@@ -1,0 +1,97 @@
+<html><head><title>CLIM: 35 Suggested Extensions to CLIM</title></head><body>
+<br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="gray-streams.html">Common Lisp Streams</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="changes.html">Changes from CLIM 1.0</a></td>
+</tr></table><br><hr><br>
+<p>
+<br><a name="35"><h1>35 Suggested Extensions to CLIM</h1></a>
+<a name="LABEL=extensions"></a> This appendix describes some suggested extensions to CLIM.  Conforming CLIM
+implementations need not implement any of these extensions.  However, if a CLIM
+implementation chooses to implement any of this functionality, it is suggested
+that is conform to the suggested API.
+<p>
+All of the symbols documented in this appendix should be accessible as external
+symbols in the <tt>clim</tt> package.
+<p>
+
+<a name="35.1"><h2>35.1 Support for PostScript Output</h2></a>
+CLIM implementations may choose to implement a PostScript back-end.  Such a
+back-end must include a medium that supports CLIM's medium protocol, and should
+support CLIM's output stream protocol as well.
+<p>
+<a name="Macro with-output-to-postscript-stream"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>with-output-to-postscript-stream</b></td><td valign="baseline" width="100%"><i>(stream-var file-stream
+                                               <tt>&amp;key</tt> device-type multi-page scale-to-fit 
+                                                    orientation header-comments) 
+                                               <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Within <i>body</i> , <i>stream-var</i> is bound to a stream that produces
+PostScript code.  This stream is suitable as a stream or medium argument to any
+CLIM output utility, such as <tt>draw-line*</tt> or <tt>write-string</tt> .  A PostScript
+program describing the output to the <i>stream-var</i> stream will be written to
+<i>file-stream</i> .  <i>stream-var</i> must be a symbol.  <i>file-stream</i> is a
+stream.
+<p>
+<i>device-type</i> is a symbol that names some sort of PostScript display device.
+Its default value is unspecified, but must be a useful display device type for
+the CLIM implementation.
+<p>
+<i>multi-page</i> is a <a href="extensions.html#CONCEPT=boolean"><i>boolean</i></a> that specifies whether or not the output
+should be broken into multiple pages if it is larger than one page.  How the
+output is broken into multiple pages, and how these multiple pages should be
+pieced together is unspecified.  The default is <tt>nil</tt> .
+<p>
+<i>scale-to-fit</i> is a <a href="extensions.html#CONCEPT=boolean"><i>boolean</i></a> that specifies whether or not the output
+should be scaled to fit on a single page if it is larger than one page.  The
+default is <tt>nil</tt> .  It is an error if <i>multi-page</i> and <tt>scale-to-fit</tt> are both supplied as <a href="extensions.html#CONCEPT=true"><i>true</i></a> .
+<p>
+<i>orientation</i> may be one of <tt>:portrait</tt> (the default) or <tt>:landscape</tt> .
+It specifies how the output should be oriented.
+<p>
+<i>header-comments</i> allows the programmer to specify some PostScript header
+comment fields for the resulting PostScript output.  The value of
+<i>header-comments</i> is a list consisting of alternating keyword and value
+pairs.  These are the supported keywords:
+<p>
+<ul> <li> <tt>:title</tt> ---specifies a title for the document, as it will appear in the
+"<p>
+<li> <tt>:for</tt> ---specifies who the document is for.  The associated value will
+appear in a "</ul> <a name="Function new-page"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>new-page</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Give a PostScript stream <i>stream</i> , <tt>new-page</tt> sends all of the currently
+collected output to the related file stream (by emitting a PostScript
+<tt>showpage</tt> command), and resets the PostScript stream to have no output.
+<p>
+
+<a name="35.2"><h2>35.2 Support for Reading Bitmap Files</h2></a>
+CLIM implementations may supply some functions that read standard bitmap and
+pixmaps files.  The following is the suggested API for such functionality.
+<p>
+<a name="Generic function read-bitmap-file"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>read-bitmap-file</b></td><td valign="baseline" width="100%"><i>type pathname <tt>&amp;key</tt> </i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Reads a bitmap file of type <i>type</i> from the file named by <i>pathname</i> .
+<i>type</i> is a symbol that indicates what type of bitmap file is to be read.  
+<tt>read-bitmap-file</tt> can <tt>eql</tt> -specialize on <i>type</i> .
+<p>
+<tt>read-bitmap-file</tt> may take keyword arguments to provide further information
+to the method decoding the bitmap file.
+<p>
+For example, a CLIM implementation might support an <tt>:x11</tt> type.
+<tt>read-bitmap-file</tt> could take a <i>format</i> keyword argument, whose value
+can be either <tt>:bitmap</tt> or <tt>:pixmap</tt> .
+<p>
+<tt>read-bitmap-file</tt> will return two values.  The first is a 2-dimensional
+array of ``pixel'' values.  The second is a sequence of CLIM colors (or <tt>nil</tt> if the result is a monochrome image).
+<p>
+
+<a name="Function make-pattern-from-bitmap-file"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>make-pattern-from-bitmap-file</b></td><td valign="baseline" width="100%"><i>pathname <tt>&amp;key</tt> type designs <tt>&amp;allow-other-keys</tt> </i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Reads the contents of the bitmap file <i>pathname</i> and creates a CLIM
+<tt>pattern</tt> object that represents the file.  <i>type</i> is as for
+<tt>read-bitmap-file</tt> .
+<p>
+<i>designs</i> is a sequence of CLIM designs (typically color objects) that will
+be used as the second argument in a call to <tt>make-pattern</tt> .  <i>designs</i> must be supplied if no second value will be returned from <tt>read-bitmap-file</tt> .
+<p>
+<tt>make-pattern-from-bitmap-file</tt> will pass any additional keyword arguments
+along to <tt>read-bitmap-file</tt> .
+<br><hr><br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="gray-streams.html">Common Lisp Streams</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="changes.html">Changes from CLIM 1.0</a></td>
+</tr></table>
+</body></html>

@@ -1,0 +1,443 @@
+<html><head><title>CLIM: 31 Glossary</title></head><body>
+<br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="gadgets.html">Gadgets</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="clim-sys.html">The CLIM-SYS Package</a></td>
+</tr></table><br><hr><br>
+<p>
+<br><a name="31"><h1>31 Glossary</h1></a>
+<a name="LABEL=glossary"></a> 
+<hr><b>Issue:</b> SWM<br><i>Fill these in.  What glossary entries would it be useful to borrow
+from the ANSI CL spec?</i><hr>
+<ul> <table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>adaptive toolkit</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+---Fill this in---<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>adopted</b></td><td align=right nowrap="nowrap" width="0%"><i>[adj.]</i></td></tr></table>
+(of a <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> ) Having a parent sheet.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>affine transformation</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+A <a href="glossary.html#CONCEPT=transformation"><i>transformation</i></a> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>ancestors</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+The parent of a <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> or an <a href="glossary.html#CONCEPT=output
+record"><i>output
+record</i></a> , and all of its ancestors, recursively.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>applicable</b></td><td align=right nowrap="nowrap" width="0%"><i>[adj.]</i></td></tr></table>
+(of a <a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlcommands.html#CONCEPT=presentation translator"><i>presentation translator</i></a> ) A
+<a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlcommands.html#CONCEPT=presentation translator"><i>presentation translator</i></a> is said to be <a href="glossary.html#CONCEPT=applicable"><i>applicable</i></a> when the pointer
+is pointing to a <a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlcommands.html#CONCEPT=presentation"><i>presentation</i></a> whose <a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlpresentation-types.htmlcommands.html#CONCEPT=presentation type"><i>presentation type</i></a> matches the
+current <a href="presentation-types.html#CONCEPT=input context"><i>input context</i></a> , and the other criteria for translator matching
+have been met.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>application frame</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+1.~A program that interacts directly
+with a <a href="conventions.html#CONCEPT=user"><i>user</i></a> to perform some specific task.  2.~A Lisp object that holds
+the information associated with such a program, including the panes of the user
+interface and application state variables.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>area</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+A <a href="regions.html#CONCEPT=region"><i>region</i></a> that has dimensionality 2, that is,
+has area.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>background</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+The <a href="regions.html#CONCEPT=design"><i>design</i></a> that is used when erasing,
+that is, drawing using <tt>+background-ink+</tt> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>bounded design</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+A <a href="regions.html#CONCEPT=design"><i>design</i></a> that is transparent
+everywhere beyond a certain distance from a certain point.  Drawing a bounded
+design has no effect on the drawing plane outside that distance.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>bounded region</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+A <a href="regions.html#CONCEPT=region"><i>region</i></a> that contains at least one
+point and for which there exists a number, <tt>d</tt>, called the region's diameter,
+such that if <tt>p1</tt> and <tt>p2</tt> are points in the region, the distance between <tt>p1</tt>
+and <tt>p2</tt> is always less than or equal to <tt>d</tt>.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>bounding rectangle</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+1.~The smallest <a href="glossary.html#CONCEPT=rectangle"><i>rectangle</i></a> that
+surrounds a <a href="http://www.mikemac.com/mikemac/clim/regions.htmlcolors.html#CONCEPT=bounded region"><i>bounded region</i></a> and contains every point in the region, and
+may contain additional points as well.  The sides of a bounding rectangle are
+parallel to the coordinate axes.  2.~A Lisp object that represents a
+<a href="bboxes.html#CONCEPT=bounding rectangle"><i>bounding rectangle</i></a> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>cache value</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+During <a href="glossary.html#CONCEPT=incremental redisplay"><i>incremental redisplay</i></a> , the
+<a href="glossary.html#CONCEPT=cache value"><i>cache value</i></a> is used to determine whether or not a piece of output has
+changed.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>children</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+(of a <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> or <a href="glossary.html#CONCEPT=output record"><i>output record</i></a> ) The
+direct descendants of a <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> or an <a href="glossary.html#CONCEPT=output record"><i>output record</i></a> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>color</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+1.~An object representing the intuitive definition
+of a color, such as black or red.  2.~A Lisp object that represents a
+<a href="glossary.html#CONCEPT=color"><i>color</i></a> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>colored design</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+A <a href="regions.html#CONCEPT=design"><i>design</i></a> whose points have
+<a href="glossary.html#CONCEPT=color"><i>color</i></a> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>colorless design</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+A <a href="regions.html#CONCEPT=design"><i>design</i></a> whose points have no
+<a href="glossary.html#CONCEPT=color"><i>color</i></a> .  Drawing a colorless design uses the default color specified by
+the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> 's foreground design.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>command</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+1.~The way CLIM represents a user interaction.
+2.~A Lisp object that represents a <a href="commands.html#CONCEPT=command"><i>command</i></a> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>command name</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+A symbol that names a command.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>command table</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+1.~A way of collecting and organizing a
+group of related commands, and defining the interaction styles that can be used
+to invoke those commands.  2.~A Lisp object that represents a <a href="commands.html#CONCEPT=command
+table"><i>command
+table</i></a> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>command table designator</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+A Lisp object that is either a
+command table or a symbol that names a command table.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>completion</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+A facility provided by CLIM for completing
+user input over a set of possibilities.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>compositing</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+(of <a href="regions.html#CONCEPT=designs"><i>designs</i></a> ) The creation of a
+<a href="regions.html#CONCEPT=design"><i>design</i></a> whose appearance at each point is a composite of the appearances
+of two other designs at that point.  There are three varieties of compositing:
+<a href="http://www.mikemac.com/mikemac/clim/transforms.htmldesigns.html#CONCEPT=composing over"><i>composing over</i></a> , <a href="http://www.mikemac.com/mikemac/clim/transforms.htmldesigns.html#CONCEPT=composing in"><i>composing in</i></a> , and <a href="http://www.mikemac.com/mikemac/clim/transforms.htmldesigns.html#CONCEPT=composing out"><i>composing out</i></a> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>composition</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+(of <a href="glossary.html#CONCEPT=transformations"><i>transformations</i></a> ) The
+transformation from one coordinate system to another, then from the second to a
+third can be represented by a single transformation that is the
+<a href="glossary.html#CONCEPT=composition"><i>composition</i></a> of the two component transformations.  Transformations are
+closed under composition.  Composition is not commutative.  Any arbitrary
+transformation can be built up by composing a number of simpler transformations,
+but that composition is not unique.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>context-dependent input</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+---Fill this in---<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>degrafted</b></td><td align=right nowrap="nowrap" width="0%"><i>[adj.]</i></td></tr></table>
+(of a <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> ) Not <a href="http://www.mikemac.com/mikemac/clim/silica.htmlsilica.html#CONCEPT=grafted"><i>grafted</i></a> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>descendants</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+All of the children of a <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> or an
+<a href="glossary.html#CONCEPT=output record"><i>output record</i></a> , and all of their descendents, recursively.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>design</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+An object that represents a way of arranging
+<a href="glossary.html#CONCEPT=colors"><i>colors</i></a> and <a href="glossary.html#CONCEPT=opacities"><i>opacities</i></a> in the <a href="glossary.html#CONCEPT=drawing plane"><i>drawing plane</i></a> .  A mapping from
+an <tt>(x,y)</tt> pair into color and opacity values.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>device transformation</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+---Fill this in---<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>disowned</b></td><td align=right nowrap="nowrap" width="0%"><i>[adj.]</i></td></tr></table>
+(of a <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> ) Not <a href="http://www.mikemac.com/mikemac/clim/silica.htmlframes.html#CONCEPT=adopted"><i>adopted</i></a> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>disabled</b></td><td align=right nowrap="nowrap" width="0%"><i>[adj.]</i></td></tr></table>
+(of a <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> ) Not <a href="http://www.mikemac.com/mikemac/clim/silica.htmlframes.html#CONCEPT=enabled"><i>enabled</i></a> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>dispatching</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+(of <a href="silica.html#CONCEPT=events"><i>events</i></a> ) ---Fill this in---<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>display medium</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+---Fill this in---<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>display server</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+---Fill this in---<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>displayed output record</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+An <a href="glossary.html#CONCEPT=output record"><i>output record</i></a> that
+corresponds to a visible piece of output, such as text or graphics.  The leaves
+of the output record tree.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>distributing</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+(of <a href="silica.html#CONCEPT=events"><i>events</i></a> ) ---Fill this in---<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>drawing plane</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+An infinite two-dimensional plane on which
+graphical output occurs.  A drawing plane contains an arrangement of colors and
+opacities that is modified by each graphical output operation.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>enabled</b></td><td align=right nowrap="nowrap" width="0%"><i>[adj.]</i></td></tr></table>
+(of a <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> ) ---Fill this in---<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>event</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+1.~Some sort of significant event, such as a user
+gesture (such as moving the pointer, pressing a pointer button, or typing a
+keystroke) or a window configuration event (such as resizing a window).  2.~A
+Lisp object that represents an <a href="silica.html#CONCEPT=event"><i>event</i></a> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>extended input stream</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+A kind of sheet that supports
+CLIM's extended input stream protocol, such as supporting a pointing device.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>extended output stream</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+A kind of sheet that supports
+CLIM's extended output stream protocol, such as supporting a variable
+line-height text rendering.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>false</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+1.~The boolean value false.  2.~The Lisp object
+<tt>nil</tt> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>flipping ink</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+1.~An <a href="glossary.html#CONCEPT=ink"><i>ink</i></a> that interchanges
+occurrences of two <a href="regions.html#CONCEPT=designs"><i>designs</i></a> , such as might be done by ``XOR'' on a
+monochrome display.  2.~A Lisp object that represents a <a href="glossary.html#CONCEPT=flipping ink"><i>flipping ink</i></a> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>foreground</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+The <a href="regions.html#CONCEPT=design"><i>design</i></a> that is used when drawing
+using <tt>+foreground-ink+</tt> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>formatted output</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+1.~Output that obeys some high level
+constraints on its appearance, such as being arranged in a tabular format, or
+justified within some margins.  2.~The CLIM facility that provides a programmer
+the tools to produce such output.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>frame</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+An <a href="glossary.html#CONCEPT=application frame"><i>application frame</i></a> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>frame manager</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+An object that controls the realization of
+the look and feel of an <a href="glossary.html#CONCEPT=application frame"><i>application frame</i></a> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>fully specified</b></td><td align=right nowrap="nowrap" width="0%"><i>[adj.]</i></td></tr></table>
+(of a <a href="text-styles.html#CONCEPT=text style"><i>text style</i></a> ) Having
+components none of which are <tt>nil</tt> , and not having a relative size (that is,
+neither <tt>:smaller</tt> nor <tt>:larger</tt> ).<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>gesture</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+Some sort of input action by a user, such as
+typing a character or clicking a pointer button.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>gesture name</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+A symbol that gives a name to a
+<a href="extended-input.html#CONCEPT=gesture"><i>gesture</i></a> , for example, <tt>:select</tt> is commonly used to indicate a left
+pointer button click.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>graft</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+A kind of <a href="silica.html#CONCEPT=mirrored sheet"><i>mirrored sheet</i></a> that represents a
+host window, typically a root window.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>grafted</b></td><td align=right nowrap="nowrap" width="0%"><i>[adj.]</i></td></tr></table>
+(of a <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> ) Having an ancestor sheet
+that is a <a href="silica.html#CONCEPT=graft"><i>graft</i></a> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>highlighting</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+Changing of some piece of output so that it
+stands out.  CLIM often <a href="glossary.html#CONCEPT=highlights"><i>highlights</i></a> the <a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlcommands.html#CONCEPT=presentation"><i>presentation</i></a> under the
+<a href="regions.html#CONCEPT=pointer"><i>pointer</i></a> to indicate that it is <a href="glossary.html#CONCEPT=sensitive"><i>sensitive</i></a> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>immutable</b></td><td align=right nowrap="nowrap" width="0%"><i>[adj.]</i></td></tr></table>
+1.~(of an object) Having components that
+cannot be modified once the object has been created.  2.~(of a class) An
+<a href="conventions.html#CONCEPT=immutable class"><i>immutable class</i></a> is a class all of whose objects are <a href="conventions.html#CONCEPT=immutable"><i>immutable</i></a> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>implementor</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+A programmer who implements CLIM.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>incremental redisplay</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+1.~Redraw part of some output while
+leaving other output unchanged.  2.~The CLIM facility that implements this
+behavior.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>indirect ink</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+Drawing with an <a href="colors.html#CONCEPT=indirect ink"><i>indirect ink</i></a> is the
+same as drawing with another <a href="glossary.html#CONCEPT=ink"><i>ink</i></a> named directly.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>ink</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+Any member of the class <tt>design</tt> supplied as the
+<tt>:ink</tt> argument to a CLIM drawing function.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>input context</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+1.~---Fill this in---.  2.~A Lisp object
+that represents an <a href="presentation-types.html#CONCEPT=input context"><i>input context</i></a> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>input editor</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+The CLIM facility that allows a <a href="conventions.html#CONCEPT=user"><i>user</i></a> to modify typed-in input.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>input editing stream</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+A CLIM stream that supports
+<a href="glossary.html#CONCEPT=input editing"><i>input editing</i></a> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>input stream designator</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+A Lisp object that is either an
+input stream, or the symbol <tt>t</tt> , which is taken to mean <tt>*standard-input*</tt> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>interactive stream</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+A stream that supports both input from
+and output to the user in an interactive fashion.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>line style</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+1.~Advice to CLIM's rendering substrate on how
+to render a path, such as a line or an unfilled ellipse or polygon.  2.~A Lisp
+object that represents a <a href="drawing-options.html#CONCEPT=line style"><i>line style</i></a> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>medium</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+1.~A destination for output, having a
+<a href="glossary.html#CONCEPT=drawing plane"><i>drawing plane</i></a> , two designs called the medium's <a href="glossary.html#CONCEPT=foreground"><i>foreground</i></a> and
+<a href="glossary.html#CONCEPT=background"><i>background</i></a> , a <a href="glossary.html#CONCEPT=transformation"><i>transformation</i></a> , a <a href="glossary.html#CONCEPT=clipping region"><i>clipping region</i></a> , a
+<a href="drawing-options.html#CONCEPT=line style"><i>line style</i></a> , and a <a href="text-styles.html#CONCEPT=text style"><i>text style</i></a> .  2.~A Lisp object that represents a
+<a href="silica.html#CONCEPT=medium"><i>medium</i></a> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>mirror</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+The host window system object associated with a
+<a href="silica.html#CONCEPT=mirrored sheet"><i>mirrored sheet</i></a> , such as a window object on an X11 display server.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>mirrored sheet</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+A special class of <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> that is
+attached directly to a window on a <a href="glossary.html#CONCEPT=display server"><i>display server</i></a> .  A <a href="silica.html#CONCEPT=graft"><i>graft</i></a> is one
+kind of a <a href="silica.html#CONCEPT=mirrored sheet"><i>mirrored sheet</i></a> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>mutable</b></td><td align=right nowrap="nowrap" width="0%"><i>[adj.]</i></td></tr></table>
+1.~(of an object) Having components that can be
+modified once the object has been created.  2.~(of a class) An <a href="conventions.html#CONCEPT=mutable
+class"><i>mutable
+class</i></a> is a class all of whose objects are <a href="conventions.html#CONCEPT=mutable"><i>mutable</i></a> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>non-uniform design</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+A <a href="regions.html#CONCEPT=design"><i>design</i></a> that is not a
+<a href="colors.html#CONCEPT=uniform design"><i>uniform design</i></a> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>opacity</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+1.~An object that controls how graphical output
+covers previous output, such as fully opaque to fully transparent, and levels of
+translucency between.  2.~A Lisp object that represents an <a href="glossary.html#CONCEPT=opacity"><i>opacity</i></a> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>output history</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+The highest level <a href="glossary.html#CONCEPT=output record"><i>output record</i></a> for
+an <a href="glossary.html#CONCEPT=output recording stream"><i>output recording stream</i></a> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>output record</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+1.~An object that remembers the output
+performed to a <a href="glossary.html#CONCEPT=stream"><i>stream</i></a> or <a href="silica.html#CONCEPT=medium"><i>medium</i></a> .  2.~A Lisp object that represents
+an <a href="glossary.html#CONCEPT=output record"><i>output record</i></a> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>output recording</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+The process of remembering the output
+performed to a <a href="glossary.html#CONCEPT=stream"><i>stream</i></a> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>output recording stream</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+A CLIM stream that supports
+<a href="glossary.html#CONCEPT=output recording"><i>output recording</i></a> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>output stream designator</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+A Lisp object that is either an
+output stream, or the symbol <tt>t</tt> , which is taken to mean
+<tt>*standard-output*</tt> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>pane</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+A <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> or window that appears as the child
+of some other window or <a href="glossary.html#CONCEPT=frame"><i>frame</i></a> .  A composite pane can hold other panes; a
+leaf pane cannot.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>parent</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+The direct ancestor of a <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> or an
+<a href="glossary.html#CONCEPT=output record"><i>output record</i></a> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>path</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+A <a href="regions.html#CONCEPT=region"><i>region</i></a> that has dimensionality 1, that is,
+has length.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>patterning</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+The process of creating a bounded rectangular
+arrangement of <a href="regions.html#CONCEPT=designs"><i>designs</i></a> , like a checkerboard.  A <a href="glossary.html#CONCEPT=pattern"><i>pattern</i></a> is a
+<a href="regions.html#CONCEPT=design"><i>design</i></a> created by this process.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>pixmap</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+An ``off-screen window'', that is, a sheet that
+can be used for graphical output, but is not visible on any display device.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>point</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+1.~A <a href="regions.html#CONCEPT=region"><i>region</i></a> that has dimensionality 0, that
+is, has only a position.  2.~A Lisp object that represents a <a href="regions.html#CONCEPT=point"><i>point</i></a> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>pointer</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+A physical device used for pointing, such as a
+mouse.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>pointer documentation</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+---Fill this in---<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>port</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+An abstract connection to a <a href="glossary.html#CONCEPT=display server"><i>display server</i></a> that is responsible for managing host display server resources and for
+processing input events received from the host display server.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>position</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+1.~A position on a plane, such as CLIM's
+abstract drawing plane.  2.~A pair of real number values <tt>x</tt> and <tt>y</tt> that
+represent a <a href="glossary.html#CONCEPT=position"><i>position</i></a> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>presentation</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+1.~An association between an object and a
+<a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlpresentation-types.htmlcommands.html#CONCEPT=presentation type"><i>presentation type</i></a> with some output on a <a href="glossary.html#CONCEPT=output recording stream"><i>output recording stream</i></a> .
+2.~A Lisp object that represents a <a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlcommands.html#CONCEPT=presentation"><i>presentation</i></a> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>presentation tester</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+A predicate that restricts the
+applicability of a <a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlcommands.html#CONCEPT=presentation translator"><i>presentation translator</i></a> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>presentation translator</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+A mapping from an object of one
+<a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlpresentation-types.htmlcommands.html#CONCEPT=presentation type"><i>presentation type</i></a> , an <a href="presentation-types.html#CONCEPT=input context"><i>input context</i></a> , and a <a href="extended-input.html#CONCEPT=gesture"><i>gesture</i></a> to an
+object of another presentation type.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>presentation type</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+1.~A description of a class of
+<a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlcommands.html#CONCEPT=presentations"><i>presentations</i></a> .  2.~An extension to CLOS that implements this.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>presentation type specifier</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+A Lisp object used to specify
+a <a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlpresentation-types.htmlcommands.html#CONCEPT=presentation type"><i>presentation type</i></a> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>programmer</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+A person who writes application programs using
+CLIM.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>protocol class</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+An ``abstract'' class having no methods or
+slots that is used to indicate that a class obeys a certain protocol.  For
+example, all classes that inherit from the <tt>bounding-rectangle</tt> class obey
+the bounding rectangle protocol.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>rectangle</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+1.~A four-sided polygon whose sides are
+parallel to the coordinate axes.  2.~A Lisp object that represents a
+<a href="glossary.html#CONCEPT=rectangle"><i>rectangle</i></a> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>redisplay</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+See <a href="glossary.html#CONCEPT=incremental redisplay"><i>incremental redisplay</i></a> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>region</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+1.~A set of mathematical points in the plane; a
+mapping from an <tt>(x,y)</tt> pair into either true or false (meaning member or not a
+member, respectively, of the region).  In CLIM, all regions include their
+boundaries (that is, they are closed) and have infinite resolution.  2.~A Lisp
+object that represents a <a href="regions.html#CONCEPT=region"><i>region</i></a> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>region set</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+1.~A ``compound'' <a href="regions.html#CONCEPT=region"><i>region</i></a> , that is, a
+region consisting of several other regions related by one of the operations
+union, intersection, or difference.  2.~A Lisp object that represents a
+<a href="http://www.mikemac.com/mikemac/clim/regions.htmlregions.html#CONCEPT=region set"><i>region set</i></a> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>rendering</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+The process of drawing a shape (such as a line
+or a circle) on a display device.  Rendering is an approximate process, since an
+abstract shape exists in a continuous coordinate system having infinite
+precision, whereas display devices must necessarily draw discrete points having
+some measurable size.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>replaying</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+The process of redrawing a set of <a href="glossary.html#CONCEPT=output
+records"><i>output
+records</i></a> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>repainting</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+---Fill this in---<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>sensitive</b></td><td align=right nowrap="nowrap" width="0%"><i>[adj.]</i></td></tr></table>
+(of a <a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlcommands.html#CONCEPT=presentation"><i>presentation</i></a> ) A
+<a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlcommands.html#CONCEPT=presentation"><i>presentation</i></a> is <a href="glossary.html#CONCEPT=sensitive"><i>sensitive</i></a> if some action will take place when the
+user clicks on it with the pointer, that is, there is at least one
+<a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlcommands.html#CONCEPT=presentation translator"><i>presentation translator</i></a> that is <a href="glossary.html#CONCEPT=applicable"><i>applicable</i></a> .  In this case, the
+presentation will usually be <a href="glossary.html#CONCEPT=highlighted"><i>highlighted</i></a> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>server path</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+---Fill this in---<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>sheet</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+1.~---Fill this in---.  2.~A Lisp object that
+represents a <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>sheet region</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+---Fill this in---<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>sheet transformation</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+---Fill this in---<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>solid design</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+A <a href="regions.html#CONCEPT=design"><i>design</i></a> that is either completely
+opaque or completely transparent.  A solid design can be opaque at some points
+and transparent at others.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>stencil</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+A kind of <a href="glossary.html#CONCEPT=pattern"><i>pattern</i></a> that contains only
+<a href="glossary.html#CONCEPT=opacities"><i>opacities</i></a> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>stencil opacity</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+The <a href="glossary.html#CONCEPT=opacity"><i>opacity</i></a> at one point in a
+<a href="regions.html#CONCEPT=design"><i>design</i></a> that would result from drawing the design onto a fictitious medium
+whose drawing plane is initially completely transparent black (opacity and all
+color components are zero), and whose foreground and background are both opaque
+black.  The <a href="http://www.mikemac.com/mikemac/clim/designs.htmldesigns.html#CONCEPT=stencil opacity"><i>stencil opacity</i></a> of an <a href="glossary.html#CONCEPT=opacity"><i>opacity</i></a> is simply its value.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>stream</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+A kind of <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> that implements the stream
+protocol (such as maintaining a <a href="glossary.html#CONCEPT=text cursor"><i>text cursor</i></a> ).<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>text cursor</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+---Fill this in---<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>text style</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+1.~A description of how textual output should
+appear, consisting of family, face code, and size.  2.~A Lisp object that
+represents a <a href="text-styles.html#CONCEPT=text style"><i>text style</i></a> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>tiling</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+The process of repeating a rectangular portion of
+a <a href="regions.html#CONCEPT=design"><i>design</i></a> throughout the drawing plane.  A <a href="glossary.html#CONCEPT=tile"><i>tile</i></a> is a <a href="regions.html#CONCEPT=design"><i>design</i></a> created by this process.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>transformation</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+1.~A mapping from one coordinate system
+onto another that preserves straight lines.  General transformations include all
+the sorts of transformations that CLIM uses, namely, translations, scaling,
+rotations, and reflections.  2.~A Lisp object that represents a
+<a href="glossary.html#CONCEPT=transformation"><i>transformation</i></a> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>translucent design</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+A <a href="regions.html#CONCEPT=design"><i>design</i></a> that is not
+<a href="colors.html#CONCEPT=solid"><i>solid</i></a> , that is, has at least one point with an opacity that is
+intermediate between completely opaque and transparent.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>true</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+1.~The boolean value true; not <a href="glossary.html#CONCEPT=false"><i>false</i></a> .  2.~Any
+Lisp object that is not <tt>nil</tt> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>unbounded design</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+A <a href="regions.html#CONCEPT=design"><i>design</i></a> that has at least one
+point of non-zero opacity arbitrarily far from the origin.  Drawing an unbounded
+design affects the entire drawing plane.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>unbounded region</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+A <a href="regions.html#CONCEPT=region"><i>region</i></a> that either contains no
+points or contains points arbitrarily far apart.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>uniform design</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+A <a href="regions.html#CONCEPT=design"><i>design</i></a> that has the same color
+and opacity at every point in the drawing plane.  Uniform designs are always
+unbounded, unless they are completely transparent.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>unique id</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+During <a href="glossary.html#CONCEPT=incremental redisplay"><i>incremental redisplay</i></a> , the
+<a href="glossary.html#CONCEPT=unique id"><i>unique id</i></a> is an object used to uniquely identify a piece of output.  The
+output named by the <a href="glossary.html#CONCEPT=unique id"><i>unique id</i></a> will often have a <a href="glossary.html#CONCEPT=cache value"><i>cache value</i></a> associated with it.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>user</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+A person who uses an application program that was
+written using CLIM.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>user transformation</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+---Fill this in---<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>view</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+1.~---Fill this in---.  2.~A Lisp object that
+represents a <a href="glossary.html#CONCEPT=view"><i>view</i></a> .<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>viewport</b></td><td align=right nowrap="nowrap" width="0%"><i>[n.]</i></td></tr></table>
+The portion of the drawing plane of a sheet's
+medium that is visible on a display device.<br><br>
+<table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>volatile</b></td><td align=right nowrap="nowrap" width="0%"><i>[adj.]</i></td></tr></table>
+(of an immutable object) Having components
+that cannot be modified by the programmer at the protocol level, but which may
+be modified internally by CLIM.  <a href="glossary.html#CONCEPT=Volatile"><i>Volatile</i></a> objects reflect internal state
+of CLIM.<br><br>
+</ul> <br><hr><br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="gadgets.html">Gadgets</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="clim-sys.html">The CLIM-SYS Package</a></td>
+</tr></table>
+</body></html>

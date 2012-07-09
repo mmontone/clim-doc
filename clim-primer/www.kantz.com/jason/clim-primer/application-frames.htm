@@ -1,0 +1,184 @@
+<html><head><title>Common Lisp Interface Manager (CLIM) -- Application Frames</title>
+<LINK REL=STYLESHEET HREF="clim-primer.css" TYPE="text/css"></head><body>
+
+
+<h1>Application Frames</h1>
+
+part of <a href="index.htm">Common Lisp Interface Manager (CLIM)</a>
+by <a href="http://jason.kantz.com">Jason Kantz</a>
+
+<hr>
+<!--"Science and technology revolutionize our lives, but memory,
+tradition and myth frame our response."  
+<br>--Arthur M. Schlesinger, Jr.-->
+
+<h2>Questions</h2>
+
+<li>What are the characteristics and  components of application frames?
+<li>How are application frames defined and constructed?
+<li>How are application frames displayed?
+
+
+<h2>Reading</h2>
+
+<li><a href="http://www.lispworks.com/reference/lw44/CLIM/html/climguide-138.htm#marker-406333">define-application-frame [Macro]</a>
+
+<li><a href="http://www.lispworks.com/reference/lw44/CLIM/html/climguide-138.htm#marker-406334">make-application-frame [Function]</a>
+
+<li><a href="http://www.lispworks.com/reference/lw44/CLIM/html/climguide-154.htm#marker-406376">run-frame-top-level [Generic Function] </a>
+
+
+<h2>Frames</h2>
+
+<ul>
+ <li class=separate>
+ are the central abstraction of an application
+
+ <li class=separate>
+ are displayed as top-level window
+
+ <li class=separate>
+ may also be displayed as regions embedded within other applications
+
+ <li class=separate>
+ control the screen real estate managed by an application
+
+ <li class=separate>
+ contain a hierarchy of panes -- from a library of standard panes,
+ or custom defined panes
+
+ <li class=separate>
+ are managed by special application called a frame manager
+
+ <li class=separate>
+ keep track of Lisp state variables that contain the state of the
+ application
+
+ <li class=separate>
+ are used to access command-loop, gadgets, and look-and-feel-independence
+
+</ul>
+
+<h2>Panes</h2>
+
+<ul>
+ <li class=separate>
+ interactive objects
+
+ <li class=separate>
+ analogous to the windows, gadgets, or widgets of other toolkits
+
+ <li class=separate>
+ layout panes organize space
+
+ <li class=separate>
+ extended stream panes present application-specific information
+
+ <li class=separate>
+ gadget panes display data and obtain user input
+</ul>
+
+<h2>Frame Managers</h2>
+
+<ul>
+ <li class=separate>
+ control the realization of the look and feel of a frame
+
+ <li class=separate>
+ interpret the specification of the application frame in the context
+ of the available window system facilities
+
+ <li class=separate>
+ take care of attaching the pane hierarchy of an application frame
+ to an appropriate place in a window hierarchy
+</ul>
+
+<h2>Kinds of Frame Managers</h2>
+
+<ul>
+ <li class=separate>
+ desktop manager or window manager 
+
+ <ul>
+   <li class=separate>
+   allows a user to manipulate the frames of other applications
+  
+   <li class=separate>
+   is usually a non-Lisp application
+
+   <li class=separate>
+   acts as a mediator between the Lisp application and the host
+   desktop manager
+ </ul>
+
+ <ul>
+   <li class=separate>
+   application acting as frame managers
+
+   <li class=separate>
+   allow frames of other applications to be displayed within the
+   host application</ul>
+</ul>
+
+<h2>Constructing Application Frames</h2>
+
+<p>
+Before you can construct an actual instance of an application
+frame, you have to name it and define it by calling
+
+<p><code>
+define-application-frame (name superclasses slots &rest options)</code>
+
+<p>
+This is a macro that helps you define a direct sub-class of the class
+<code>standard-application-frame</code>.  The &rest options is where
+much of the action is because this is where one specifies command
+tables, panes for display, and the layout of the panes.
+
+<p class=mtb>
+The following code makes and runs a minimal application frame:
+
+<a name=wordmin></a><pre><code>
+(define-application-frame word		;name
+    ()					;superclasses
+  ()					;slots
+  ;; options
+  (:panes				;panes option
+   (title				;pane name 
+    :application)			;pane type
+   (document				;pane name
+    :application))			;pane type
+  (:layouts				;layouts option
+   (default				;layout name
+       (vertically ()			;layout macros
+	 (1/8 title)
+	 (7/8 document)))))
+
+(run-frame-top-level (make-application-frame 'word :height 300 :width 300))
+</code></pre>
+
+
+<h2>Exercises</h2>
+
+<ol>
+    <li class=separate>Load the CLIM package within your Lisp, and switch to the
+    CLIM-USER package.
+
+    <li class=separate>Define, make, and run a minimal CLIM application frame.
+
+    <li class=separate>At the toplevel type 
+<pre><code>(inspect (make-application-frame 'word :height 300 :width 300))</code></pre>
+Look for the panes and the command table.
+
+    <li class=separate>Macro Expand your call to define-application-frame.  Find the
+    call to defclass.
+
+    <li class=separate>Write a utility called make-and-run-frame
+    that makes and runs an application frame.
+</ol>
+
+<p class=mtb>
+Next: <a href="panes.htm">CLIM Panes</a>
+
+
+</body></html>

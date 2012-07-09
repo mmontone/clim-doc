@@ -1,0 +1,310 @@
+<html><head><title>CLIM: 14 General Designs</title></head><body>
+<br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="colors.html">Drawing in Color</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="extended-output.html">Extended Stream Output</a></td>
+</tr></table><br><hr><br>
+<p>
+<br><a name="14"><h1>14 General Designs</h1></a>
+<a name="LABEL=designs"></a> This chapter discusses more general designs than Chapter <a href="colors.html#LABEL=color"><b><i>Drawing in Color</i></b></i></a> and reveals
+that regions are also designs.  This chapter generalizes to those designs that
+do not have the same color and opacity at every point in the drawing plane.
+These include:
+<p>
+<ul> <li> composite designs,
+<p>
+<li> patterns,
+<p>
+<li> stencils,
+<p>
+<li> tiled designs,
+<p>
+<li> transformed designs,
+<p>
+<li> output record designs, and
+<p>
+<li> regions
+</ul> Several of the features described in this chapter may not be fully supported in
+Release 2 of CLIM.
+<p>
+<b>Note:</b> A design is a unification of both a shape and a color and opacity.
+As such, a design can serve multiple roles.  For example, the same design can
+play the role of an ink that colors the drawing plane, a shape that specifies
+where to draw another design, a stencil that controls the compositing of two
+designs, the background of a window, or a region that defines clipping.  It is
+important not to get confused between <a href="designs.html#CONCEPT=type"><i>type</i></a> , which is inherent in an
+object, and <a href="designs.html#CONCEPT=role"><i>role</i></a> , which is determined by how an object is used in a
+particular function call.
+<p>
+
+<a name="14.1"><h2>14.1 The Compositing Protocol</h2></a>
+<a name="CONCEPT=Compositing"><b><i>Compositing</i></b></a> creates a design whose appearance at each point is a
+composite of the appearances of two other designs at that point.  Three
+varieties of compositing are provided: <a name="CONCEPT=composing over"><b><i>composing over</i></b></a> ,
+<a name="CONCEPT=composing in"><b><i>composing in</i></b></a> , and <a name="CONCEPT=composing out"><b><i>composing out</i></b></a> .
+<p>
+The methods for <tt>compose-over</tt> , <tt>compose-in</tt> , and <tt>compose-out</tt> will typically specialize both of the design arguments.
+<p>
+<b><i>In Release 2, compositing might only be supported for uniform designs.</i></b>
+<p>
+
+<a name="Generic function compose-over"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>compose-over</b></td><td valign="baseline" width="100%"><i>design1 design2</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Composes a new design that is equivalent to the <a href="regions.html#CONCEPT=design"><i>design</i></a> <i>design1</i> on
+top of the <a href="regions.html#CONCEPT=design"><i>design</i></a> <i>design2</i> .  Drawing the resulting design produces
+the same visual appearance as drawing <i>design2</i> and then drawing
+<i>design1</i> , but might be faster and might not allow the intermediate state to
+be visible on the screen.
+<p>
+If both arguments are regions, <tt>compose-over</tt> is the same as
+<tt>region-union</tt> .
+<p>
+<i>This function is permitted to capture its mutable inputs; the
+consequences of modifying those objects are unspecified. </i>The result returned by <tt>compose-over</tt> might be freshly constructed or might
+be an existing object.
+<p>
+
+<a name="Generic function compose-in"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>compose-in</b></td><td valign="baseline" width="100%"><i>ink mask</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Composes a new design by clipping the <a href="regions.html#CONCEPT=design"><i>design</i></a> <i>ink</i> to the inside of
+the <a href="regions.html#CONCEPT=design"><i>design</i></a> <i>mask</i> .  The first design, <i>ink</i> , supplies the color,
+while the second design, <i>mask</i> , changes the shape of the design by
+adjusting the opacity.
+<p>
+More precisely, at each point in the drawing plane the resulting design
+specifies a color and an opacity as follows: the color is the same color that
+<i>ink</i> specifies.  The opacity is the opacity that <i>ink</i> specifies,
+multiplied by the stencil opacity of <i>mask</i> .
+<p>
+The <a name="CONCEPT=stencil opacity"><b><i>stencil opacity</i></b></a> of a design at a point is defined as the opacity
+that would result from drawing the design onto a fictitious medium whose drawing
+plane is initially completely transparent black (opacity and all color
+components are zero), and whose foreground and background are both opaque black.
+With this definition, the stencil opacity of a member of class <tt>opacity</tt> is
+simply its value.
+<p>
+If <i>mask</i> is a solid design, the effect of <tt>compose-in</tt> is to clip
+<i>ink</i> to <i>mask</i> .  If <i>mask</i> is translucent, the effect is a soft
+matte.
+<p>
+If both arguments are regions, <tt>compose-in</tt> is the same as
+<tt>region-intersection</tt> .
+<p>
+<i>This function is permitted to capture its mutable inputs; the
+consequences of modifying those objects are unspecified. </i>The result returned by <tt>compose-in</tt> might be freshly constructed or might be
+an existing object.
+<p>
+
+<a name="Generic function compose-out"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>compose-out</b></td><td valign="baseline" width="100%"><i>ink mask</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Composes a new design by clipping the <a href="regions.html#CONCEPT=design"><i>design</i></a> <i>ink</i> to the outside of
+the <a href="regions.html#CONCEPT=design"><i>design</i></a> <i>mask</i> .  The first design, <i>ink</i> , supplies the color,
+while the second design, <i>mask</i> , changes the shape of the design by
+adjusting the opacity.
+<p>
+More precisely, at each point in the drawing plane the resulting design
+specifies a color and an opacity as follows: the color is the same color that
+<i>ink</i> specifies.  The opacity is the opacity that <i>ink</i> specifies,
+multiplied by 1 minus the stencil opacity of <i>mask</i> .
+<p>
+If <i>mask</i> is a solid design, the effect of <tt>compose-out</tt> is to clip
+<i>ink</i> to the complement of <i>mask</i> .  If <i>mask</i> is translucent, the
+effect is a soft matte.
+<p>
+If both arguments are regions, <tt>compose-out</tt> is the same as
+<tt>region-difference</tt> of <i>mask</i> and <i>ink</i> .
+<p>
+<i>This function is permitted to capture its mutable inputs; the
+consequences of modifying those objects are unspecified. </i>The result returned by <tt>compose-out</tt> might be freshly constructed or might be
+an existing object.
+<p>
+
+<a name="14.2"><h2>14.2 Patterns and Stencils</h2></a>
+<a name="CONCEPT=Patterning"><b><i>Patterning</i></b></a> creates a bounded rectangular arrangement of designs, like
+a checkerboard.  Drawing a pattern draws a different design in each rectangular
+cell of the pattern.  To create an infinite pattern, apply
+<tt>make-rectangular-tile</tt> to a pattern.
+<p>
+A <a name="CONCEPT=stencil"><b><i>stencil</i></b></a> is a special kind of pattern that contains only opacities.
+<p>
+<a name="Function make-pattern"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>make-pattern</b></td><td valign="baseline" width="100%"><i>array designs</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Returns a pattern design that has <tt>(array-dimension <i>array</i> 0)</tt> cells in
+the vertical direction and <tt>(array-dimension <i>array</i> 1)</tt> cells in the
+horizontal direction.  <i>array</i> must be a two-dimensional array of
+non-negative integers less than the length of <i>designs</i> .  <i>designs</i> must
+be a sequence of <a href="regions.html#CONCEPT=designs"><i>designs</i></a> .  The design in cell <tt>(i,j)</tt> of the resulting
+pattern is the <tt>n</tt>th element of <i>designs</i> , if <tt>n</tt> is the value of <tt>(aref
+<i>array</i> i j)</tt> .  For example, <i>array</i> can be a bit-array and
+<i>designs</i> can be a list of two designs, the design drawn for 0 and the one
+drawn for 1.
+<p>
+Each cell of a pattern can be regarded as a hole that allows the design in it to
+show through.  Each cell might have a different design in it.  The portion of
+the design that shows through a hole is the portion on the part of the drawing
+plane where the hole is located.  In other words, incorporating a design into a
+pattern does not change its alignment to the drawing plane, and does not apply a
+coordinate transformation to the design.  Drawing a pattern collects the pieces
+of designs that show through all the holes and draws the pieces where the holes
+lie on the drawing plane.  The pattern is completely transparent outside the
+area defined by the array.
+<p>
+Each cell of a pattern occupies a 1 by 1 square.  You can use
+<tt>transform-region</tt> to scale the pattern to a different cell size and shape,
+or to rotate the pattern so that the rectangular cells become diamond-shaped.
+Applying a coordinate transformation to a pattern does not affect the designs
+that make up the pattern.  It only changes the position, size, and shape of the
+cells' holes, allowing different portions of the designs in the cells to show
+through.  Consequently, applying <tt>make-rectangular-tile</tt> to a pattern of
+nonuniform designs can produce a different appearance in each tile.  The pattern
+cells' holes are tiled, but the designs in the cells are not tiled and a
+different portion of each of those designs shows through in each tile.
+<p>
+<i>This function is permitted to capture its mutable inputs; the
+consequences of modifying those objects are unspecified. </i><a name="Generic function pattern-width"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>pattern-width</b></td><td valign="baseline" width="100%"><i>pattern</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function pattern-height"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>pattern-height</b></td><td valign="baseline" width="100%"><i>pattern</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>These functions return the width and height, respectively, of the <a href="designs.html#CONCEPT=pattern"><i>pattern</i></a> <i>pattern</i> .
+<p>
+
+<a name="Function make-stencil"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>make-stencil</b></td><td valign="baseline" width="100%"><i>array</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Returns a pattern design that has <tt>(array-dimension <i>array</i> 0)</tt> cells in
+the vertical direction and <tt>(array-dimension <i>array</i> 1)</tt> cells in the
+horizontal direction.  <i>array</i> must be a two-dimensional array of real
+numbers between 0 and 1 (inclusive) that represent opacities.  The design in
+cell <tt>(i,j)</tt> of the resulting pattern is the value of <tt>(make-opacity (aref
+<i>array</i> i j))</tt> .
+<p>
+<i>This function is permitted to capture its mutable inputs; the
+consequences of modifying those objects are unspecified. </i><a name="14.3"><h2>14.3 Tiling</h2></a>
+<a name="CONCEPT=Tiling"><b><i>Tiling</i></b></a> repeats a rectangular portion of a design throughout the
+drawing plane.  This is most commonly used with patterns.
+<p>
+<a name="Function make-rectangular-tile"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>make-rectangular-tile</b></td><td valign="baseline" width="100%"><i>design width height</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Returns a design that, when used as an ink, tiles a rectangular portion of the
+<a href="regions.html#CONCEPT=design"><i>design</i></a> <i>design</i> across the entire drawing plane.  The resulting
+design repeats with a period of <i>width</i> horizontally and <i>height</i> vertically.  <i>width</i> and <i>height</i> must both be integers.  The portion of
+<i>design</i> that appears in each tile is a rectangle whose top-left corner is
+at <tt>(0,0)</tt> and whose bottom-right corner is at <tt>(width,height)</tt>.  The repetition
+of <i>design</i> is accomplished by applying a coordinate transformation to shift
+<i>design</i> into position for each tile, and then extracting a <i>width</i> by
+<i>height</i> portion of that design.
+<p>
+Applying a coordinate transformation to a rectangular tile does not change the
+portion of the argument <i>design</i> that appears in each tile.  However, it can
+change the period, phase, and orientation of the repeated pattern of tiles.
+This is so that adjacent figures drawn using the same tile have their inks
+``line up''.
+<p>
+
+<a name="14.4"><h2>14.4 Regions as Designs</h2></a>
+Any member of the class <tt>region</tt> is a solid, colorless design.  The design is
+opaque at points in the region and transparent elsewhere.
+Figure <a href="designs.html#LABEL=design-classes"><b><i>14.1</i></b></i></a> shows how the design and region classes relate to
+each other.
+<p>
+<center><img src="design-classes.jpg"></center>
+<center><b>Figure 14.1: </b><a name="LABEL=design-classes"></a> The class structure for all designs and regions.
+Entries in bold correspond to real CLIM classes.</center>
+Since bounded designs obey the region protocol, the functions
+<tt>transform-region</tt> and <tt>untransform-region</tt> accept any design as their
+second argument and apply a coordinate transformation to the design.  The result
+is a design that might be freshly constructed or might be an existing object.
+<p>
+Transforming a uniform design simply returns the argument.  Transforming a
+composite, flipping, or indirect design applies the transformation to the
+component design(s).  Transforming a pattern, tile, or output record design is
+described in the sections on those designs.
+<p>
+
+<a name="14.5"><h2>14.5 Arbitrary Designs</h2></a>
+<a name="Generic function draw-design"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>draw-design</b></td><td valign="baseline" width="100%"><i>medium design <tt>&amp;key</tt> ink clipping-region transformation line-style line-thickness line-unit line-dashes line-joint-shape line-cap-shape text-style text-family text-face text-size</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Draws the <a href="regions.html#CONCEPT=design"><i>design</i></a> <i>design</i> onto the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> .  This is
+defined to work for all types of regions and designs, although in practice some
+implementations may be more restrictive.  <i>ink</i> , <i>transformation</i> , and
+<i>clipping-region</i> are used to modify the medium.  The other drawing
+arguments control the drawing of the design, depending on what sort of design is
+being drawn.  For instance, if <i>design</i> is a path, then line style options
+may be supplied.
+<p>
+If <i>design</i> is an area, <tt>draw-design</tt> paints the specified region of the
+drawing plane with medium's current ink.  If <i>design</i> is a
+path, <tt>draw-design</tt> strokes the path with medium's current ink under control
+of the line-style.  If <i>design</i> is a point, <tt>draw-design</tt> is the same as
+<tt>draw-point</tt> .
+<p>
+If <i>design</i> is a color or an opacity, <tt>draw-design</tt> paints the entire
+drawing plane (subject to the clipping region of the medium).
+<p>
+If <i>design</i> is <tt>+nowhere+</tt> , <tt>draw-design</tt> has no effect.
+<p>
+If <i>design</i> is a non-uniform design (see Chapter <a href="designs.html#LABEL=designs"><b><i>General Designs</i></b></i></a> ),
+<tt>draw-design</tt> paints the design, positioned at coordinates <tt>(0,0)</tt>.
+<p>
+CLIM implementations are required to support <tt>draw-design</tt> for the following
+cases:
+<p>
+<ul> <li> Designs created by the geometric object constructors, such as
+<tt>make-line</tt> and <tt>make-ellipse</tt> , in conjunction with drawing arguments that
+supply the drawing ink.
+<p>
+<li> Designs created by calling <tt>compose-in</tt> on a color and an object
+created by a geometric object constructor.
+<p>
+<li> Designs created by calling <tt>compose-over</tt> on any of the cases above.
+<p>
+<li> Designs returned by <tt>make-design-from-output-record</tt> .
+</ul> <a name="Function draw-pattern*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>draw-pattern*</b></td><td valign="baseline" width="100%"><i>medium pattern x y <tt>&amp;key</tt> clipping-region transformation</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Draws the pattern <i>pattern</i> on the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> at the
+position <tt>(x,y)</tt>. <i>pattern</i> is any design created by <tt>make-pattern</tt> .
+<i>clipping-region</i> and <i>transformation</i> are as for
+<tt>with-drawing-options</tt> or any of the drawing functions.
+<p>
+Note that <i>transformation</i> only affects the position at which the pattern is
+drawn, not the pattern itself.  If a programmer wishes to affect the pattern, he
+should explicity call <tt>transform-region</tt> on the pattern.
+<p>
+Drawing a bitmap consists of drawing an appropriately aligned and scaled pattern
+constructed from the bitmap's bits.  A 1 in the bitmap corresponds to
+<tt>+foreground-ink+</tt> , while a 0 corresponds to <tt>+background-ink+</tt> if an
+opaque drawing operation is desired, or to <tt>+nowhere+</tt> if a transparent
+drawing operation is desired.
+<p>
+Drawing a (colored) raster image consists of drawing an appropriately aligned
+and scaled pattern constructed from the raster array and raster color map.
+<p>
+<tt>draw-pattern*</tt> could be implemented as follows, assuming that the functions
+<tt>pattern-width</tt> and <tt>pattern-height</tt> return the width and height of the
+pattern.
+<p>
+<pre>(defun draw-pattern* (medium pattern x y &key clipping-region transformation)
+  (check-type pattern pattern)
+  (let ((width (pattern-width pattern))
+        (height (pattern-height pattern)))
+    (if (or clipping-region transformation)
+        (with-drawing-options (medium :clipping-region clipping-region
+                                      :transformation transformation)
+          (draw-rectangle* medium x y (+ x width) (+ y height)
+                           :filled t :ink pattern))
+        (draw-rectangle* medium x y (+ x width) (+ y height)
+                         :filled t :ink pattern))))
+</pre> <a name="14.6"><h2>14.6 Examples of More Complex Drawing Effects</h2></a>
+<p><b>Painting a gray or colored wash over a display.</b><br>
+Specify a translucent design as the ink, such as <tt>:ink (compose-in +black+
+(make-opacity 0.25))</tt> , <tt>:ink (compose-in +red+ (make-opacity 0.1))</tt> , or
+<tt>:ink (compose-in +foreground-ink+ (make-opacity 0.75))</tt> .  The last example
+can be abbreviated as <tt>:ink (make-opacity 0.75)</tt> .  On a non-color,
+non-grayscale display this will usually turn into a stipple.
+<p>
+<p><b>Drawing a faded but opaque version of the foreground color.</b><br>
+Specify <tt>:ink (compose-over (compose-in +foreground-ink+ (make-opacity 0.25))
++background-ink+)</tt> to draw at 25% of the normal contrast.  On a non-color,
+non-grayscale display this will probably turn into a stipple.
+<p>
+<p><b>Drawing a tiled pattern.</b><br>
+Specify <tt>:ink (make-rectangular-tile (make-pattern <i>array</i> <i>colors</i> ))</tt> .
+<p>
+<p><b>Drawing a ``bitmap''.</b><br>
+Use <tt>(draw-design <i>medium</i> (make-pattern <i>bit-array</i> (list
++background-ink+ +foreground-ink+)) :transformation
+(make-translation-transformation <i>x</i> <i>y</i> ))</tt> .
+<p>
+
+<a name="14.7"><h2>14.7 Design Protocol</h2></a>
+<hr><b>Issue:</b> SWM<br><i>The generic functions underlying the functions described in this
+and the preceding chapter will be documented later.  This will allow for
+programmer-defined design classes.  This also needs to describe how to decode
+designs into inks.</i><hr>
+<br><hr><br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="colors.html">Drawing in Color</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="extended-output.html">Extended Stream Output</a></td>
+</tr></table>
+</body></html>

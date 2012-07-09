@@ -1,0 +1,21 @@
+body {margin-left: 10% ; margin-right: 10%}
+
+P { margin-top: 0.3em;  text-indent : 2em }
+
+P.noi { text-indent : 0in}
+P.stb { margin-top: 12pt }
+P.mtb { margin-top: 24pt; text-indent : 0in}
+P.ltb { margin-top: 36pt; text-indent : 0in}
+
+p.marginnote { background: #E0E0E0;
+               text-indent: 0in ; padding-left: 5%; padding-right: 5%; padding-top: 3pt;
+               font-size: 75%}
+p.bodynote { background-color: #E0E0E0 }
+p.paperonly { background-color: #E0E0E0 }
+
+ul {margin-top: .5em; margin-bottom: .5em ; margin-left: 2em ; margin-right : 2em}
+
+li {margin-bottom: 0.2em}
+
+li.separate { margin-top: 12pt }
+

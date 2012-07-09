@@ -1,0 +1,225 @@
+<html><head><title>CLIM: 18 Graph Formatting</title></head><body>
+<br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="table-formatting.html">Table Formatting</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="bordered-output.html">Bordered Output</a></td>
+</tr></table><br><hr><br>
+<p>
+<br><a name="18"><h1>18 Graph Formatting</h1></a>
+<a name="LABEL=graph-formatting"></a> CLIM provides a mechanism for arranging arbitrary output in a graph.  The
+following code produces the graph shown in Figure <a href="graph-formatting.html#LABEL=graph-example"><b><i>18.1</i></b></i></a> .
+<p>
+<pre>(defun graph-test (stream &optional (orientation :horizontal)) 
+  (fresh-line stream)
+  (macrolet ((make-node (&key name children)
+               `(list* ,name ,children)))
+    (flet ((node-name (node)
+             (car node))
+           (node-children (node)
+             (cdr node)))
+      (let* ((2a (make-node :name "2A"))
+             (2b (make-node :name "2B"))
+             (2c (make-node :name "2C"))
+             (1a (make-node :name "1A" :children (list 2a 2b)))
+             (1b (make-node :name "1B" :children (list 2b 2c)))
+             (root (make-node :name "0" :children (list 1a 1b))))
+        (format-graph-from-roots
+          (list root)
+          #'(lambda (node s)
+              (write-string (node-name node) s))
+          #'node-children
+          :orientation orientation
+          :stream stream)))))
+</pre> <center><img src="graph-example.jpg"></center>
+<center><b>Figure 18.1: </b><a name="LABEL=graph-example"></a> Example of graph formatting.</center>
+<a name="18.1"><h2>18.1 Graph Formatting Functions</h2></a>
+<a name="Function format-graph-from-roots"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>format-graph-from-roots</b></td><td valign="baseline" width="100%"><i>root-objects object-printer inferior-producer
+                                  <tt>&amp;key</tt> stream
+                                       orientation cutoff-depth
+                                       merge-duplicates duplicate-key duplicate-test
+                                       generation-separation within-generation-separation
+                                       center-nodes
+                                       arc-drawer arc-drawing-options
+                                       graph-type (move-cursor <tt>t</tt> )</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Draws a graph whose roots are specified by the sequence <i>root-objects</i> .  The
+nodes of the graph are displayed by calling the function <i>object-printer</i> ,
+which takes two arguments, the node to display and a stream.
+<i>inferior-producer</i> is a function of one argument that is called on each
+node to produce a sequence of inferiors (or <tt>nil</tt> if there are none).  Both
+<i>object-printer</i> and <i>inferior-producer</i> have dynamic extent.
+<p>
+The output from graph formatting takes place in a normalized +<tt>y</tt>-downward
+coordinate system.  The graph is placed so that the upper left corner of its
+bounding rectangle is at the current text cursor position of <i>stream</i> .  If
+the boolean <i>move-cursor</i> is <a href="graph-formatting.html#CONCEPT=true"><i>true</i></a> (the default), then the text cursor
+will be moved so that it immediately follows the lower right corner of the
+graph.
+<p>
+The returned value is the output record corresponding to the graph.
+<p>
+<i>stream</i> is an output recording stream to which output will be done.  It
+defaults to <tt>*standard-output*</tt> .
+<p>
+<i>orientation</i> may be either <tt>:horizontal</tt> (the default) or
+<tt>:vertical</tt> .  It specifies which way the graph is oriented.  CLIM
+implementations are permitted to extend the values of <i>orientation</i> , for
+example, adding <tt>:right</tt> or <tt>:left</tt> to distinguish between left-to-right
+or right-to-left layouts.
+<p>
+<i>cutoff-depth</i> specifies the maximum depth of the graph.  It defaults to
+<tt>nil</tt> , meaning that there is no cutoff depth.  Otherwise it must be an
+integer, meaning that no nodes deeper than <i>cutoff-depth</i> will be formatted
+or displayed.
+<p>
+If the boolean <i>merge-duplicates</i> is <a href="graph-formatting.html#CONCEPT=true"><i>true</i></a> , then duplicate objects in
+the graph will share the same node in the display of the graph.  That is, when
+<i>merge-duplicates</i> is <a href="graph-formatting.html#CONCEPT=true"><i>true</i></a> , the resulting graph will be a tree.  If
+<i>merge-duplicates</i> is <a href="graph-formatting.html#CONCEPT=false"><i>false</i></a> (the default), then duplicate objects
+will be displayed in separate nodes.  <i>duplicate-key</i> is a function of one
+argument that is used to extract the node object component used for duplicate
+comparison; the default is <tt>identity</tt> .  <i>duplicate-test</i> is a function of
+two arguments that is used to compare two objects to see if they are duplicates;
+the default is <tt>eql</tt> .  <i>duplicate-key</i> and <i>duplicate-test</i> have
+dynamic extent.
+<p>
+<i>generation-separation</i> is the amount of space to leave between successive
+generations of the graph; the default should be chosen so that the resulting
+graph is visually pleasing.  <i>within-generation-separation</i> is the amount of
+space to leave between nodes in the same generation of the graph; the default
+should be chosen so that the resulting graph is visually pleasing.
+<i>generation-separation</i> and <i>within-generation-separation</i> are specified
+in the same way as the <i>inter-row-spacing</i> argument to
+<tt>formatting-table</tt> .
+<p>
+When <i>center-nodes</i> is <a href="graph-formatting.html#CONCEPT=true"><i>true</i></a> , each node of the graph is centered with
+respect to the widest node in the same generation.  The default is <a href="graph-formatting.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<i>arc-drawer</i> is a function of seven positional and some unspecified keyword
+arguments that is responsible for drawing the arcs from one node to another; it
+has dynamic extent.  The positional arguments are the stream, the ``from''
+node's object, the ``to'' node's object, the ``from'' <tt>x</tt> and <tt>y</tt> position, and
+the ``to'' <tt>x</tt> and <tt>y</tt> position.  The keyword arguments gotten from
+<i>arc-drawing-options</i> are typically line drawing options, such as for
+<tt>draw-line*</tt> .  If <i>arc-drawer</i> is unsupplied, the default behavior is to
+draw a thin line from the ``from'' node to the ``to'' node using
+<tt>draw-line*</tt> .
+<p>
+<i>graph-type</i> is a keyword that specifies the type of graph to draw.  All
+CLIM implementations must support graphs of type <tt>:tree</tt> ,
+<tt>:directed-graph</tt> (and its synonym <tt>:digraph</tt> ), and
+<tt>:directed-acyclic-graph</tt> (and its synonym <tt>:dag</tt> ).  <i>graph-type</i> defaults to <tt>:digraph</tt> when <i>merge-duplicates</i> is <a href="graph-formatting.html#CONCEPT=true"><i>true</i></a> , otherwise
+it defaults to <tt>:tree</tt> .  Typically, different graph types will use different
+output record classes and layout engines to lay out the graph.  However, it is
+permissible for all of the required graph types to use exactly the same graph
+layout engine.
+<p>
+
+<a name="18.2"><h2>18.2 The Graph Formatting Protocols</h2></a>
+Graph formatting is implemented on top of the basic output recording protocol,
+using <tt>with-new-output-record</tt> to specify the appropriate type of output
+record.  For example, <tt>format-graph-from-roots</tt> first collects all the output
+that belongs in the graph into a collection of graph node output records by
+calling <tt>generate-graph-nodes</tt> .  All of the graph node output records are
+descendents of a single graph output record.  During this phase,
+<tt>stream-drawing-p</tt> is bound to <tt>nil</tt> and <tt>stream-recording-p</tt> is bound
+to <tt>t</tt> .  When all the output has been generated, the graph layout code
+(<tt>layout-graph-nodes</tt> and <tt>layout-graph-edges</tt> ) is called to compute the
+graph layout.  Finally, the graph output record is positioned on the stream at
+the current text cursor position and then displayed by calling <tt>replay</tt> on
+the graph output record.
+<p>
+
+<a name="Protocol&nbsp;Class graph-output-record"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>graph-output-record</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Protocol&nbsp;Class]</b></td></tr></table>The protocol class that represents a graph; a subclass of <tt>output-record</tt> .
+If you want to create a new class that behaves like a graph output record, it should be a subclass of <b>graph-output-record</b>. Subclasses of <b>graph-output-record</b> must obey the graph output record protocol.<a name="Predicate graph-output-record-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>graph-output-record-p</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Predicate]</b></td></tr></table>Returns <a href="graph-formatting.html#CONCEPT=true"><i>true</i></a> if <i>object</i> is a <a href="graph-formatting.html#CONCEPT=graph output record"><i>graph output record</i></a> , otherwise
+returns <a href="graph-formatting.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Class standard-graph-output-record"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>standard-graph-output-record</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>The instantiable class of output record that represents a graph.  Its children
+will be a sequence graph nodes.  This is a subclass of <tt>graph-output-record</tt> .
+<p>
+<a name="Init&nbsp;arg :orientation"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:orientation</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table><a name="Init&nbsp;arg :center-nodes"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:center-nodes</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table><a name="Init&nbsp;arg :cutoff-depth"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:cutoff-depth</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table><a name="Init&nbsp;arg :merge-duplicates"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:merge-duplicates</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table><a name="Init&nbsp;arg :generation-separation"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:generation-separation</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table><a name="Init&nbsp;arg :within-generation-separation"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:within-generation-separation</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table><a name="Init&nbsp;arg :hash-table"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:hash-table</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table>All the graph output record must handle these seven initargs, which are used to
+specify, respectively, the orientation, node centering, cutoff depth, merge
+duplicates, generation and within-generation spacing, and the node hash table of
+a graph output record.
+<p>
+
+<a name="Macro define-graph-type"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>define-graph-type</b></td><td valign="baseline" width="100%"><i>graph-type class</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Defines a new graph type named by the symbol <i>graph-type</i> that is
+implemented by the class <i>class</i> .  <i>class</i> must be a subclass of
+<tt>graph-output-record</tt> .  Neither of the arguments is evaluated.
+<p>
+All CLIM implementations must support graphs of type <tt>:tree</tt> ,
+<tt>:directed-graph</tt> (and its synonym <tt>:digraph</tt> ), and
+<tt>:directed-acyclic-graph</tt> (and its synonym <tt>:dag</tt> ).
+<p>
+
+<a name="Generic function graph-root-nodes"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>graph-root-nodes</b></td><td valign="baseline" width="100%"><i>graph-record</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns a sequence of the graph node output records corresponding to the root
+objects for the graph output record <i>graph-record</i> .
+<p>
+<a name="Generic function (setf graph-root-nodes)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf graph-root-nodes)</b></td><td valign="baseline" width="100%"><i>roots graph-record</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Sets the root nodes of <i>graph-record</i> to <i>roots</i> .
+<p>
+
+<a name="Generic function generate-graph-nodes"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>generate-graph-nodes</b></td><td valign="baseline" width="100%"><i>graph-record stream
+                                    root-objects object-printer inferior-producer 
+                                    <tt>&amp;key</tt> duplicate-key duplicate-test</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>This function is responsible for generating all of the graph node output records
+of the graph.  <i>graph-record</i> is the graph output record, and <i>stream</i> is the output stream.  The graph node output records are generating by calling
+the object printer on the root objects, then (recursively) calling the inferior
+producer on the root objects and calling the object printer on all inferiors.
+After all of the graph node output records have been generated, the value of
+<tt>graph-root-nodes</tt> of <i>graph-record</i> must be set to be a sequence of the
+those graph node output records that correspond to the root objects.
+<p>
+<i>root-objects</i> , <i>object-printer</i> , <i>inferior-producer</i> ,
+<i>duplicate-key</i> , and <i>duplicate-test</i> are as for
+<tt>format-graph-from-roots</tt> .
+<p>
+<a name="Generic function layout-graph-nodes"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>layout-graph-nodes</b></td><td valign="baseline" width="100%"><i>graph-record stream arc-drawer arc-drawing-options</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>This function is responsible for laying out the nodes in the graph contained in
+the output record <i>graph-record</i> .  It is called after the graph output has
+been collected, but before the graph record has been displayed.  The method on
+<tt>standard-graph-output-record</tt> implements the usual graph layout constraint
+solver.  <i>stream</i> is the stream on which the graph is displayed.
+<p>
+<a name="Generic function layout-graph-edges"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>layout-graph-edges</b></td><td valign="baseline" width="100%"><i>graph-record stream arc-drawer arc-drawing-options</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>This function is responsible for laying out the edges in the graph.  It is
+called after the graph nodes have been layed out, but before the graph record
+has been displayed.  The method on <tt>standard-graph-output-record</tt> simply
+causes thin lines to be drawn from each node to all of its children.
+<i>graph-record</i> and <i>stream</i> are as for <tt>layout-graph-nodes</tt> .
+<p>
+
+<a name="Protocol&nbsp;Class graph-node-output-record"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>graph-node-output-record</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Protocol&nbsp;Class]</b></td></tr></table>The protocol class that represents a node in graph; a subclass of
+<tt>output-record</tt> .
+If you want to create a new class that behaves like a graph node output record, it should be a subclass of <b>graph-node-output-record</b>. Subclasses of <b>graph-node-output-record</b> must obey the graph node output record protocol.<a name="Predicate graph-node-output-record-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>graph-node-output-record-p</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Predicate]</b></td></tr></table>Returns <a href="graph-formatting.html#CONCEPT=true"><i>true</i></a> if <i>object</i> is a <a href="graph-formatting.html#CONCEPT=graph node output record"><i>graph node output record</i></a> ,
+otherwise returns <a href="graph-formatting.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Class standard-graph-node-output-record"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>standard-graph-node-output-record</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>The instantiable class of output record that represents a graph node.  Its
+parent will be a graph output record.  This is a subclass of
+<tt>graph-node-output-record</tt> .
+<p>
+<a name="Generic function graph-node-parents"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>graph-node-parents</b></td><td valign="baseline" width="100%"><i>graph-node-record</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns a sequence of the graph node output records whose objects are
+``parents'' of the object corresponding to the graph node output record
+<i>graph-node-record</i> .  Note that this is not the same as
+<tt>output-record-parent</tt> , since <tt>graph-node-parents</tt> can return output
+records that are not the parent records of <i>graph-node-record</i> .
+<p>
+<a name="Generic function (setf graph-node-parents)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf graph-node-parents)</b></td><td valign="baseline" width="100%"><i>parents graph-node-record</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Sets the parents of <i>graph-node-record</i> to be <i>parents</i> .  <i>parents</i> must be a list of graph node records.
+<p>
+<a name="Generic function graph-node-children"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>graph-node-children</b></td><td valign="baseline" width="100%"><i>graph-node-record</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns a sequence of the graph node output records whose objects are
+``children'' of the object corresponding to the graph node output record
+<i>graph-node-record</i> .  Note that this is not the same as
+<tt>output-record-children</tt> , since <tt>graph-node-children</tt> can return output
+records that are not child records of <i>graph-node-record</i> .
+<p>
+<a name="Generic function (setf graph-node-children)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf graph-node-children)</b></td><td valign="baseline" width="100%"><i>children graph-node-record</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Sets the children of <i>graph-node-record</i> to be <i>children</i> .
+<i>children</i> must be a list of graph node records.
+<p>
+<a name="Generic function graph-node-object"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>graph-node-object</b></td><td valign="baseline" width="100%"><i>graph-node-record</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the object that corresponds to the graph node output record
+<i>graph-node-record</i> .  It is permissible for this function to work correctly
+only while inside of the call to <tt>format-graph-from-roots</tt> .  It is unspecified
+what result will be returned outside of <tt>format-graph-from-roots</tt> .  This
+restriction is permitted so that CLIM is not required to capture application
+objects that might have dynamic extent.
+<br><hr><br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="table-formatting.html">Table Formatting</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="bordered-output.html">Bordered Output</a></td>
+</tr></table>
+</body></html>

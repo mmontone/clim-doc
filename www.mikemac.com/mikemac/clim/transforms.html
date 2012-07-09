@@ -1,0 +1,347 @@
+<html><head><title>CLIM: 5 Affine Transformations</title></head><body>
+<br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="bboxes.html">Bounding Rectangles</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="silica.html">Overview of Window Facilities</a></td>
+</tr></table><br><hr><br>
+<p>
+<br><a name="5"><h1>5 Affine Transformations</h1></a>
+<a name="LABEL=transforms"></a> An <a name="CONCEPT=affine transformation"><b><i>affine transformation</i></b></a> is a mapping from one coordinate system onto
+another that preserves straight lines.  In other words, if you take a number of
+points that fall on a straight line and apply an affine transformation to their
+coordinates, the transformed coordinates will describe a straight line in the
+new coordinate system.  General affine transformations include all the sorts of
+transformations that CLIM uses, namely, translations, scaling, rotations, and
+reflections.
+<p>
+
+<a name="5.1"><h2>5.1 Transformations</h2></a>
+<a name="Protocol&nbsp;Class transformation"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>transformation</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Protocol&nbsp;Class]</b></td></tr></table>The protocol class of all transformations.  There are one or more subclasses of
+<tt>transformation</tt> with implementation-dependent names that implement
+transformations.  The exact names of these classes is explicitly unspecified.
+If you want to create a new class that behaves like a transformation, it should be a subclass of <b>transformation</b>. Subclasses of <b>transformation</b> must obey the transformation protocol.All of the instantiable transformation classes provided by CLIM are immutable.
+<p>
+<a name="Predicate transformationp"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>transformationp</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Predicate]</b></td></tr></table>Returns <a href="transforms.html#CONCEPT=true"><i>true</i></a> if <i>object</i> is a <a href="transforms.html#CONCEPT=transformation"><i>transformation</i></a> , otherwise
+returns <a href="transforms.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Constant +identity-transformation+"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>+identity-transformation+</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Constant]</b></td></tr></table>An instance of a transformation that is guaranteed to be an identity
+transformation, that is, the transformation that ``does nothing''.
+<p>
+
+<a name="5.1.1"><h3>5.1.1 Transformation Conditions</h3></a>
+<a name="Error transformation-error"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>transformation-error</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Error]</b></td></tr></table>The class that is the superclass of the following three conditions.  This class
+is a subclass of <tt>error</tt> .
+<p>
+<a name="Error transformation-underspecified"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>transformation-underspecified</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Error]</b></td></tr></table>The error that is signalled when <tt>make-3-point-transformation</tt> is given three
+collinear image points.  This condition will handle the <tt>:points</tt> initarg,
+which is used to supply the points that are in error.
+<p>
+<a name="Error reflection-underspecified"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>reflection-underspecified</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Error]</b></td></tr></table>The error that is signalled when <tt>make-reflection-transformation</tt> is given
+two coincident points.  This condition will handle the <tt>:points</tt> initarg,
+which is used to supply the points that are in error.
+<p>
+<a name="Error singular-transformation"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>singular-transformation</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Error]</b></td></tr></table>The error that is signalled when <tt>invert-transformation</tt> is called on a
+singular transformation, that is, a transformation that has no inverse.  This
+condition will handle the <tt>:transformation</tt> initarg, which is used to supply
+the transformation that is singular.
+<p>
+
+<a name="5.2"><h2>5.2 Transformation Constructors</h2></a>
+The following transformation constructors do not capture any of their inputs.
+The constructors all create objects that are subclasses of <tt>transformation</tt> .
+<p>
+<a name="Function make-translation-transformation"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>make-translation-transformation</b></td><td valign="baseline" width="100%"><i>translation-x translation-y</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>A translation is a transformation that preserves length, angle, and orientation
+of all geometric entities.
+<p>
+<tt>make-translation-transformation</tt> returns a transformation that translates
+all points by <i>translation-x</i> in the <tt>x</tt> direction and <i>translation-y</i> in the <tt>y</tt> direction.  <i>translation-x</i> and <i>translation-y</i> must be real
+numbers.
+<p>
+
+<a name="Function make-rotation-transformation"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>make-rotation-transformation</b></td><td valign="baseline" width="100%"><i>angle <tt>&amp;optional</tt> origin</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table><a name="Function make-rotation-transformation*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>make-rotation-transformation*</b></td><td valign="baseline" width="100%"><i>angle <tt>&amp;optional</tt> origin-x origin-y</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>A rotation is a transformation that preserves length and angles of all geometric
+entities.  Rotations also preserve one point (the origin) and the distance of
+all entities from that point.
+<p>
+<tt>make-rotation-transformation</tt> returns a transformation that rotates all
+points by <i>angle</i> (which is a real number indicating an angle in radians)
+around the point <i>origin</i> .  If <i>origin</i> is supplied it must be a point;
+if not supplied it defaults to <tt>(0,0)</tt>.  <i>origin-x</i> and <i>origin-y</i> must
+be real numbers, and default to <tt>0</tt>.
+<p>
+<a name="Function make-scaling-transformation"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>make-scaling-transformation</b></td><td valign="baseline" width="100%"><i>scale-x scale-y <tt>&amp;optional</tt> origin</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table><a name="Function make-scaling-transformation*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>make-scaling-transformation*</b></td><td valign="baseline" width="100%"><i>scale-x scale-y <tt>&amp;optional</tt> origin-x origin-y</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>There is no single definition of a scaling transformation.  Transformations that
+preserve all angles and multiply all lengths by the same factor (preserving the
+``shape'' of all entities) are certainly scaling transformations.  However,
+scaling is also used to refer to transformations that scale distances in the <tt>x</tt>
+direction by one amount and distances in the <tt>y</tt> direction by another amount.
+<p>
+<tt>make-scaling-transformation</tt> returns a transformation that multiplies the
+<tt>x</tt>-coordinate distance of every point from <i>origin</i> by <i>scale-x</i> and
+the <tt>y</tt>-coordinate distance of every point from <i>origin</i> by <i>scale-y</i> .
+<i>scale-x</i> and <i>scale-y</i> must be real numbers.  If <i>origin</i> is
+supplied it must be a point; if not supplied it defaults to <tt>(0,0)</tt>.
+<i>origin-x</i> and <i>origin-y</i> must be real numbers, and default to <tt>0</tt>.
+<p>
+
+<a name="Function make-reflection-transformation"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>make-reflection-transformation</b></td><td valign="baseline" width="100%"><i>point1 point2</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table><a name="Function make-reflection-transformation*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>make-reflection-transformation*</b></td><td valign="baseline" width="100%"><i>x1 y1 x2 y2</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>A reflection is a transformation that preserves lengths and magnitudes of
+angles, but changes the sign (or ``handedness'') of angles.  If you think of the
+drawing plane on a transparent sheet of paper, a reflection is a transformation
+that ``turns the paper over''.
+<p>
+<tt>make-reflection-transformation</tt> returns a transformation that reflects every
+point through the line passing through the <a href="regions.html#CONCEPT=points"><i>points</i></a> <i>point1</i> and
+<i>point2</i> (or through the positions <tt>(x1,y1)</tt> and <tt>(x2,y2)</tt> in the case of
+the spread version).
+<p>
+
+<a name="Function make-transformation"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>make-transformation</b></td><td valign="baseline" width="100%"><i>mxx mxy myx myy tx ty</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Returns a general transformation whose effect is:
+<center><table>
+<tr valign="baseline"><td align=left colspan=1><tt>x<sup>' </sup> =</tt></td><td align=left colspan=1><tt> m<sub>xx</sub> x + m<sub>xy</sub> y + t<sub>x</sub></tt></td></tr>
+<tr valign="baseline"><td align=left colspan=1><tt>  y<sup>' </sup> =</tt></td><td><tt> m<sub>yx</sub> x + m<sub>yy</sub> y + t<sub>y</sub></tt></td></tr>
+<tr valign="baseline"></tr>
+</table></center>
+where <tt>x</tt> and <tt>y</tt> are the coordinates of a point before the transformation and
+<tt>x<sup>' </sup></tt> and <tt>y<sup>' </sup></tt> are the coordinates of the corresponding point after.
+<p>
+All of the arguments to <tt>make-transformation</tt> must be real numbers.
+<p>
+
+<a name="Function make-3-point-transformation"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>make-3-point-transformation</b></td><td valign="baseline" width="100%"><i>point-1 point-2 point-3 point-1-image point-2-image point-3-image</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Returns a transformation that takes <a href="regions.html#CONCEPT=points"><i>points</i></a> <i>point-1</i> into
+<i>point-1-image</i> , <i>point-2</i> into <i>point-2-image</i> and <i>point-3</i> into <i>point-3-image</i> .  Three non-collinear points and their images under the
+transformation are enough to specify any affine transformation.
+<p>
+If <i>point-1</i> , <i>point-2</i> and <i>point-3</i> are collinear, the
+<tt>transformation-underspecified</tt> error will be signalled.  If
+<i>point-1-image</i> , <i>point-2-image</i> and <i>point-3-image</i> are collinear,
+the resulting transformation will be singular (that is, will have no inverse)
+but this is not an error.
+<p>
+
+<a name="Function make-3-point-transformation*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>make-3-point-transformation*</b></td><td valign="baseline" width="100%"><i>x1 y1 x2 y2 x3 y3 x1-image y1-image x2-image y2-image x3-image y3-image</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Returns a transformation that takes the points at the positions
+(<i>x1</i> ,<i>y1</i> ) into (<i>x1-image</i> ,<i>y1-image</i> ), (<i>x2</i> ,<i>y2</i> )
+into (<i>x2-image</i> ,<i>y2-image</i> ) and (<i>x3</i> ,<i>y3</i> ) into
+(<i>x3-image</i> ,<i>y3-image</i> ).  Three non-collinear points and their images
+under the transformation are enough to specify any affine transformation.
+<p>
+If the positions <tt>(x1,y1)</tt>, <tt>(x2,y2)</tt> and <tt>(x3,y3)</tt> are collinear, the
+<tt>transformation-underspecified</tt> error will be signalled.  If
+(<i>x1-image</i> ,<i>y1-image</i> ), (<i>x2-image</i> ,<i>y2-image</i> ), and
+(<i>x3-image</i> ,<i>y3-image</i> ) are collinear, the resulting transformation will
+be singular but this is not an error.
+<p>
+This is the spread version of <tt>make-3-point-transformation</tt> .
+<p>
+
+<a name="5.3"><h2>5.3 The Transformation Protocol</h2></a>
+The following subsections describe the transformation protocol.  All classes
+that are subclasses of <tt>transformation</tt> must implement methods for all of
+the generic functions in the following subsections.
+<p>
+
+<a name="5.3.1"><h3>5.3.1 Transformation Predicates</h3></a>
+In all of the functions below, the argument named <i>transformation</i> must be a
+transformation.
+<p>
+<a name="Generic function transformation-equal"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>transformation-equal</b></td><td valign="baseline" width="100%"><i>transformation1 transformation2</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns <a href="transforms.html#CONCEPT=true"><i>true</i></a> if the two <a href="transforms.html#CONCEPT=transformations"><i>transformations</i></a> <i>transformation1</i> and
+<i>transformation2</i> have equivalent effects (that is, are mathematically
+equal), otherwise returns <a href="transforms.html#CONCEPT=false"><i>false</i></a> .
+<p>
+Implementations are encouraged to allow transformations that are not numerically
+equal due to floating-point roundoff errors to be <tt>transformation-equal</tt> .  An
+appropriate level of ``fuzziness'' is <tt>single-float-epsilon</tt> , or some small
+multiple of <tt>single-float-epsilon</tt> .
+<p>
+
+<a name="Generic function identity-transformation-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>identity-transformation-p</b></td><td valign="baseline" width="100%"><i>transformation</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns <a href="transforms.html#CONCEPT=true"><i>true</i></a> if the <a href="transforms.html#CONCEPT=transformation"><i>transformation</i></a> <i>transformation</i> is equal
+(in the sense of <tt>transformation-equal</tt> ) to the identity transformation,
+otherwise returns <a href="transforms.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Generic function invertible-transformation-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>invertible-transformation-p</b></td><td valign="baseline" width="100%"><i>transformation</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns <a href="transforms.html#CONCEPT=true"><i>true</i></a> if the <a href="transforms.html#CONCEPT=transformation"><i>transformation</i></a> <i>transformation</i> has an
+inverse, otherwise returns <a href="transforms.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Generic function translation-transformation-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>translation-transformation-p</b></td><td valign="baseline" width="100%"><i>transformation</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns <a href="transforms.html#CONCEPT=true"><i>true</i></a> if the <a href="transforms.html#CONCEPT=transformation"><i>transformation</i></a> <i>transformation</i> is a pure
+translation, that is, a transformation such that there are two distance
+components <tt>dx</tt> and <tt>dy</tt> and every point <tt>(x,y)</tt> is moved to <tt>(x+dx,y+dy)</tt>.
+Otherwise, <tt>translation-transformation-p</tt> returns <a href="transforms.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Generic function reflection-transformation-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>reflection-transformation-p</b></td><td valign="baseline" width="100%"><i>transformation</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns <a href="transforms.html#CONCEPT=true"><i>true</i></a> if the <a href="transforms.html#CONCEPT=transformation"><i>transformation</i></a> <i>transformation</i> inverts
+the ``handedness'' of the coordinate system, otherwise returns <a href="transforms.html#CONCEPT=false"><i>false</i></a> .
+Note that this is a very inclusive category---transformations are considered
+reflections even if they distort, scale, or skew the coordinate system, as long
+as they invert the handedness.
+<p>
+<a name="Generic function rigid-transformation-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>rigid-transformation-p</b></td><td valign="baseline" width="100%"><i>transformation</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns <a href="transforms.html#CONCEPT=true"><i>true</i></a> if the <a href="transforms.html#CONCEPT=transformation"><i>transformation</i></a> <i>transformation</i> transforms
+the coordinate system as a rigid object, that is, as a combination of
+translations, rotations, and pure reflections.  Otherwise, it returns
+<a href="transforms.html#CONCEPT=false"><i>false</i></a> .
+<p>
+Rigid transformations are the most general category of transformations that
+preserve magnitudes of all lengths and angles.
+<p>
+<a name="Generic function even-scaling-transformation-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>even-scaling-transformation-p</b></td><td valign="baseline" width="100%"><i>transformation</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns <a href="transforms.html#CONCEPT=true"><i>true</i></a> if the <a href="transforms.html#CONCEPT=transformation"><i>transformation</i></a> <i>transformation</i> multiplies
+all <tt>x</tt> lengths and <tt>y</tt> lengths by the same magnitude, otherwise returns
+<a href="transforms.html#CONCEPT=false"><i>false</i></a> .  It does include pure reflections through vertical and horizontal
+lines.
+<p>
+<a name="Generic function scaling-transformation-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>scaling-transformation-p</b></td><td valign="baseline" width="100%"><i>transformation</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns <a href="transforms.html#CONCEPT=true"><i>true</i></a> if the <a href="transforms.html#CONCEPT=transformation"><i>transformation</i></a> <i>transformation</i> multiplies
+all <tt>x</tt> lengths by one magnitude and all <tt>y</tt> lengths by another magnitude,
+otherwise returns <a href="transforms.html#CONCEPT=false"><i>false</i></a> .  This category includes even scalings as a
+subset.
+<p>
+<a name="Generic function rectilinear-transformation-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>rectilinear-transformation-p</b></td><td valign="baseline" width="100%"><i>transformation</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns <a href="transforms.html#CONCEPT=true"><i>true</i></a> if the <a href="transforms.html#CONCEPT=transformation"><i>transformation</i></a> <i>transformation</i> will
+always transform any axis-aligned rectangle into another axis-aligned rectangle,
+otherwise returns <a href="transforms.html#CONCEPT=false"><i>false</i></a> .  This category includes scalings as a subset,
+and also includes 90 degree rotations.
+<p>
+Rectilinear transformations are the most general category of transformations for
+which the bounding rectangle of a transformed object can be found by
+transforming the bounding rectangle of the original object.
+<p>
+<hr><b>Issue:</b> SWM<br><i>Supply this figure.</i><hr>
+<center>To be supplied.</center>
+<center><b>Figure 5.1: </b>The predicates for analyzing the mathematical properties of a transformation.</center>
+<a name="5.3.2"><h3>5.3.2 Composition of Transformations</h3></a>
+If we transform from one coordinate system to another, then from the second to a
+third coordinate system, we can regard the resulting transformation as a single
+transformation resulting from <a name="CONCEPT=composing"><b><i>composing</i></b></a> the two component
+transformations.  It is an important and useful property of affine transformations
+that they are closed under composition.  Note that composition is not commutative;
+in general, the result of applying transformation <tt>A</tt> and then applying
+transformation <tt>B</tt> is not the same as applying <tt>B</tt> first, then <tt>A</tt>.
+<p>
+Any arbitrary transformation can be built up by composing a number of simpler
+transformations, but that composition is not unique.
+<p>
+<a name="Generic function compose-transformations"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>compose-transformations</b></td><td valign="baseline" width="100%"><i>transformation1 transformation2</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns a transformation that is the mathematical composition of its arguments.
+Composition is in right-to-left order, that is, the resulting transformation
+represents the effects of applying the <a href="transforms.html#CONCEPT=transformation"><i>transformation</i></a> <i>transformation2</i> followed by the <a href="transforms.html#CONCEPT=transformation"><i>transformation</i></a> <i>transformation1</i> .
+<p>
+<a name="Generic function invert-transformation"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>invert-transformation</b></td><td valign="baseline" width="100%"><i>transformation</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns a transformation that is the inverse of the <a href="transforms.html#CONCEPT=transformation"><i>transformation</i></a> <i>transformation</i> .  The result of composing a transformation with its inverse
+is equal to the identity transformation.
+<p>
+If <i>transformation</i> is singular, <tt>invert-transformation</tt> will signal the
+<tt>singular-transformation</tt> error, with a named restart that is invoked with a
+transformation and makes <tt>invert-transformation</tt> return that transformation.
+This is to allow a drawing application, for example, to use a generalized
+inverse to transform a region through a singular transformation.
+<p>
+Note that with finite-precision arithmetic there are several low-level
+conditions that might occur during the attempt to invert a singular or ``almost
+singular'' transformation.  (These include computation of a zero determinant,
+floating-point underflow during computation of the determinant, or
+floating-point overflow during subsequent multiplication.)
+<tt>invert-transformation</tt> must signal the <tt>singular-transformation</tt> error
+for all of these cases.
+<p>
+<a name="Function compose-translation-with-transformation"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>compose-translation-with-transformation</b></td><td valign="baseline" width="100%"><i>transformation dx dy</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table><a name="Function compose-scaling-with-transformation"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>compose-scaling-with-transformation</b></td><td valign="baseline" width="100%"><i>transformation sx sy <tt>&amp;optional</tt> origin</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table><a name="Function compose-rotation-with-transformation"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>compose-rotation-with-transformation</b></td><td valign="baseline" width="100%"><i>transformation angle <tt>&amp;optional</tt> origin</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>These functions create a new transformation by composing the
+<a href="transforms.html#CONCEPT=transformation"><i>transformation</i></a> <i>transformation</i> with a given translation, scaling, or
+rotation, respectively.  The order of composition is that the translation,
+scaling, or rotation ``transformation'' is first, followed by
+<i>transformation</i> .
+<p>
+<i>dx</i> and <i>dy</i> are as for <tt>make-translation-transformation</tt> .
+<i>sx</i> and <i>sy</i> are as for <tt>make-scaling-transformation</tt> .
+<i>angle</i> and <i>origin</i> are as for <tt>make-rotation-transformation</tt> .
+<p>
+Note that these functions could be implemented by using the various constructors
+and <tt>compose-transformations</tt> .  They are provided, because it is common to
+build up a transformation as a series of simple transformations.
+<p>
+
+<a name="Function compose-transformation-with-translation"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>compose-transformation-with-translation</b></td><td valign="baseline" width="100%"><i>transformation dx dy</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table><a name="Function compose-transformation-with-scaling"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>compose-transformation-with-scaling</b></td><td valign="baseline" width="100%"><i>transformation sx sy <tt>&amp;optional</tt> origin</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table><a name="Function compose-transformation-with-rotation"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>compose-transformation-with-rotation</b></td><td valign="baseline" width="100%"><i>transformation angle <tt>&amp;optional</tt> origin</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>These functions create a new transformation by composing a given translation,
+scaling, or rotation, respectively, with the <a href="transforms.html#CONCEPT=transformation"><i>transformation</i></a> <i>transformation</i> .  The order of composition is <i>transformation</i> is
+first, followed by the translation, scaling, or rotation ``transformation''.
+<p>
+<i>dx</i> and <i>dy</i> are as for <tt>make-translation-transformation</tt> .
+<i>sx</i> and <i>sy</i> are as for <tt>make-scaling-transformation</tt> .
+<i>angle</i> and <i>origin</i> are as for <tt>make-rotation-transformation</tt> .
+<p>
+Note that these functions could be implemented by using the various constructors
+and <tt>compose-transformations</tt> .  They are provided, because it is common to
+build up a transformation as a series of simple transformations.
+<p>
+
+<a name="5.3.3"><h3>5.3.3 Applying Transformations</h3></a>
+Transforming a region applies a coordinate transformation to that region, thus
+moving its position on the drawing plane, rotating it, or scaling it.  Note that
+transforming a region does not side-effect the <i>region</i> argument; it is free
+to either create a new region or return an existing (cached) region.
+<p>
+These generic functions must be implemented for all classes of transformations.
+Furthermore, all subclasses of <tt>region</tt> and <tt>design</tt> must implement
+methods for <tt>transform-region</tt> and <tt>untransform-region</tt> .  That is, methods
+for the following generic functions will typically specialize both the
+<i>transformation</i> and <a href="regions.html#CONCEPT=region"><i>region</i></a> arguments.
+<p>
+Note that, if the extended region classes are not implemented, the following
+functions are not closed, that is, they may return results that are not CLIM
+regions.
+<p>
+
+<a name="Generic function transform-region"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>transform-region</b></td><td valign="baseline" width="100%"><i>transformation region</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Applies <i>transformation</i> to the <a href="regions.html#CONCEPT=region"><i>region</i></a> <i>region</i> , and returns the
+transformed region.
+<p>
+<a name="Generic function untransform-region"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>untransform-region</b></td><td valign="baseline" width="100%"><i>transformation region</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>This is exactly equivalent to <br>
+<tt><huge>(transform-region (invert-transformation</huge></tt> <i>transformation</i> <tt><huge>)</huge></tt>
+<i>region</i> <tt><huge>)</huge></tt> .
+<p>
+CLIM provides a default method for <tt>untransform-region</tt> on the
+<tt>transformation</tt> protocol class that does exactly this.
+<p>
+
+<a name="Generic function transform-position"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>transform-position</b></td><td valign="baseline" width="100%"><i>transformation x y</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Applies the <a href="transforms.html#CONCEPT=transformation"><i>transformation</i></a> <i>transformation</i> to the point whose
+coordinates are the real numbers <i>x</i> and <i>y</i> , and returns two values,
+the transformed <tt>x</tt> coordinate and the transformed <tt>y</tt> coordinate.
+<p>
+<tt>transform-position</tt> is the spread version of <tt>transform-region</tt> in the
+case where the region is a point.
+<p>
+<a name="Generic function untransform-position"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>untransform-position</b></td><td valign="baseline" width="100%"><i>transformation x y</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>This is exactly equivalent to <br>
+<tt><huge>(transform-position (invert-transformation</huge></tt> <i>transformation</i> <tt><huge>)</huge></tt>
+<i>x</i> <i>y</i> <tt><huge>)</huge></tt> .
+<p>
+CLIM provides a default method for <tt>untransform-position</tt> on the
+<tt>transformation</tt> protocol class that does exactly this.
+<p>
+
+<a name="Generic function transform-distance"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>transform-distance</b></td><td valign="baseline" width="100%"><i>transformation dx dy</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Applies the <a href="transforms.html#CONCEPT=transformation"><i>transformation</i></a> <i>transformation</i> to the distance
+represented by the real numbers <i>dx</i> and <i>dy</i> , and returns two values,
+the transformed <i>dx</i> and the transformed <i>dy</i> .
+<p>
+A distance represents the difference between two points.  It does <b><i>not</i></b>
+transform like a point.
+<p>
+<a name="Generic function untransform-distance"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>untransform-distance</b></td><td valign="baseline" width="100%"><i>transformation dx dy</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>This is exactly equivalent to <br>
+<tt><huge>(transform-distance (invert-transformation</huge></tt> <i>transformation</i> <tt><huge>)</huge></tt>
+<i>dx</i> <i>dy</i> <tt><huge>)</huge></tt> .
+<p>
+CLIM provides a default method for <tt>untransform-distance</tt> on the
+<tt>transformation</tt> protocol class that does exactly this.
+<p>
+
+<a name="Generic function transform-rectangle*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>transform-rectangle*</b></td><td valign="baseline" width="100%"><i>transformation x1 y1 x2 y2</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Applies the <a href="transforms.html#CONCEPT=transformation"><i>transformation</i></a> <i>transformation</i> to the rectangle
+specified by the four coordinate arguments, which are real numbers.  The
+arguments <i>x1</i> , <i>y1</i> , <i>x2</i> , and <i>y1</i> are canonicalized in the
+same way as for <tt>make-bounding-rectangle</tt> .  Returns four values that specify
+the minimum and maximum points of the transformed rectangle in the order
+<i>min-x</i> , <i>min-y</i> , <i>max-x</i> , and <i>max-y</i> .
+<p>
+It is an error is <i>transformation</i> does not satisfy
+<tt>rectilinear-transformation-p</tt> .
+<p>
+<tt>transform-rectangle*</tt> is the spread version of <tt>transform-region</tt> in the
+case where the transformation is rectilinear and the region is a rectangle.
+<p>
+<a name="Generic function untransform-rectangle*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>untransform-rectangle*</b></td><td valign="baseline" width="100%"><i>transformation x1 y1 x2 y2</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>This is exactly equivalent to <br>
+<tt><huge>(transform-rectangle* (invert-transformation</huge></tt> <i>transformation</i> <tt><huge>)</huge></tt>
+<i>x1</i> <i>y1</i> <i>x2</i> <i>y2</i> <tt><huge>)</huge></tt> .
+<p>
+CLIM provides a default method for <tt>untransform-rectangle*</tt> on the
+<tt>transformation</tt> protocol class that does exactly this.
+<br><hr><br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="bboxes.html">Bounding Rectangles</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="silica.html">Overview of Window Facilities</a></td>
+</tr></table>
+</body></html>

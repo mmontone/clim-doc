@@ -1,0 +1,68 @@
+<html><head><title>Common Lisp Interface Manager (CLIM) Primer -- Presentation Types</title>
+<LINK REL=STYLESHEET HREF="clim-primer.css" TYPE="text/css"></head><body>
+<h1>Presentation Types</h1>
+
+part of <a href="index.htm">Common Lisp Interface Manager (CLIM)</a>
+by <a href="http://jason.kantz.com">Jason Kantz</a>
+
+<hr>
+<!-- "Experience is the worst teacher; it gives the test before presenting the lesson."
+--Vernon Law  -->
+
+
+
+<h2>Reading</h2>
+
+<li><a href="http://ccrma-www.stanford.edu/CCRMA/Software/cltl/clm/node44.html">Type Specifiers</a>
+
+<li><a href="http://www.lispworks.com/reference/lw44/CLIM/html/climguide-98.htm#pgfId-383464">How to Specify a CLIM Presentation Type</a>
+
+<li><a href="http://www.lispworks.com/reference/lw44/CLIM/html/climguide-100.htm#marker-383133">with-output-as-presentation, present, present-to-string</a>
+
+<li><a href="http://www.lispworks.com/reference/lw44/CLIM/html/climguide-115.htm#pgfId-383787">Conceptual Overview of Defining a New Presentation Type</a>
+
+<li><a href="http://www.lispworks.com/reference/lw44/CLIM/html/climguide-119.htm#pgfId-383899">Presentation Methods in CLIM</a>
+
+<h2>What are they?</h2>
+
+<p class=noi>A presentation is an association between 
+<ul>
+<li> a type of object,
+<li> an instance of that type of object, 
+<li>and that object's visual representation.</ul> 
+
+<p class=stb>Or more specifically, when output is done as a presentation, CLIM
+creates an <a href="output-records.htm">output record</a> associated
+with an object and a presentation type, and saves that record in the
+window's output history.
+
+<p class=mtb>To associate an object and it's type with visual output,
+use one of the following to display the object:
+
+<ul>
+
+<li><code><b>with-output-as-presentation</b><br> <i>(stream object
+type &key single-box allow-sensitive-inferiors modifier parent
+record-type) &body body</i></code>
+
+<li><code><b>present</b><br> <i>object &optionaly presentation-type
+&key (stream *standard-output*) view modifier acceptably
+for-context-type single-box allow-sensitive-inferiors sensitive
+query-identifier prompt record-type</i></code>
+
+<li><code><b>present-to-string</b><br> <i>object &optional
+presentation-type &key view acceptably for-context-type string
+index</i></code>
+
+</ul>
+
+<p class=stb>When CLIM knows the type of a displayed object, it also
+knows which commands are appropriate for that object.  
+
+<p class=mtb>
+Next: <a href="commands.htm">Commands</a>
+
+<br />
+<b>Warning</b>:  require(/usr/home/kantz/www/htdocs/comments.php) [<a href='http://www.kantz.com/jason/clim-primer/function.require'>function.require</a>]: failed to open stream: No such file or directory in <b>/usr/home/jkantz1/public_html/jason/clim-primer/presentation-types.htm</b> on line <b>65</b><br />
+<br />
+<b>Fatal error</b>:  require() [<a href='http://www.kantz.com/jason/clim-primer/function.require'>function.require</a>]: Failed opening required '/usr/home/kantz/www/htdocs/comments.php' (include_path='.:/usr/local/lib/php') in <b>/usr/home/jkantz1/public_html/jason/clim-primer/presentation-types.htm</b> on line <b>65</b><br />

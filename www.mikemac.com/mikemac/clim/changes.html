@@ -1,0 +1,378 @@
+<html><head><title>CLIM: 36 Changes from CLIM 1.0</title></head><body>
+<br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="extensions.html">Suggested Extensions to CLIM</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="index.html">Index</a></td>
+</tr></table><br><hr><br>
+<p>
+<br><a name="36"><h1>36 Changes from CLIM 1.0</h1></a>
+<a name="LABEL=changes"></a> This appendix lists the incompatible changes from CLIM 1.0 (and CLIM 0.9 for the
+API related to the windowing substrate and gadgets), and the rationale for those
+changes.  They are listed on a chapter-by-chapter basis.
+<p>
+When the items say that a compatibility stub will be provided, this does not
+mean that this compatibility needs to be part of CLIM itself.  It could be
+provided by a small compatibility package that defines stubs that translate from
+the old behavior to the new behavior at compile-time or run-time, or by some
+sort of conversion utility, or both.  In the first case, compiler warnings
+should be generated to indicate that an obsolete form is being used.
+<p>
+<hr><b>Issue:</b> SWM<br><i>There are still lots of things from the windowing part, and the
+frames, panes, and gadgets chapters that need to be included here.</i><hr>
+<p><b>Regions</b><br>
+<ul> <li> <tt>point-position*</tt> has been renamed to <tt>point-position</tt> , since the
+term ``position'' unambiguously refers to an <tt>(x,y)</tt> coordinate pair.  A
+compatibility function will be provided.
+<p>
+<li> <tt>region-contains-point*-p</tt> has been renamed to
+<tt>region-contains-position-p</tt> , since the term ``position'' unambiguously
+refers to an <tt>(x,y)</tt> coordinate pair.  A compatibility function will be
+provided.
+<p>
+<li> The use of <tt>region-set-function</tt> has been deprecated in favor of using
+the three classes <tt>standard-region-union</tt> , <tt>standard-region-intersection</tt> ,
+and <tt>standard-region-difference</tt> , in keeping with the spirit of CLOS.
+<tt>region-set-function</tt> will be provided as a compatibility function.
+</ul> <p><b>Bounding Rectangles</b><br>
+<ul> <li> <tt>with-bounding-rectangle*</tt> used to have optional <i>max-x</i> and
+<i>max-y</i> arguments.  They are now required.
+<p>
+<li> The function <tt>bounding-rectangle-set-edges</tt> has been removed, since
+bounding rectangles have been made immutable.  There is no replacement for it.
+<p>
+<li> <tt>bounding-rectangle-position*</tt> has been renamed to
+<tt>bounding-rectangle-position</tt> , since the term ``position'' unambiguously
+refers to an <tt>(x,y)</tt> coordinate pair.  A compatibility function will be
+provided.
+<p>
+<li> The functions <tt>bounding-rectangle-left</tt> , <tt>bounding-rectangle-top</tt> ,
+<tt>bounding-rectangle-right</tt> , and <tt>bounding-rectangle-bottom</tt> have been
+replaced by <tt>bounding-rectangle-min-x</tt> , <tt>bounding-rectangle-min-y</tt> ,
+<tt>bounding-rectangle-max-x</tt> , and <tt>bounding-rectangle-max-y</tt> .  This is
+because left, top, right, and bottom are ill-specified.  Compatibility functions
+will be provided.
+</ul> <p><b>Affine Transformations</b><br>
+<ul> <li> The function <tt>make-3-point-transformation</tt> has had its argument list
+changed from <i>(point-1 point-1-image point-2 point-2-image point-3 point-3-image)</i>
+to <i>(point-1 point-2 point-3 point-1-image point-2-image point-3-image)</i>.
+This was done because the original argument list did not group together inputs
+and output, which was confusing.
+<p>
+<li> The function <tt>make-3-point-transformation*</tt> has had its argument list
+changed from <i>(x1 y1 x1-image y1-image x2 y2 x2-image y2-image x3 y3 x3-image y3-image)</i>
+to <i>(x1 y1 x2 y2 x3 y3 x1-image y1-image x2-image y2-image x3-image y3-image)</i>.
+This was done because the original argument list did not group together inputs
+and output, which was confusing.
+<p>
+<li> <tt>compose-scaling-transformation</tt> , <tt>compose-translation-transformation</tt> , and
+<tt>compose-rotation-transformation</tt> have been replaced by the six functions
+<tt>compose-translation-with-transformation</tt> , <tt>compose-scaling-with-transformation</tt> ,
+<tt>compose-rotation-with-transformation</tt> , <tt>compose-transformation-with-translation</tt> ,
+<tt>compose-transformation-with-scaling</tt> , and <tt>compose-transformation-with-rotation</tt> .
+This was done because the six functions implement all of the optimized useful
+cases of composition of transformations, and new names are required for all six.
+Compatibility functions will be provided for the three CLIM 1.0 functions.
+<p>
+<li> <tt>transform-point*</tt> and <tt>untransform-point*</tt> have been renamed to
+<tt>transform-position</tt> and <tt>untransform-position</tt> .  Compatibility functions
+will be provided.
+</ul> <p><b>Properties of Sheets</b><br>
+<p><b>Sheet Protocols</b><br>
+<p><b>Ports, Grafts, and Mirrored Sheets</b><br>
+<p><b>Text Styles</b><br>
+<ul> <li> The macros <tt>with-text-style</tt> , <tt>with-text-family</tt> ,
+<tt>with-text-face</tt> , and <tt>with-text-size</tt> have been changed to take the
+<i>medium</i> argument first and the text style (or family, face, or size)
+argument second.  This was done in order to be consistent with all of the other
+macros that take a <i>medium</i> argument as the first argument.  Compatibility
+code will be provided that attempts to detect the old syntax and massages it
+into the new syntax, although it will probably not be able to detect all cases.
+<p>
+<li> <tt>add-text-style-mapping</tt> has been replaced by <tt>(setf~text-style-mapping)</tt> to be consistent with Common Lisp conventions.  A compatibility function will be
+provided. 
+</ul> <p><b>Drawing in Color</b><br>
+<ul> <li> <tt>+foreground+</tt> and <tt>+background+</tt> have been renamed to
+<tt>+foreground-ink+</tt> and <tt>+background-ink+</tt> , for consistency with
+<tt>+flipping-ink+</tt> .  Compatibility constants will be provided.
+<p>
+<li> <tt>make-color-rgb</tt> and <tt>make-color-ihs</tt> have been renamed to
+<tt>make-rgb-color</tt> and <tt>make-ihs-color</tt> , by popular demand.  Compatibility
+functions will be provided.
+</ul> <p><b>Extended Stream Output</b><br>
+<ul> <li> <tt>stream-cursor-position*</tt> and <tt>stream-increment-cursor-position*</tt> have been renamed to <tt>stream-cursor-position</tt> and
+<tt>stream-increment-cursor-position</tt> .  Compatibility functions will be
+provided.
+<p>
+<li> The function <tt>stream-set-cursor-position*</tt> has been replaced by
+<tt>(setf*~stream-cursor-position)</tt> to be consistent with Common Lisp
+conventions.  A compatibility function will be provided.
+<p>
+<li> The function <tt>stream-vsp</tt> has been replace by
+<tt>stream-vertical-spacing</tt> .  A compatibility function will be provided.
+<p>
+<li> The macros <tt>with-end-of-line-action</tt> and <tt>with-end-of-page-action</tt> have been changed to take the <i>stream</i> argument first and the action
+argument second.  This was done in order to be consistent with all of the other
+macros that take a <i>stream</i> argument as the first argument.  Compatibility
+code will be provided that attempts to detect the old syntax and massages it
+into the new syntax, although it will probably not be able to detect all cases.
+</ul> <p><b>Output Recording</b><br>
+<ul> <li> The three protocol classes <tt>output-record</tt> , <tt>output-record-element</tt> ,
+and <tt>displayed-output-record-element</tt> have been replaced by the two classes
+<tt>output-record</tt> and <tt>displayed-output-record</tt> .  The predicates for the
+classes have been similarly changed.
+<p>
+<li> <tt>output-record-position*</tt> has been renamed to
+<tt>output-record-position</tt> .  A compatibility function will be provided.
+<p>
+<li> The function <tt>output-record-set-position*</tt> has been replaced by
+<tt>(setf*~output-record-position)</tt> to be consistent with Common Lisp
+conventions.  A compatibility function will be provided.
+<p>
+<li> The functions <tt>output-record-start-position*</tt> ,
+<tt>output-record-set-start-position*</tt> , <tt>output-record-end-position*</tt> ,
+<tt>output-record-set-end-position*</tt> have been replaced by
+<tt>output-record-start-cursor-position</tt> , <tt>(setf*~output-record-start-cursor-position)</tt> ,
+<tt>output-record-end-cursor-position</tt> , <tt>(setf*~output-record-end-cursor-position)</tt> to
+better reflect their functionality.  Compatibility functions will be provided.
+<p>
+<li> <tt>replay-1</tt> has been renamed to <tt>replay-output-record</tt> .
+<p>
+<li> <tt>output-record-elements</tt> and <tt>output-record-element-count</tt> have been
+renamed to <tt>output-record-children</tt> and <tt>output-record-count</tt> , since the
+term ``element'' is no longer used when referring to output records.
+Compatibility functions will be provided.
+<p>
+<li> <tt>add-output-record-element</tt> and <tt>delete-output-record-element</tt> have
+been renamed to <tt>add-output-record</tt> and <tt>delete-output-record</tt> , and the
+argument order has been changed.  Compatibility functions will be provided.
+<p>
+<li> <tt>map-over-output-record-elements-containing-point*</tt> and
+<tt>map-over-output-record-elements-overlapping-region</tt> have been renamed to
+<tt>map-over-output-records-containing-position</tt> and
+<tt>map-over-output-records-overlapping-region</tt> .  Compatibility functions will
+be provided.
+<p>
+<li> <tt>linear-output-record</tt> and <tt>coordinate-sorted-set-output-record</tt> have been renamed to <tt>standard-sequence-output-record</tt> and
+<tt>standard-tree-output-record</tt> .
+<p>
+<li> <tt>stream-draw-p</tt> and <tt>stream-record-p</tt> and their <tt>setf</tt> functions
+have been renamed to <tt>stream-drawing-p</tt> and <tt>stream-recording-p</tt> to better
+reflect their functionality.  Compatibility functions will be provided.
+<p>
+<li> <tt>output-recording-stream-output-record</tt> ,
+<tt>output-recording-stream-current-output-record-stack</tt> , and
+<tt>output-recording-stream-text-output-record</tt> have been renamed to
+<tt>stream-output-history</tt> , <tt>stream-current-output-record</tt> , and
+<tt>stream-text-output-record</tt> .  Compatibility functions will be provided.
+<p>
+<li> <tt>add-output-record</tt> has been renamed to <tt>stream-add-output-record</tt> .
+Because of the change to <tt>add-output-record-element</tt> above, no compatibility
+function can be provided.
+<p>
+<li> <tt>close-current-text-output-record</tt> has been renamed to
+<tt>stream-close-text-output-record</tt> .  A compatibility function will be
+provided.
+<p>
+<li> <tt>add-string-output-to-output-record</tt> and
+<tt>add-character-output-to-output-record</tt> have been renamed to
+<tt>stream-add-string-output</tt> and <tt>stream-add-character-output</tt> .
+Compatibility functions will be provided.
+<p>
+<li> <tt>with-output-recording-options</tt> has had its <tt>:draw-p</tt> and
+<tt>:record-p</tt> keyword arguments changed to <tt>:draw</tt> and <tt>:record</tt> to
+conform to Common Lisp naming conventions.  Compatibility code will be provided.
+</ul> <p><b>Table Formatting</b><br>
+<ul> <li> The <tt>:inter-column-spacing</tt> , <tt>:inter-row-spacing</tt> , and
+<tt>:multiple-columns-inter-column-spacing</tt> options to <tt>formatting-table</tt> have been renamed to <tt>:x-spacing</tt> , <tt>:y-spacing</tt> , and
+<tt>:multiple-columns-x-spacing</tt> in order to be consistent with the pane
+options.  Compatibility options will be provided.
+<p>
+<li> The <tt>:minimum-width</tt> and <tt>:minimum-height</tt> options to
+<tt>formatting-cell</tt> have been renamed to <tt>:min-width</tt> and <tt>:min-height</tt> in order to be consistent with the pane options.  Compatibility options will be
+provided.
+<p>
+<li> The <tt>:inter-column-spacing</tt> and <tt>:inter-row-spacing</tt> options to
+<tt>formatting-item-list</tt> and <tt>format-items</tt> have been renamed to
+<tt>:x-spacing</tt> and <tt>:y-spacing</tt> in order to be consistent with the pane
+options.  Compatibility options will be provided.
+<p>
+<li> The <tt>:no-initial-spacing</tt> option to <tt>formatting-item-list</tt> and
+<tt>format-items</tt> has been renamed to <tt>:initial-spacing</tt> , because
+inverted-sense flags are too hard to keep straight.  The default for
+<tt>:no-initial-spacing</tt> was <a href="changes.html#CONCEPT=true"><i>true</i></a> , therefore the default for
+<tt>:initial-spacing</tt> is <a href="changes.html#CONCEPT=false"><i>false</i></a> .  Compatibility options will be
+provided.
+</ul> <p><b>Graph Formatting</b><br>
+<ul> <li> The function <tt>format-graph-from-root</tt> has been renamed to
+<tt>format-graph-from-roots</tt> , since it now takes a sequence of root objects,
+rather than a single root object.  The function <tt>format-graph-from-root</tt> will
+remain as a compatibility function that takes a single root object.
+</ul> <p><b>Incremental Redisplay</b><br>
+<ul> <li> <tt>redisplay-1</tt> has been renamed to <tt>redisplay-output-record</tt> .
+</ul> <p><b>Extended Stream Input</b><br>
+<ul> <li> <tt>stream-pointer-position*</tt> has been renamed to
+<tt>stream-pointer-position</tt> .  A compatibility function will be provided.
+<p>
+<li> The function <tt>stream-set-pointer-position*</tt> has been replaced by
+<tt>(setf*~stream-pointer-position)</tt> to be consistent with Common Lisp
+conventions.  A compatibility function will be provided.
+<p>
+<li> All of the clause arglists for <tt>tracking-pointer</tt> are specified with
+<tt>&key</tt>, that is, they are named arguments rather than positional ones.
+This should not cause any problems, except for the one case that the
+<i>character</i> argument to the <tt>:keyboard</tt> clause has been renamed to
+<i>gesture</i> .
+<p>
+<li> The function <tt>dragging-output-record</tt> has been renamed to
+<tt>drag-output-record</tt> to be consistent with our naming conventions.  A
+compatibility function will be provided.
+</ul> <p><b>Presentation Types</b><br>
+<ul> <li> The argument list for <tt>with-output-as-presentation</tt> has been changed to
+make <i>stream</i> , <i>object</i> , and <i>type</i> be required arguments instead of
+keyword arguments.  This is because it is always necessary to supply those
+arguments in order for <tt>with-output-as-presentation</tt> to work.  Compatibility
+code will be provided to support the old syntax.
+<p>
+<li> The <tt>:activation-characters</tt> , <tt>:additional-activation-characters</tt> ,
+<tt>:blip-characters</tt> , and <tt>:additional-blip-characters</tt> keyword arguments to
+the <tt>accept</tt> functions have been renamed to <tt>:activation-gestures</tt> ,
+<tt>:additional-activation-gestures</tt> , <tt>:delimiter-gestures</tt> , and
+<tt>:additional-delimiter-gestures</tt> .  Compatibility code will be provided to
+support the old keyword arguments.
+<p>
+<li> The arglists for presentation translators and their documentation and
+tester components have been changed to take a single positional <i>object</i> argument and a list of named (keyword) arguments.  Except for translators that
+omit the <i>object</i> argument or have it in other than the initial position of
+the arglist, this will not pose a problem.  This change can be detected.
+<p>
+<li> The <i>frame</i> argument to <tt>find-presentation-translators</tt> has
+been changed to be a <i>command-table</i> argument.  A check at run-time
+can detect when a frame is supplied to
+<tt>find-presentation-translators</tt> instead of a command table.
+<p>
+<li> The <tt>:shift-mask</tt> keyword argument to <tt>test-presentation-translator</tt> ,
+<tt>find-applicable-translators</tt> , <tt>presentation-matches-context-type</tt> , and
+<tt>find-innermost-applicable-presentation</tt> has been renamed to
+<tt>:modifier-state</tt> in order to be consistent with the device event terminology.
+Compatibility code will be provided to support the old keyword.
+<p>
+<li> <tt>define-gesture-name</tt> is completely different from CLIM 1.1.  There
+will be no compatibility code provided to support the old version of
+<tt>define-gesture-name</tt> .
+<p>
+<li> <tt>dialog-view</tt> and <tt>+dialog-view+</tt> have been renamed to
+<tt>textual-dialog-view</tt> and <tt>+textual-dialog-view+</tt> in order to accurately
+reflect what they are.  Likewise, <tt>menu-view</tt> and <tt>+menu-view+</tt> have been
+renamed to <tt>textual-menu-view</tt> and <tt>+textual-menu-view+</tt> .  Compatibility
+classes and constants will be provided.
+</ul> <p><b>Input Editing and Completion Facilities</b><br>
+<ul> <li> <tt>*activation-characters*</tt> , <tt>*standard-activation-characters*</tt> ,
+<tt>with-activation-characters</tt> , and <tt>activation-character-p</tt> have been
+renamed to <tt>*activation-gestures*</tt> , <tt>*standard-activation-gestures*</tt> ,
+<tt>with-activation-gestures</tt> , and <tt>activation-gesture-p</tt> .  Compatibility
+functions will remain for <tt>with-activation-characters</tt> and
+<tt>activation-character-p</tt> , but since the variables were not previously
+documented, no compatibility will be provided for them.
+<p>
+<li> <tt>*blip-characters*</tt> , <tt>with-blip-characters</tt> , and
+<tt>blip-character-p</tt> have been renamed to <tt>*delimiter-gestures*</tt> ,
+<tt>with-delimiter-gestures</tt> , and <tt>delimiter-gesture-p</tt> .  Compatibility
+functions will remain for <tt>with-blip-characters</tt> and <tt>blip-character-p</tt> ,
+but since <tt>*blip-characters*</tt> was not previously documented, no compatibility
+will be provided.
+<p>
+<li> <tt>*abort-characters*</tt> has been renamed to <tt>*abort-gestures*</tt> .
+<p>
+<li> <tt>*completion-characters*</tt> , <tt>*help-characters*</tt> , and
+<tt>*possibilities-characters*</tt> have been renamed to <tt>*completion-gestures*</tt> ,
+<tt>*help-gestures*</tt> , and <tt>*possibilities-gestures*</tt> .
+<p>
+<li> Input editing streams no longer use the interactive stream class.
+Instead, interactive streams are defined to be any stream that can potentially
+support input editing, and the class <tt>input-editing-stream</tt> now refers to
+input editor streams.
+<p>
+<li> <tt>input-editor-buffer</tt> , <tt>input-position</tt> , <tt>insertion-pointer</tt> , and
+<tt>rescanning-p</tt> have been renamed to <tt>stream-input-buffer</tt> ,
+<tt>stream-scan-pointer</tt> , <tt>stream-insertion-pointer</tt> , and
+<tt>stream-rescanning-p</tt> .  Compatibility functions will be provided.
+</ul> <p><b>Menus</b><br>
+<ul> <li> The <tt>:inter-column-spacing</tt> and <tt>:inter-row-spacing</tt> options to
+<tt>menu-choose</tt> have been renamed to <tt>:x-spacing</tt> and <tt>:y-spacing</tt> in
+order to be consistent with the pane options.  Compatibility options will be
+provided.
+</ul> <p><b>Command Processing</b><br>
+<ul> <li> The variable <tt>*unsupplied-argument*</tt> has been renamed to
+<tt>*unsupplied-argument-marker*</tt> in keeping with its functionality, and to
+match the new <tt>*numeric-argument-marker*</tt> .  <tt>*unsupplied-argument*</tt> will
+be retained, but its use is deprecated.
+<p>
+<li> The <tt>:inter-column-spacing</tt> and <tt>:inter-row-spacing</tt> options to
+<tt>display-command-table-menu</tt> have been renamed to <tt>:x-spacing</tt> and
+<tt>:y-spacing</tt> in order to be consistent with the pane options.  Compatibility
+options will be provided.
+<p>
+<li> The <tt>:test</tt> argument to the following functions has been removed, since
+the use of gesture names makes it unnecessary:
+<tt>add-command-to-command-table</tt> , <tt>(add-keystroke-to-command-table</tt> , and
+<tt>remove-keystroke-from-command-table</tt> .  The <tt>:keystroke-test</tt> argument has
+been removed from <tt>read-command</tt> and <tt>read-command-using-keystrokes</tt> for
+the same reason.
+</ul> <p><b>Application Frames</b><br>
+<ul> <li> The <tt>:root</tt> argument has been removed from <tt>open-window-stream</tt> and
+<tt>make-application-frame</tt> .
+<p>
+<li> The <tt>:layout</tt> option has been removed, and is replaced by the more
+general <tt>:layouts</tt> option.  A compatibility hook will be provided that
+handles the old <tt>:layout</tt> option.
+<p>
+<li> The function <tt>set-frame-layout</tt> has been replaced by
+<tt>(setf~frame-current-layout)</tt> to be consistent with Common Lisp conventions.
+A compatibility function will be provided.
+<p>
+<li> The function <tt>frame-top-level-window</tt> has been renamed to
+<tt>frame-top-level-sheet</tt> .  A compatibility function will be provided.
+<p>
+<li> <tt>command-enabled-p</tt> , <tt>enable-command</tt> , and <tt>disable-command</tt> have been replaced by <tt>command-enabled</tt> and <tt>(setf~command-enabled)</tt> .
+Compatibility functions will be provided.
+<p>
+<li> <tt>window-viewport-position*</tt> has been renamed to
+<tt>window-viewport-position</tt> .  A compatibility function will be provided.
+<p>
+<li> <tt>window-set-viewport-position*</tt> has been replaced by
+(setf*~window-viewport-position).  A compatibility function will be provided.
+</ul> <p><b>Panes</b><br>
+<ul> <li> <tt>realize-pane</tt> and <tt>realize-pane-1</tt> have been renamed to
+<tt>make-pane</tt> and <tt>make-pane-1</tt> .  A compatibility function will be provided
+for <tt>realize-pane</tt> .
+<p>
+<li> The pane options <tt>:hs</tt> , <tt>:hs+</tt> , <tt>:hs-</tt> , <tt>:vs</tt> , <tt>:vs+</tt> , and
+<tt>:vs-</tt> have been replaced by the options <tt>:width</tt> , <tt>:max-width</tt> ,
+<tt>:min-width</tt> , <tt>:height</tt> , <tt>:max-height</tt> , and <tt>:min-height</tt> to be more
+perspicuous, and to conform the the same options for the formatted output
+facilities.  Compatibility options will be supplied.
+<p>
+<li> The <tt>:nchars</tt> and <tt>:nlines</tt> pane options have been removed in favor
+of an extended syntax to the <tt>:width</tt> and <tt>:height</tt> options.
+<p>
+<li> The pane layout options <tt>:halign</tt> and <tt>:valign</tt> have been renamed to
+<tt>:align-x</tt> and <tt>:align-y</tt> to conform with table formatting.  Compatibility
+options will be supplied.
+<p>
+<li> The pane layout options <tt>:hspace</tt> and <tt>:vspace</tt> have been renamed to
+<tt>:x-spacing</tt> and <tt>:y-spacing</tt> to conform with table formatting.
+Compatibility options will be supplied.
+<p>
+<li> The term ``space req'' has been renamed to ``space requirement''.  All of
+the functions with <tt>space-req</tt> in their names have been renamed to have
+<tt>space-requirement</tt> instead.
+<p>
+<li> <tt>make-space-requirement</tt> no longer takes the <tt>:hs</tt> and <tt>:vs</tt> arguments, <i>et al</i>.  It now takes <tt>:width</tt> and <tt>:height</tt> , <i>et al</i>.
+</ul> <br><hr><br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="extensions.html">Suggested Extensions to CLIM</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="index.html">Index</a></td>
+</tr></table>
+</body></html>

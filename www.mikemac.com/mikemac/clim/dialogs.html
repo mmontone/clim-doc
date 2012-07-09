@@ -1,0 +1,209 @@
+<html><head><title>CLIM: 26 Dialog Facilities</title></head><body>
+<br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="menus.html">Menu Facilities</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="commands.html">Command Processing</a></td>
+</tr></table><br><hr><br>
+<p>
+<br><a name="26"><h1>26 Dialog Facilities</h1></a>
+<a name="LABEL=dialogs"></a> <hr><b>Issue:</b> SWM<br><i>There is a general issue about how these dialogs fit in with the
+dialogs that might be provided by the underlying toolkit.  For example, under
+what circumstances is CLIM allowed to directly use the dialog facility provided
+by the host?</i><hr>
+<a name="Macro accepting-values"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>accepting-values</b></td><td valign="baseline" width="100%"><i>(<tt>&amp;optional</tt> stream
+                               <tt>&amp;key</tt> own-window exit-boxes 
+                                    initially-select-query-identifier modify-initial-query
+                                    resynchronize-every-pass resize-frame
+                                    align-prompts label scroll-bars 
+                                    x-position y-position width height
+                                    command-table frame-class)
+                              <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Builds a dialog for user interaction based on calls to <tt>accept</tt> within
+<i>body</i> . The user can select the values and change them, or use defaults if
+they are supplied.  The dialog will also contain some sort of ``end'' and
+``abort'' choices.  If ``end'' is selected, then <tt>accepting-values</tt> returns
+whatever values the body returns.  If ``abort'' is selected,
+<tt>accepting-values</tt> will invoke the <tt>abort</tt> restart.
+<p>
+<i>stream</i> is an interactive stream that <tt>accepting-values</tt> will use to
+build up the dialog.  The <i>stream</i> argument is not evaluated, and must be a
+symbol that is bound to a stream.  If <i>stream</i> is <tt>t</tt> (the default),
+<tt>*standard-input*</tt> is used.
+<p>
+<i>body</i> is the body of the dialog, which contains calls to <tt>accept</tt> that
+will be intercepted by <tt>accepting-values</tt> and used to build up the dialog.
+<i>body</i> may have zero or more declarations as its first forms.
+<p>
+An <tt>accepting-values</tt> dialog is implemented as an application frame with a
+looping structure.  First, <i>body</i> is evaluated in order to collect the
+output.  While the body is being evaluated, all calls to <tt>accept</tt> call the
+<tt>accept-present-default</tt> presentation methods instead of calling the
+<tt>accept</tt> presentation methods.  The output is then displayed, preferably
+using incremental redisplay in order to avoid unnecessary redisplay of unchanged
+output.  If <i>align-prompts</i> is <a href="dialogs.html#CONCEPT=true"><i>true</i></a> (the default is <tt>nil</tt> ), then
+the fields of the dialog will be displayed within a call to
+<tt>formatting-table</tt> so that the prompts are aligned vertically on their
+right-hand sides and the input fields are aligned on their left-hand sides.
+This option is intended to support toolkits where users expect dialogs to have
+this sort of layout.
+<p>
+After <tt>accepting-values</tt> has displayed all of the fields, it awaits a user
+gesture, such as clicking on one of the fields of the dialog.  When the user
+clicks on a field, <tt>accepting-values</tt> reads a new value for that field using
+<tt>accept</tt> and replaces the old value with the new value.  Then the loop is
+started again, until the user either exits or aborts from the dialog.
+<p>
+Because of its looping structure, <tt>accepting-values</tt> needs to be able to
+uniquely identify each call to <tt>accept</tt> in the body of the dialog.  The
+<a name="CONCEPT=query identifier"><b><i>query identifier</i></b></a> is used to identify the calls to <tt>accept</tt> .  The
+query identifier for a call to <tt>accept</tt> is computed on each loop through the
+dialog, and should therefore be free of side-effects.  Query identifiers are
+compared using <tt>equal</tt> .  Inside of <tt>accepting-values</tt> , programmers should
+supply the <tt>:query-identifier</tt> argument to each call to <tt>accept</tt> .  If
+<tt>:query-identifier</tt> is not explicitly supplied, the prompt for that call to
+<tt>accept</tt> is used as the query identifier.  Thus, if <tt>:query-identifier</tt> is
+not supplied, programmers must ensure that all of the prompts are different.  If
+there is more than one call to <tt>accept</tt> with the same query identifier, the
+behavior of <tt>accepting-values</tt> is unspecified.  
+<p>
+While inside <tt>accepting-values</tt> , calls to <tt>accept</tt> return a third value, a
+boolean (``changed-p'') that indicates whether the object is the result of new
+input by the user, or is just the previously supplied default.  The third value
+will be <a href="dialogs.html#CONCEPT=true"><i>true</i></a> in the former case, <a href="dialogs.html#CONCEPT=false"><i>false</i></a> in the latter.
+<p>
+<b>Implementation note:</b> each invocation of <tt>accepting-values</tt> will
+probably need to maintain a table that maps from a query identifier to the
+output record for the field that used the query identifier, and the output
+record for each field in the dialog will probably need a mapping back to the
+query identifier.  A mediating object (a ``query object'') is also useful, for
+instance, as a place to store the ``changed-p'' flag.
+<p>
+The class of the application frame created by <tt>accepting-values</tt> will be
+<tt>accept-values</tt> or a subclass of <tt>accept-values</tt> .  Programmers can use a
+class of their own by supplying the name of a class via the <i>frame-class</i> argument.  CLIM will use the command table <tt>accept-values</tt> as the command
+table for <tt>accepting-values</tt> .  Programmers can supply a command table of their
+own by supplying the <i>command-table</i> argument.
+<p>
+When <i>own-window</i> is non-<tt>nil</tt> , the dialog will appear in its own
+``popped-up'' window.  In this case the initial value of <i>stream</i> is a
+window with which the dialog is associated.  (This is similar to the
+<i>associated-window</i> argument to <tt>menu-choose</tt> .)  Within the <i>body</i> ,
+the value of <i>stream</i> will be the ``popped-up'' window.  <i>own-window</i> is
+either <tt>t</tt> or a list of alternating keyword options and values.  The accepted
+options are <tt>:right-margin</tt> and <tt>:bottom-margin</tt> ; their values control the
+amount of extra space to the right of and below the dialog (useful if the user's
+responses to the dialog take up more space than the initially displayed
+defaults).  The allowed values for <tt>:right-margin</tt> are the same as for the
+<tt>:x-spacing</tt> option to <tt>formatting-table</tt> ; the allowed values for
+<tt>:bottom-margin</tt> are the same as for the <tt>:y-spacing</tt> option.
+<p>
+<hr><b>Issue:</b> barmar, SWM<br><i>When the programmer supplies <tt>:right-margin</tt> or
+<tt>:bottom-margin</tt> options in the own-window argument, how is he supposed to
+determine what's needed?  How about providing an option to permit the window to
+resize itself dynamically?  There really needs to be a hook into
+<tt>note-space-requirements-changed</tt> or something.</i><hr>
+<i>exit-boxes</i> specifies what the exit boxes should look like.  The default
+behavior is though the following were supplied:
+<p>
+<pre>'((:exit "<End> uses these values")
+  (:abort "<Abort> aborts"))
+</pre> <hr><b>Issue:</b> barmar<br><i>We need to describe the interpretation of the <i>exit-boxes</i> argument.  Are other keywords beside <tt>:exit</tt> and <tt>:abort</tt> permitted, such
+as <tt>:help</tt> ?  It's pretty common for a dialog to have multiple ways to exit;
+perhaps <tt>accepting-values</tt> should return a second value that indicates which
+exit box was selected.  This alist looks sort of like a menu item list; perhaps
+the full generality should be permitted (so that the style of the exit box
+messages can be specified).  The text strings that are shown in the default
+value look more like documentation than button labels; I think both are
+necessary, and the programmer must be able to find out what the default labels
+are so that he can include them in the documentation (rather than hard-coding
+"<End>" and "<Abort>").</i><hr>
+<i>initially-select-query-identifier</i> specifies that a particular field in the
+dialog should be pre-selected when the user interaction begins. The field to be
+selected is tagged by the <tt>:query-identifier</tt> option to <tt>accept</tt> .  When
+the initial display is output, the input editor cursor appears after the prompt
+of the tagged field, just as if the user had selected that field by clicking on
+it.  The default value, if any, for the selected field is not displayed.  When
+<i>modify-initial-query</i> is <a href="dialogs.html#CONCEPT=true"><i>true</i></a> , the initially selected field is
+selected for modification rather than for replacement; the default is <tt>nil</tt> .
+<p>
+<i>resynchronize-every-pass</i> is a boolean option specifying whether earlier
+queries depend on later values; the default is <a href="dialogs.html#CONCEPT=false"><i>false</i></a> .  When it is
+<a href="dialogs.html#CONCEPT=true"><i>true</i></a> , the contents of the dialog are redisplayed an additional time after
+each user interaction.  This has the effect of ensuring that, when the value of
+some field of a dialog depends on the value of another field, all of the
+displayed fields will be up to date.
+<p>
+When <i>resize-frame</i> is <a href="dialogs.html#CONCEPT=true"><i>true</i></a> , own-window dialogs will be resized after
+each pass through the redisplay loop.  The default is <tt>nil</tt> .
+<p>
+<i>label</i> is as for <tt>menu-choose</tt> .  <i>x-position</i> and <i>y-position</i> are as for <tt>menu-choose-from-drawer</tt> .  <i>width</i> and <i>height</i> are real
+numbers that specify the initial width and height of own-window dialogs.
+<p>
+
+<a name="Frame accept-values"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>accept-values</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Frame]</b></td></tr></table><tt>accepting-values</tt> must be implemented as a CLIM application frame that uses
+<tt>accept-values</tt> as the name of the frame class.
+<p>
+
+<a name="Generic function display-exit-boxes"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>display-exit-boxes</b></td><td valign="baseline" width="100%"><i>frame stream view</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Displays the exits boxes for the <tt>accepting-values</tt> frame <i>frame</i> on the
+stream <i>strea,</i> in the view <i>view</i> .  The exit boxes specification is not
+passed in directly, but is a slot in the frame.  The default method (on
+<tt>accept-values</tt> ) simply writes a line of text associating the Exit and Abort
+strings with presentations that either exit or abort from the dialog.
+<p>
+The <i>frame</i> , <i>stream</i> , and <i>view</i> arguments may be specialized to
+provide a different look-and-feel for different host window systems.
+<p>
+<a name="Generic function accept-values-resynchronize"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>accept-values-resynchronize</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Causes <tt>accepting-values</tt> to resynchronizes the dialog once on the accepting
+values stream <i>stream</i> before it restarts the dialog loop.
+<p>
+
+<a name="Macro accept-values-command-button"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>accept-values-command-button</b></td><td valign="baseline" width="100%"><i>(<tt>&amp;optional</tt> stream
+                                           <tt>&amp;key</tt> documentation query-identifier
+                                                cache-value cache-test resynchronize) 
+                                          prompt
+                                          <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Displays the prompt <i>prompt</i> on the stream <i>stream</i> and creates an area
+(the ``button'').  When a pointer button is clicked in this area at runtime,
+<i>body</i> will be evaluated.
+<p>
+<tt>accept-values-command-button</tt> must be implemented by expanding into a call
+to <tt>invoke-accept-values-command-button</tt> , supplying a function that executes
+<i>body</i> as the <i>continuation</i> argument to <tt>accept-values-command-button</tt> .
+<p>
+The <i>stream</i> argument is not evaluated, and must be a symbol that is bound
+to a stream.  If <i>stream</i> is <tt>t</tt> (the default), <tt>*standard-input*</tt> is
+used.  <i>body</i> may have zero or more declarations as its first forms.
+<p>
+<a name="Method invoke-accept-values-command-button"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>invoke-accept-values-command-button</b></td><td valign="baseline" width="100%"><i>stream continuation view prompt
+            <tt>&amp;key</tt> documentation query-identifier cache-value cache-test resynchronize</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Method]</b></td></tr></table>Displays the prompt <i>prompt</i> on the stream <i>stream</i> and creates an area
+(the ``button'').  When a pointer button is clicked in this area at runtime, the
+continuation will be called.  <i>continuation</i> is a function that takes no
+arguments.  <i>view</i> is a view.
+<p>
+<i>prompt</i> may be either a string (which will be displayed via
+<tt>write-string</tt> ), or a form that will be evaluated to draw the button.
+<p>
+<i>documentation</i> is an object that will be used to produce pointer
+documentation for the button.  It defaults to <i>prompt</i> .  If it is a string,
+the string itself will be used as the pointer documentation.  Otherwise it must
+be a function of one argument, the stream to which the documentation should be
+written.
+<p>
+When <i>resynchronize</i> is <a href="dialogs.html#CONCEPT=true"><i>true</i></a> , the dialog will be redisplayed an
+additional time whenever the command button is clicked on.  See the
+<i>resynchronize-every-pass</i> argument to <tt>accepting-values</tt> .
+ 
+<i>cache-value</i> and <i>cache-test</i> are as for <tt>updating-output</tt> .  That
+is, <i>cache-value</i> should evaluate to the same value if and only if the
+output produced by <i>prompt</i> does not ever change.  <i>cache-test</i> is a
+function of two arguments that is used to compare cache values.
+<i>cache-value</i> defaults to <tt>t</tt> and <i>cache-test</i> defaults to <tt>eql</tt> .
+<p>
+This function may only be used inside the dynamic context of an
+<tt>accepting-values</tt> .
+<br><hr><br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="menus.html">Menu Facilities</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="commands.html">Command Processing</a></td>
+</tr></table>
+</body></html>

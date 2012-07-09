@@ -1,0 +1,181 @@
+<html><head><title>CLIM: 4 Bounding Rectangles</title></head><body>
+<br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="regions.html">Regions</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="transforms.html">Affine Transformations</a></td>
+</tr></table><br><hr><br>
+<p>
+<br><a name="4"><h1>4 Bounding Rectangles</h1></a>
+<a name="LABEL=bboxes"></a> <a name="4.1"><h2>4.1 Bounding Rectangles</h2></a>
+Every bounded region has a derived <a name="CONCEPT=bounding rectangle"><b><i>bounding rectangle</i></b></a> , which is a
+rectangular region whose sides are parallel to the coordinate axes.  Therefore,
+every bounded region participates in the bounding rectangle protocol.  The
+bounding rectangle for a region is the smallest rectangle that contains every
+point in the region.  However, the bounding rectangle may contain additional
+points as well.  Unbounded regions do not have a bounding rectangle and do not
+participate in the bounding rectangle protocol.  Other objects besides bounded
+regions participate in the bounding rectangle protocol, such as sheets and
+output records.
+<p>
+The coordinate system in which the bounding rectangle is maintained depends on
+the context.  For example, the coordinates of the bounding rectangle of a sheet
+are expressed in the sheet's parent's coordinate system.  For output records,
+the coordinates of the bounding rectangle are maintained in the coordinate
+system of the stream with which the output record is associated.
+<p>
+Note that the bounding rectangle of a transformed region is not in general the
+same as the result of transforming the bounding rectangle of a region, as shown
+in Figure <a href="bboxes.html#LABEL=output-record-bbox"><b><i>4.1</i></b></i></a> .  For transformations that satisfy
+<tt>rectilinear-transformation-p</tt> , the following equality holds.  For all other
+transformations, it does not hold.
+<p>
+<pre>(region-equal
+  (transform-region transformation (bounding-rectangle region))
+  (bounding-rectangle (transform-region transformation region)))
+</pre> <center><img src="bounding-box.jpg"></center>
+<center><b>Figure 4.1: </b><a name="LABEL=output-record-bbox"></a> The bounding rectangle of an output record.</center>
+CLIM uses bounding rectangles for a variety of purposes.  For example,
+repainting of windows is driven from the bounding rectangle of the window's
+viewport, intersected with a ``damage'' region.  The formatting engines used by
+<tt>formatting-table</tt> and <tt>formatting-graph</tt> operate on the bounding
+rectangles of the output records in the output.  Bounding rectangles are also
+used internally by CLIM to achieve greater efficiency.  For instance, when
+performing hit detection to see if the pointer is within the region of an output
+record, CLIM first checks to see if the pointer is within the bounding rectangle
+of the output record.
+<p>
+Note that the bounding rectangle for an output record may have a different size
+depending on the medium on which the output record is rendered.  Consider the
+case of rendering text on different output devices; the font chosen for a
+particular text style may vary considerably in size from one device to another.
+<p>
+<a name="Protocol&nbsp;Class bounding-rectangle"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>bounding-rectangle</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Protocol&nbsp;Class]</b></td></tr></table>The protocol class that represents a bounding rectangle.
+If you want to create a new class that behaves like a bounding rectangle, it should be a subclass of <b>bounding-rectangle</b>. Subclasses of <b>bounding-rectangle</b> must obey the bounding rectangle protocol.Note that bounding rectangles are not a subclass of <tt>rectangle</tt> , nor even a
+subclass of <tt>region</tt> .  This is because, in general, bounding rectangles do
+not obey the region protocols.  However, all bounded regions and sheets that
+obey the bounding rectangle protocol are subclasses of <tt>bounding-rectangle</tt> .
+<p>
+Bounding rectangles are immutable, but since they reflect the live state of such
+mutable objects as sheets and output records, bounding rectangles are volatile.
+Therefore, programmers must not depend on the bounding rectangle associated with
+a mutable object remaining constant.
+<p>
+<a name="Predicate bounding-rectangle-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>bounding-rectangle-p</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Predicate]</b></td></tr></table>Returns <a href="bboxes.html#CONCEPT=true"><i>true</i></a> if <i>object</i> is a <a href="bboxes.html#CONCEPT=bounding rectangle"><i>bounding rectangle</i></a> (that is,
+supports the bounding rectangle protocol), otherwise returns <a href="bboxes.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Class standard-bounding-rectangle"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>standard-bounding-rectangle</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>An instantiable class that implements a bounding rectangle.  This is a subclass
+of both <tt>bounding-rectangle</tt> and <tt>rectangle</tt> , that is, standard bounding
+rectangles obey the rectangle protocol.
+<p>
+<tt>make-bounding-rectangle</tt> returns an object of this class.
+<p>
+The representation of bounding rectangles in CLIM is chosen to be efficient.
+CLIM will probably represent such rectangles by storing the coordinates of two
+opposing corners of the rectangle, namely, the ``min point'' and the ``max
+point''.  Because this representation is not sufficient to represent the result
+of arbitrary transformations of arbitrary rectangles, CLIM is allowed to return
+a polygon as the result of such a transformation.  (The most general class of
+transformations that is guaranteed to always turn a rectangle into another
+rectangle is the class of transformations that satisfy
+<tt>rectilinear-transformation-p</tt> .)
+<p>
+<a name="Function make-bounding-rectangle"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>make-bounding-rectangle</b></td><td valign="baseline" width="100%"><i>x1 y1 x2 y2</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Returns an object of the class <tt>standard-bounding-rectangle</tt> with the edges
+specified by <i>x1</i> , <i>y1</i> , <i>x2</i> , and <i>y2</i> , which must be real
+numbers.
+<p>
+<i>x1</i> , <i>y1</i> , <i>x2</i> , and <i>y2</i> are ``canonicalized'' in the
+following way.  The min point of the rectangle has an <tt>x</tt> coordinate that is the
+smaller of <i>x1</i> and <i>x2</i> and a <tt>y</tt> coordinate that is the smaller of
+<i>y1</i> and <i>y2</i> .  The max point of the rectangle has an <tt>x</tt> coordinate
+that is the larger of <i>x1</i> and <i>x2</i> and a <tt>y</tt> coordinate that is the
+larger of <i>y1</i> and <i>y2</i> .  (Therefore, in a right-handed coordinate
+system the canonicalized values of <i>x1</i> , <i>y1</i> , <i>x2</i> , and <i>y2</i> correspond to the left, top, right, and bottom edges of the rectangle,
+respectively.)
+<p>
+<i>This function returns fresh objects that may be modified. </i><a name="4.1.1"><h3>4.1.1 The Bounding Rectangle Protocol</h3></a>
+The following generic function comprises the bounding rectangle protocol.  All
+classes that participate in this protocol (including all subclasses of
+<tt>region</tt> that are bounded regions) must implement a method for
+<tt>bounding-rectangle*</tt> .
+<p>
+<a name="Generic function bounding-rectangle*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>bounding-rectangle*</b></td><td valign="baseline" width="100%"><i>region</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the bounding rectangle of <i>region</i> as four real numbers specifying
+the <tt>x</tt> and <tt>y</tt> coordinates of the min point and the <tt>x</tt> and <tt>y</tt> coordinates of
+the max point of the rectangle.  The argument <i>region</i> must be either a
+bounded region (such as a line or an ellipse) or some other object that obeys
+the bounding rectangle protocol, such as a sheet or an output record.
+<p>
+The four returned values <i>min-x</i> , <i>min-y</i> , <i>max-x</i> , and <i>max-y</i> will satisfy the inequalities
+<center><table>
+<tr valign="baseline"><td align=left colspan=1><tt>minx <i>&lt;=</i> maxx</tt></td></tr>
+<tr valign="baseline"><td align=left colspan=1><tt>  miny <i>&lt;=</i> maxy</tt></td></tr>
+<tr valign="baseline"></tr>
+</table></center>
+
+<p>
+<a name="Generic function bounding-rectangle"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>bounding-rectangle</b></td><td valign="baseline" width="100%"><i>region</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the bounding rectangle of <i>region</i> as an object that is a subclass
+of <tt>rectangle</tt> (described in Section <a href="regions.html#LABEL=rect"><b><i>Rectangles</i></b></i></a> ).  The argument <i>region</i> must be either a bounded region (such as a line or an ellipse) or some other
+object that obeys the bounding rectangle protocol, such as a sheet or an output
+record.
+<p>
+It is unspecified whether <tt>bounding-rectangle</tt> will or will not create a new
+object each time it is called.  Many CLIM implementations will cache the
+bounding rectangle for sheets and output records.  The implication of this is
+that, since bounding rectangles are volatile, programmers should depend on the
+object returned by <tt>bounding-rectangle</tt> remaining constant.
+<p>
+<tt>bounding-rectangle</tt> is part of the bounding rectangle API, but not part of
+the bounding rectangle protocol.  CLIM will supply a default method for
+<tt>bounding-rectangle</tt> on the protocol class <tt>bounding-rectangle</tt> that is
+implemented by calling <tt>bounding-rectangle*</tt> .
+<p>
+
+<a name="4.1.2"><h3>4.1.2 Bounding Rectangle Convenience Functions</h3></a>
+The functions described below are part of the bounding rectangle API, but are
+not part of the bounding rectangle protocol.  They are provided as a convenience
+to programmers who wish to specialize classes that participate in the bounding
+rectangle protocol, but do not complicate the task of those programmers who
+define their own types (such as sheet classes) that participate in this
+protocol.
+<p>
+CLIM will supply default methods for all of these generic functions on the
+protocol class <tt>bounding-rectangle</tt> that are implemented by calling
+<tt>bounding-rectangle*</tt> .
+<p>
+
+<a name="Macro with-bounding-rectangle*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>with-bounding-rectangle*</b></td><td valign="baseline" width="100%"><i>(min-x min-y max-x max-y) region <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Binds <i>min-x</i> , <i>min-y</i> , <i>max-x</i> , and <i>max-y</i> to the edges of the
+bounding rectangle of <i>region</i> , and then executes <i>body</i> in that
+context.  The argument <i>region</i> must be either a bounded region (such as a
+line or an ellipse) or some other object that obeys the bounding rectangle
+protocol, such as a sheet or an output record.
+<p>
+The arguments <i>min-x</i> , <i>min-y</i> , <i>max-x</i> , and <i>max-y</i> are not
+evaluated.  <i>body</i> may have zero or more declarations as its first forms.
+<p>
+<tt>with-bounding-rectangle*</tt> must be implemented by calling <tt>bounding-rectangle*</tt> .
+<p>
+
+<a name="Generic function bounding-rectangle-position"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>bounding-rectangle-position</b></td><td valign="baseline" width="100%"><i>region</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the position of the bounding rectangle of <i>region</i> .  The position of
+a bounding rectangle is specified by its min point.
+<p>
+
+<a name="Generic function bounding-rectangle-min-x"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>bounding-rectangle-min-x</b></td><td valign="baseline" width="100%"><i>region</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function bounding-rectangle-min-y"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>bounding-rectangle-min-y</b></td><td valign="baseline" width="100%"><i>region</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function bounding-rectangle-max-x"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>bounding-rectangle-max-x</b></td><td valign="baseline" width="100%"><i>region</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function bounding-rectangle-max-y"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>bounding-rectangle-max-y</b></td><td valign="baseline" width="100%"><i>region</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns (respectively) the <tt>x</tt> and <tt>y</tt> coordinates of the min point and the <tt>x</tt>
+and <tt>y</tt> coordinate of the max point of the bounding rectangle of <i>region</i> .
+The argument <i>region</i> must be either a bounded region or some other object
+that obeys the bounding rectangle protocol.
+<p>
+
+<a name="Generic function bounding-rectangle-width"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>bounding-rectangle-width</b></td><td valign="baseline" width="100%"><i>region</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function bounding-rectangle-height"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>bounding-rectangle-height</b></td><td valign="baseline" width="100%"><i>region</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function bounding-rectangle-size"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>bounding-rectangle-size</b></td><td valign="baseline" width="100%"><i>region</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the width, height, or size (as two values, the width and height) of the
+bounding rectangle of <i>region</i> , respectively.  The argument <i>region</i> must be either a bounded region or some other object that obeys the bounding
+rectangle protocol.
+<p>
+The width of a bounding rectangle is the difference between its maximum <tt>x</tt>
+coordinate and its minimum <tt>x</tt> coordinate.  The height is the difference between
+the maximum <tt>y</tt> coordinate and its minimum <tt>y</tt> coordinate.
+<br><hr><br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="regions.html">Regions</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="transforms.html">Affine Transformations</a></td>
+</tr></table>
+</body></html>

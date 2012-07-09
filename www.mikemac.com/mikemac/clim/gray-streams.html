@@ -1,0 +1,223 @@
+<html><head><title>CLIM: 34 Common Lisp Streams</title></head><body>
+<br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="encapsulating-streams.html">Encapsulating Streams</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="extensions.html">Suggested Extensions to CLIM</a></td>
+</tr></table><br><hr><br>
+<p>
+<br><a name="34"><h1>34 Common Lisp Streams</h1></a>
+<a name="LABEL=gray-streams"></a> CLIM performs all of its character-based input and output operations on objects
+called <a name="CONCEPT=streams"><b><i>streams</i></b></a> .  Streams are divided into two layers, the
+<a name="CONCEPT=basic stream protocol"><b><i>basic stream protocol</i></b></a> , which is character-based and compatible with
+existing Common Lisp programs, and the <a name="CONCEPT=extended stream protocol"><b><i>extended stream protocol</i></b></a> , which
+introduces extended gestures such as pointer gestures and synchronous
+window-manager communication.
+<p>
+This appendix describes the basic stream-based input and output protocol used by
+CLIM.  The protocol is taken from the <tt>STREAM-DEFINITION-BY-USER</tt> proposal to
+the X3J13 committee, made by David Gray of TI.  This proposal was not accepted
+by the X3J13 committee as part of the ANSI Common Lisp language definition, but
+many Lisp implementations do support it.   For those implementations that do not
+support it, it is implemented as part of CLIM.
+<p>
+
+<a name="34.1"><h2>34.1 Stream Classes</h2></a>
+The following classes must be used as superclasses of user-defined stream
+classes.  They are not intended to be directly instantiated; they just provide
+places to hang default methods.
+<p>
+
+<a name="Class fundamental-stream"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>fundamental-stream</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>This class is the base class for all CLIM streams.  It is a subclass of
+<tt>stream</tt> and of <tt>standard-object</tt> .
+<p>
+<a name="Generic function streamp"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>streamp</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns <a href="gray-streams.html#CONCEPT=true"><i>true</i></a> if <i>object</i> is a member of the class
+<tt>fundamental-stream</tt> .  It may return <a href="gray-streams.html#CONCEPT=true"><i>true</i></a> for other objects that are
+not members of the <tt>fundamental-stream</tt> class, but claim to serve as streams.
+(It is not sufficient to implement <tt>streamp</tt> as <tt>(typep object
+'fundamental-stream)</tt> , because implementations may have additional ways of
+defining streams.)
+<p>
+
+<a name="Class fundamental-input-stream"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>fundamental-input-stream</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>A subclass of <tt>fundamental-stream</tt> that implements input streams.
+<p>
+<a name="Generic function input-stream-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>input-stream-p</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns <a href="gray-streams.html#CONCEPT=true"><i>true</i></a> when called on any object that is a member of the class
+<tt>fundamental-input-stream</tt> .  It may return <a href="gray-streams.html#CONCEPT=true"><i>true</i></a> for other objects that
+are not members of the <tt>fundamental-input-stream</tt> class, but claim to serve
+as input streams.
+<p>
+
+<a name="Class fundamental-output-stream"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>fundamental-output-stream</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>A subclass of <tt>fundamental-stream</tt> that implements output streams.
+<p>
+<a name="Generic function output-stream-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>output-stream-p</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns <a href="gray-streams.html#CONCEPT=true"><i>true</i></a> when called on any object that is a member of the class
+<tt>fundamental-output-stream</tt> .  It may return <a href="gray-streams.html#CONCEPT=true"><i>true</i></a> for other objects
+that are not members of the <tt>fundamental-output-stream</tt> class, but claim to
+serve as output streams.
+<p>
+Bidirectional streams can be formed by including both
+<tt>fundamental-input-stream</tt> and <tt>fundamental-output-stream</tt> .
+<p>
+
+<a name="Class fundamental-character-stream"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>fundamental-character-stream</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>A subclass of <tt>fundamental-stream</tt> .  It provides a method for
+<tt>stream-element-type</tt> , which returns <tt>character</tt> .
+<p>
+<a name="Class fundamental-binary-stream"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>fundamental-binary-stream</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>A subclass of <tt>fundamental-stream</tt> .  Any instantiable class that includes
+this needs to define a method for <tt>stream-element-type</tt> .
+<p>
+
+<a name="Class fundamental-character-input-stream"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>fundamental-character-input-stream</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>A subclass of both <tt>fundamental-input-stream</tt> and
+<tt>fundamental-character-stream</tt> .  It provides default methods for several
+generic functions used for character input.
+<p>
+<a name="Class fundamental-character-output-stream"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>fundamental-character-output-stream</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>A subclass of both <tt>fundamental-output-stream</tt> and
+<tt>fundamental-character-stream</tt> .  It provides default methods for several
+generic functions used for character output.
+<p>
+
+<a name="Class fundamental-binary-input-stream"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>fundamental-binary-input-stream</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>A subclass of both <tt>fundamental-input-stream</tt> and
+<tt>fundamental-binary-stream</tt> .
+<p>
+
+<a name="Class fundamental-binary-output-stream"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>fundamental-binary-output-stream</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>A subclass of both <tt>fundamental-output-stream</tt> and
+<tt>fundamental-binary-stream</tt> .
+<p>
+
+<a name="34.2"><h2>34.2 Basic Stream Functions</h2></a>
+These generic functions must be defined for all stream classes.
+<p>
+<a name="Generic function stream-element-type"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-element-type</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>This existing Common Lisp function is made generic, but otherwise behaves the
+same.  Class <tt>fundamental-character-stream</tt> provides a default method that
+returns <tt>character</tt> .
+<p>
+<a name="Generic function open-stream-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>open-stream-p</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>This function is made generic.  A default method is provided by class
+<tt>fundamental-stream</tt> that returns <a href="gray-streams.html#CONCEPT=true"><i>true</i></a> if <tt>close</tt> has not been
+called on the stream.
+<p>
+<a name="Generic function close"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>close</b></td><td valign="baseline" width="100%"><i>stream <tt>&amp;key</tt> abort</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>The existing Common Lisp function <tt>close</tt> is redefined to be a generic
+function, but otherwise behaves the same.  The default method provided by the
+class <tt>fundamental-stream</tt> sets a flag used by <tt>open-stream-p</tt> .  The value
+returned by <tt>close</tt> will be as specified by the X3J13 issue
+<tt>closed-stream-operations</tt> .
+<p>
+<a name="Generic function stream-pathname"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-pathname</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function stream-truename"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-truename</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>These are used to implement <tt>pathname</tt> and <tt>truename</tt> .  There is no
+default method since these are not valid for all streams.
+<p>
+
+<a name="34.3"><h2>34.3 Character Input</h2></a>
+A character input stream can be created by defining a class that includes
+<tt>fundamental-character-input-stream</tt> and defining methods for the generic
+functions below.
+<p>
+<a name="Generic function stream-read-char"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-read-char</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Reads one character from <i>stream</i> , and returns either a character object or
+the symbol <tt>:eof</tt> if the stream is at end-of-file.  There is no default
+method for this generic function, so every subclass of
+<tt>fundamental-character-input-stream</tt> must define a method.
+<p>
+<a name="Generic function stream-unread-char"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-unread-char</b></td><td valign="baseline" width="100%"><i>stream character</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Undoes the last call to <tt>stream-read-char</tt> , as in <tt>unread-char</tt> , and
+returns <tt>nil</tt> .  There is no default method for this, so every subclass of
+<tt>fundamental-character-input-stream</tt> must define a method.
+<p>
+<a name="Generic function stream-read-char-no-hang"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-read-char-no-hang</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns either a character, or <tt>nil</tt> if no input is currently available, or
+<tt>:eof</tt> if end-of-file is reached.  This is used to implement
+<tt>read-char-no-hang</tt> .  The default method provided by
+<tt>fundamental-character-input-stream</tt> simply calls <tt>stream-read-char</tt> ; this
+is sufficient for file streams, but interactive streams should define their own
+method.
+<p>
+<a name="Generic function stream-peek-char"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-peek-char</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns either a character or <tt>:eof</tt> without removing the character from the
+stream's input buffer.  This is used to implement <tt>peek-char</tt> ; this
+corresponds to peek-type of <tt>nil</tt> .  The default method calls
+<tt>stream-read-char</tt> and <tt>stream-unread-char.</tt> <a name="Generic function stream-listen"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-listen</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns <a href="gray-streams.html#CONCEPT=true"><i>true</i></a> if there is any input pending on <i>stream</i> , otherwise it
+returns <a href="gray-streams.html#CONCEPT=false"><i>false</i></a> .  This is used by <tt>listen</tt> .  The default method uses
+<tt>stream-read-char-no-hang</tt> and <tt>stream-unread-char</tt> .  Most streams should
+define their own method since it will usually be trivial and will generally be
+more efficient than the default method.
+<p>
+<a name="Generic function stream-read-line"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-read-line</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns a string as the first value, and <tt>t</tt> as the second value if the
+string was terminated by end-of-file instead of the end of a line.  This is used
+by <tt>read-line</tt> .  The default method uses repeated calls to
+<tt>stream-read-char</tt> .
+<p>
+<a name="Generic function stream-clear-input"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-clear-input</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Clears any buffered input associated with <i>stream</i> , and returns
+<a href="gray-streams.html#CONCEPT=false"><i>false</i></a> .  This is used to implement <tt>clear-input</tt> .  The default method
+does nothing.
+<p>
+
+<a name="34.4"><h2>34.4 Character Output</h2></a>
+A character output stream can be created by defining a class that includes
+<tt>fundamental-character-output-stream</tt> and defining methods for the generic
+functions below.
+<p>
+<a name="Generic function stream-write-char"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-write-char</b></td><td valign="baseline" width="100%"><i>stream character</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Writes <i>character</i> to <i>stream</i> , and returns <i>character</i> as its
+value.  Every subclass of <tt>fundamental-character-output-stream</tt> must have a
+method defined for this function.
+<p>
+<a name="Generic function stream-line-column"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-line-column</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>This function returns the column number where the next character will be written
+on <i>stream</i> , or <tt>nil</tt> if that is not meaningful.  The first column on a
+line is numbered 0.  This function is used in the implementation of <tt>pprint</tt> and the <tt>format</tt> <tt><huge>~T</huge></tt> directive.  Every character output stream class
+must define a method for this, although it is permissible for it to always
+return <tt>nil</tt> .
+<p>
+<a name="Generic function stream-start-line-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-start-line-p</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns <a href="gray-streams.html#CONCEPT=true"><i>true</i></a> if <i>stream</i> is positioned at the beginning of a line,
+otherwise returns <a href="gray-streams.html#CONCEPT=false"><i>false</i></a> .  It is permissible to always return
+<a href="gray-streams.html#CONCEPT=false"><i>false</i></a> .  This is used in the implementation of <tt>fresh-line</tt> .
+<p>
+Note that while a value of 0 from <tt>stream-line-column</tt> also indicates the
+beginning of a line, there are cases where <tt>stream-start-line-p</tt> can be
+meaningfully implemented when <tt>stream-line-column</tt> cannot.  For example, for
+a window using variable-width characters, the column number isn't very
+meaningful, but the beginning of the line does have a clear meaning.  The
+default method for <tt>stream-start-line-p</tt> on class
+<tt>fundamental-character-output-stream</tt> uses <tt>stream-line-column</tt> , so if
+that is defined to return <tt>nil</tt> , then a method should be provided for either
+<tt>stream-start-line-p</tt> or <tt>stream-fresh-line</tt> .
+<p>
+<a name="Generic function stream-write-string"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-write-string</b></td><td valign="baseline" width="100%"><i>stream string <tt>&amp;optional</tt> (start <tt>0</tt> ) end</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Writes the string <i>string</i> to <i>stream</i> .  If <i>start</i> and <i>end</i> are supplied, they specify what part of <i>string</i> to output.  <i>string</i> is
+returned as the value.  This is used by <tt>write-string</tt> .  The default method
+provided by <tt>fundamental-character-output-stream</tt> uses repeated calls to
+<tt>stream-write-char</tt> .
+<p>
+<a name="Generic function stream-terpri"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-terpri</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Writes an end of line character on <i>stream</i> , and returns <a href="gray-streams.html#CONCEPT=false"><i>false</i></a> .  This
+is used by <tt>terpri</tt> .  The default method does <tt>stream-write-char</tt> of
+<tt><huge>#\Newline</huge></tt>.
+<p>
+<a name="Generic function stream-fresh-line"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-fresh-line</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Writes an end of line character on <i>stream</i> only if the stream is not at the
+beginning of the line.  This is used by <tt>fresh-line</tt> .  The default method
+uses <tt>stream-start-line-p</tt> and <tt>stream-terpri</tt> .
+<p>
+<a name="Generic function stream-finish-output"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-finish-output</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Ensures that all the output sent to <i>stream</i> has reached its destination,
+and only then return <a href="gray-streams.html#CONCEPT=false"><i>false</i></a> .  This is used by <tt>finish-output</tt> .  The
+default method does nothing.
+<p>
+<a name="Generic function stream-force-output"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-force-output</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Like <tt>stream-finish-output</tt> , except that it may return <a href="gray-streams.html#CONCEPT=false"><i>false</i></a> without
+waiting for the output to complete.  This is used by <tt>force-output</tt> .  The
+default method does nothing.
+<p>
+<a name="Generic function stream-clear-output"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-clear-output</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Aborts any outstanding output operation in progress, and returns <a href="gray-streams.html#CONCEPT=false"><i>false</i></a> .
+This is used by <tt>clear-output</tt> .  The default method does nothing.
+<p>
+<a name="Generic function stream-advance-to-column"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-advance-to-column</b></td><td valign="baseline" width="100%"><i>stream column</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Writes enough blank space on <i>stream</i> so that the next character will be
+written at the position specified by <i>column</i> .  Returns <a href="gray-streams.html#CONCEPT=true"><i>true</i></a> if the
+operation is successful, or <tt>nil</tt> if it is not supported for this stream.
+This is intended for use by <tt>pprint</tt> and <tt>format</tt> <tt><huge>~T</huge></tt>.  The default
+method uses <tt>stream-line-column</tt> and repeated calls to <tt>stream-write-char</tt> with a <tt><huge>#\Space</huge></tt> character; it returns <tt>nil</tt> if <tt>stream-line-column</tt> returns <tt>nil</tt> .
+<p>
+
+<a name="34.5"><h2>34.5 Binary Streams</h2></a>
+Binary streams can be created by defining a class that includes either
+<tt>fundamental-binary-input-stream</tt> or <tt>fundamental-binary-output-stream</tt> (or both) and defining a method for <tt>stream-element-type</tt> and for one or both
+of the following generic functions.
+<p>
+<a name="Generic function stream-read-byte"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-read-byte</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns either an integer, or the symbol <tt>:eof</tt> if <i>stream</i> is at
+end-of-file.  This is used by <tt>read-byte</tt> .
+<p>
+<a name="Generic function stream-write-byte"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-write-byte</b></td><td valign="baseline" width="100%"><i>stream integer</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Writes <i>integer</i> to <i>stream</i> , and returns <i>integer</i> as the
+result.  This is used by <tt>write-byte</tt> .
+<p>
+<br><hr><br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="encapsulating-streams.html">Encapsulating Streams</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="extensions.html">Suggested Extensions to CLIM</a></td>
+</tr></table>
+</body></html>

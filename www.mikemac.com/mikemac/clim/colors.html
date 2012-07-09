@@ -1,0 +1,429 @@
+<html><head><title>CLIM: 13 Drawing in Color</title></head><body>
+<br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="graphics.html">Graphics</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="designs.html">General Designs</a></td>
+</tr></table><br><hr><br>
+<p>
+<br><a name="13"><h1>13 Drawing in Color</h1></a>
+<a name="LABEL=color"></a> This chapter describes the <tt>:ink</tt> drawing option and the simpler values that
+can be supplied for that option, such as colors.  More complex values that have
+a regular or irregular pattern in the ink are described in Chapter <a href="designs.html#LABEL=designs"><b><i>General Designs</i></b></i></a> .
+<p>
+<hr><b>Issue:</b> SWM<br><i>We need to add a thing called a ``palette'', which is simply an
+abstract color map.  Palettes are primarily used as a resource for the limited
+number of colors on most hosts.  Do we need to be able to used them to more
+directly control color maps, to do ``color map animation'', for example?</i><hr>
+<hr><b>Issue:</b> SWM<br><i>We need to add a thing called a ``raster ink'', which includes
+things like plane masks, pixel values, etc.  Be clear that this is platform and
+device dependent.</i><hr>
+<a name="13.1"><h2>13.1 The <tt>:ink</tt> Drawing Option</h2></a>
+The <tt>:ink</tt> drawing option, used with the drawing functions described in
+Chapter <a href="graphics.html#LABEL=graphics"><b><i>Graphics</i></b></i></a> , can take as its value:
+<ul> <li> a color,
+<p>
+<li> an opacity or the constant <tt>+transparent-ink+</tt> ,
+<p>
+<li> the constant <tt>+foreground-ink+</tt> ,
+<p>
+<li> the constant <tt>+background-ink+</tt> ,
+<p>
+<li> a flipping ink, or
+<p>
+<li> other values described in Chapter <a href="designs.html#LABEL=designs"><b><i>General Designs</i></b></i></a> </ul> More exactly, an ink can be any member of the class <tt>design</tt> .  For now you
+may think of a design as a possibly translucent color.  More general designs are
+described in Chapter <a href="designs.html#LABEL=designs"><b><i>General Designs</i></b></i></a> .
+<p>
+The drawing functions work by selecting a region of the drawing plane and
+painting it with color.  The region to be painted is the intersection of the
+shape specified by the drawing function and the <tt>:clipping-region</tt> drawing
+option, which is then transformed by the <tt>:transformation</tt> drawing option.
+The <tt>:ink</tt> drawing option is a design that specifies a new arrangement of
+colors (and opacities) in this region of the medium's drawing plane.  Any
+viewports or dataports attached to this drawing plane are updated accordingly.
+The <tt>:ink</tt> drawing option is never affected by the <tt>:transformation</tt> drawing option nor by the medium's transformation; this ensures that stipple
+patterns on adjacent sheets join seamlessly.
+<p>
+<hr><b>Issue:</b> DCPL<br><i>The description of how the clipping region and transformations
+contribute isn't good enough.  It is true if there are no other transformations
+and clipping regions present, and both are specified in the current drawing
+operation.  But it doesn't say what happens if things are nested.  I'm not sure
+it needs to.  Rather, I think it should just say that the the region is clipped
+by the current clipping region in effect, then transformed by the current
+transform in effect, and that the rules for these are discussed in the drawing
+options section.</i><hr>
+Drawing consists conceptually of the following sequence of operations, performed
+in parallel at every point in the drawing plane.  Of course, the actual
+implementation does not involve an infinite (or large parallel) computation.
+<p>
+<ol> The design specifies a color and an opacity at the point.  These can
+depend on the drawing plane's current color and opacity, on the medium's
+foreground color, and on the medium's background color.
+<p>
+The color blending function is applied to the design's color and opacity
+and the drawing plane's color and opacity, returning a new color and opacity for
+the point.
+<p>
+The drawing plane's color and opacity at that point are set to the new
+color and opacity.
+</ol> <a name="13.2"><h2>13.2 Basic Designs</h2></a>
+<a name="Protocol&nbsp;Class design"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>design</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Protocol&nbsp;Class]</b></td></tr></table>A design is an object that represents a way of arranging colors and opacities in
+the drawing plane.  The <tt>design</tt> class is the protocol class for designs.
+If you want to create a new class that behaves like a design, it should be a subclass of <b>design</b>. Subclasses of <b>design</b> must obey the design protocol.The fundamental operation of the CLIM graphic drawing model
+is to draw a design onto a drawing plane, thus drawing is always controlled by
+designs.  The designs discussed in this chapter do the same thing at each point
+in the drawing plane.  Chapter <a href="designs.html#LABEL=designs"><b><i>General Designs</i></b></i></a> discusses more general designs and
+reveals that regions are also designs.
+<p>
+A design can be characterized in several different ways:
+<p>
+All designs are either <a name="CONCEPT=bounded"><b><i>bounded</i></b></a> or <a name="CONCEPT=unbounded"><b><i>unbounded</i></b></a> .  Bounded
+designs are transparent everywhere beyond a certain distance from a certain
+point.  Drawing a bounded design has no effect on the drawing plane outside that
+distance.  Unbounded designs have points of non-zero opacity arbitrarily far
+from the origin.  Drawing an unbounded design affects the entire drawing plane.
+<p>
+All designs are either <a name="CONCEPT=uniform"><b><i>uniform</i></b></a> or <a name="CONCEPT=non-uniform"><b><i>non-uniform</i></b></a> .  Uniform
+designs have the same color and opacity at every point in the drawing plane.
+Uniform designs are always unbounded, unless they are completely transparent.
+<p>
+All designs are either <a name="CONCEPT=solid"><b><i>solid</i></b></a> or <a name="CONCEPT=translucent"><b><i>translucent</i></b></a> .  At each point
+a solid design is either completely opaque or completely transparent.  A solid
+design can be opaque at some points and transparent at others.  In translucent
+designs, at least one point has an opacity that is intermediate between
+completely opaque and transparent.
+<p>
+All designs are either <a name="CONCEPT=colorless"><b><i>colorless</i></b></a> or <a name="CONCEPT=colored"><b><i>colored</i></b></a> .  Drawing a
+colorless design uses a default color specified by the medium's foreground
+design.  This is done by drawing with <tt>(compose-in</tt> <tt>+foreground-ink+</tt> the-colorless-design<tt>)</tt> .  See Chapter <a href="designs.html#LABEL=designs"><b><i>General Designs</i></b></i></a> for the details of
+<tt>compose-in</tt> .
+<p>
+<a name="Predicate designp"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>designp</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Predicate]</b></td></tr></table>Returns <a href="colors.html#CONCEPT=true"><i>true</i></a> if <i>object</i> is a <a href="regions.html#CONCEPT=design"><i>design</i></a> , otherwise returns
+<a href="colors.html#CONCEPT=false"><i>false</i></a> .
+<p>
+
+<a name="13.3"><h2>13.3 Color</h2></a>
+<a name="Protocol&nbsp;Class color"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>color</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Protocol&nbsp;Class]</b></td></tr></table>A member of the class <tt>color</tt> is a completely opaque design that represents
+the intuitive definition of color: white, black, red, pale yellow, and so forth.
+The visual appearance of a single point is completely described by its color.
+Drawing a color sets the color of every point in the drawing plane to that
+color, and sets the opacity to 1.  The <tt>color</tt> class is the protocol class
+for a color, and is a subclass of <tt>design</tt> .
+If you want to create a new class that behaves like a color, it should be a subclass of <b>color</b>. Subclasses of <b>color</b> must obey the color protocol.All of the standard instantiable color classes provided by CLIM are immutable.
+<p>
+A color can be specified by three real numbers between 0 and 1 (inclusive),
+giving the amounts of red, green, and blue.  Three 0's mean black; three 1's
+mean white.  The intensity-hue-saturation color model is also supported, but the
+red-green-blue color model is the primary model we will use in the
+specification.
+<p>
+<a name="Predicate colorp"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>colorp</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Predicate]</b></td></tr></table>Returns <a href="colors.html#CONCEPT=true"><i>true</i></a> if <i>object</i> is a <a href="colors.html#CONCEPT=color"><i>color</i></a> , otherwise returns
+<a href="colors.html#CONCEPT=false"><i>false</i></a> .
+<p>
+
+The following functions create colors.  These functions produce objects that
+have equivalent effects; the only difference is in how the color components are
+specified.  The resulting objects are indistinguishable when drawn.  Whether
+these functions use the specified values exactly or approximate them because of
+limited color resolution is unspecified.  Whether these functions create a new
+object or return an existing object with equivalent color component values is
+unspecified.
+<p>
+
+<a name="Function make-rgb-color"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>make-rgb-color</b></td><td valign="baseline" width="100%"><i>red green blue</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Returns a member of class <tt>color</tt> .  The <i>red</i> , <i>green</i> , and
+<i>blue</i> arguments are real numbers between 0 and 1 (inclusive) that specify
+the values of the corresponding color components.
+<p>
+
+<a name="Function make-ihs-color"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>make-ihs-color</b></td><td valign="baseline" width="100%"><i>intensity hue saturation</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Returns a member of class <tt>color</tt> .  The <i>intensity</i> argument is a real
+number between 0 and <tt><tt>sqrt(3)</tt> </tt> (inclusive).  The <i>hue</i> and <i>saturation</i> arguments are real numbers between 0 and 1 (inclusive).
+<p>
+
+<a name="Function make-gray-color"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>make-gray-color</b></td><td valign="baseline" width="100%"><i>luminance</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Returns a member of class <tt>color</tt> .  <i>luminance</i> is a real number between
+0 and 1 (inclusive).  On a black-on-white display device, 0 means black, 1 means
+white, and the values in between are shades of gray.  On a white-on-black
+display device, 0 means white, 1 means black, and the values in between are
+shades of gray.
+<p>
+
+The following two functions comprise the color protocol.  Both of them return
+the components of a color.  All subclasses of <tt>color</tt> must implement methods
+for these generic functions.
+<p>
+<a name="Generic function color-rgb"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>color-rgb</b></td><td valign="baseline" width="100%"><i>color</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns three values, the <i>red</i> , <i>green</i> , and <i>blue</i> components of
+the <a href="colors.html#CONCEPT=color"><i>color</i></a> <i>color</i> . The values are real numbers between 0 and 1
+(inclusive).
+<p>
+<a name="Generic function color-ihs"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>color-ihs</b></td><td valign="baseline" width="100%"><i>color</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns three values, the <i>intensity</i> , <i>hue</i> , and <i>saturation</i> components of the <a href="colors.html#CONCEPT=color"><i>color</i></a> <i>color</i> .  The first value is a real number
+between 0 andn <tt><tt>sqrt(3)</tt> </tt> (inclusive).  The second and third values are real
+numbers between 0 and 1 (inclusive).
+<p>
+
+<a name="13.3.1"><h3>13.3.1 Standard Color Names and Constants</h3></a>
+Table <a href="colors.html#LABEL=color-names"><b><i>13.1</i></b></i></a> lists the commonly provided color names that can be
+looked up with <tt>find-named-color</tt> .  Application programs can define other
+colors; these are provided because they are commonly used in the X Windows
+community, not because there is anything special about these particular colors.
+This table is a subset of the color listed in the file
+<tt>/X11/R4/mit/rgb/rgb.txt</tt> , from the X11 R4 distribution.
+<p>
+<center><hr><br><br> <tt>
+<center><table>
+<tr valign="baseline"><td align=left colspan=1>alice-blue </td><td> </td><td align=left colspan=1> antique-white </td><td> </td><td align=left colspan=1> aquamarine</td><td> </td></tr>
+<tr valign="baseline"><td align=left colspan=1>azure </td><td> </td><td align=left colspan=1> beige </td><td> </td><td align=left colspan=1> bisque</td><td> </td></tr>
+<tr valign="baseline"><td align=left colspan=1>black </td><td> </td><td align=left colspan=1> blanched-almond </td><td> </td><td align=left colspan=1> blue</td><td> </td></tr>
+<tr valign="baseline"><td align=left colspan=1>blue-violet </td><td> </td><td align=left colspan=1> brown </td><td> </td><td align=left colspan=1> burlywood</td><td> </td></tr>
+<tr valign="baseline"><td align=left colspan=1>cadet-blue </td><td> </td><td align=left colspan=1> chartreuse </td><td> </td><td align=left colspan=1> chocolate</td><td> </td></tr>
+<tr valign="baseline"><td align=left colspan=1>coral </td><td> </td><td align=left colspan=1> cornflower-blue </td><td> </td><td align=left colspan=1> cornsilk</td><td> </td></tr>
+<tr valign="baseline"><td align=left colspan=1>cyan </td><td> </td><td align=left colspan=1> dark-goldenrod </td><td> </td><td align=left colspan=1> dark-green</td><td> </td></tr>
+<tr valign="baseline"><td align=left colspan=1>dark-khaki </td><td> </td><td align=left colspan=1> dark-olive-green </td><td> </td><td align=left colspan=1> dark-orange</td><td> </td></tr>
+<tr valign="baseline"><td align=left colspan=1>dark-orchid </td><td> </td><td align=left colspan=1> dark-salmon </td><td> </td><td align=left colspan=1> dark-sea-green</td><td> </td></tr>
+<tr valign="baseline"><td align=left colspan=1>dark-slate-blue </td><td> </td><td align=left colspan=1> dark-slate-gray </td><td> </td><td align=left colspan=1> dark-turquoise</td><td> </td></tr>
+<tr valign="baseline"><td align=left colspan=1>dark-violet </td><td> </td><td align=left colspan=1> deep-pink </td><td> </td><td align=left colspan=1> deep-sky-blue</td><td> </td></tr>
+<tr valign="baseline"><td align=left colspan=1>dim-gray </td><td> </td><td align=left colspan=1> dodger-blue </td><td> </td><td align=left colspan=1> firebrick</td><td> </td></tr>
+<tr valign="baseline"><td align=left colspan=1>floral-white </td><td> </td><td align=left colspan=1> forest-green </td><td> </td><td align=left colspan=1> gainsboro</td><td> </td></tr>
+<tr valign="baseline"><td align=left colspan=1>ghost-white </td><td> </td><td align=left colspan=1> gold </td><td> </td><td align=left colspan=1> goldenrod</td><td> </td></tr>
+<tr valign="baseline"><td align=left colspan=1>gray </td><td> </td><td align=left colspan=1> green </td><td> </td><td align=left colspan=1> green-yellow</td><td> </td></tr>
+<tr valign="baseline"><td align=left colspan=1>honeydew </td><td> </td><td align=left colspan=1> hot-pink </td><td> </td><td align=left colspan=1> indian-red</td><td> </td></tr>
+<tr valign="baseline"><td align=left colspan=1>ivory </td><td> </td><td align=left colspan=1> khaki </td><td> </td><td align=left colspan=1> lavender</td><td> </td></tr>
+<tr valign="baseline"><td align=left colspan=1>lavender-blush </td><td> </td><td align=left colspan=1> lawn-green </td><td> </td><td align=left colspan=1> lemon-chiffon</td><td> </td></tr>
+<tr valign="baseline"><td align=left colspan=1>light-blue </td><td> </td><td align=left colspan=1> light-coral </td><td> </td><td align=left colspan=1> light-cyan</td><td> </td></tr>
+<tr valign="baseline"><td align=left colspan=1>light-goldenrod </td><td> </td><td align=left colspan=1> light-goldenrod-yellow </td><td> </td><td align=left colspan=1> light-gray</td><td> </td></tr>
+<tr valign="baseline"><td align=left colspan=1>light-pink </td><td> </td><td align=left colspan=1> light-salmon </td><td> </td><td align=left colspan=1> light-sea-green</td><td> </td></tr>
+<tr valign="baseline"><td align=left colspan=1>light-sky-blue </td><td> </td><td align=left colspan=1> light-slate-blue </td><td> </td><td align=left colspan=1> light-slate-gray</td><td> </td></tr>
+<tr valign="baseline"><td align=left colspan=1>light-steel-blue </td><td> </td><td align=left colspan=1> light-yellow </td><td> </td><td align=left colspan=1> lime-green</td><td> </td></tr>
+<tr valign="baseline"><td align=left colspan=1>linen </td><td> </td><td align=left colspan=1> magenta </td><td> </td><td align=left colspan=1> maroon</td><td> </td></tr>
+<tr valign="baseline"><td align=left colspan=1>medium-aquamarine </td><td> </td><td align=left colspan=1> medium-blue </td><td> </td><td align=left colspan=1> medium-orchid</td><td> </td></tr>
+<tr valign="baseline"><td align=left colspan=1>medium-purple </td><td> </td><td align=left colspan=1> medium-sea-green </td><td> </td><td align=left colspan=1> medium-slate-blue</td><td> </td></tr>
+<tr valign="baseline"><td align=left colspan=1>medium-spring-green </td><td> </td><td align=left colspan=1> medium-turquoise </td><td> </td><td align=left colspan=1> medium-violet-red</td><td> </td></tr>
+<tr valign="baseline"><td align=left colspan=1>midnight-blue </td><td> </td><td align=left colspan=1> mint-cream </td><td> </td><td align=left colspan=1> misty-rose</td><td> </td></tr>
+<tr valign="baseline"><td align=left colspan=1>moccasin </td><td> </td><td align=left colspan=1> navajo-white </td><td> </td><td align=left colspan=1> navy-blue</td><td> </td></tr>
+<tr valign="baseline"><td align=left colspan=1>old-lace </td><td> </td><td align=left colspan=1> olive-drab </td><td> </td><td align=left colspan=1> orange</td><td> </td></tr>
+<tr valign="baseline"><td align=left colspan=1>orange-red </td><td> </td><td align=left colspan=1> orchid </td><td> </td><td align=left colspan=1> pale-goldenrod</td><td> </td></tr>
+<tr valign="baseline"><td align=left colspan=1>pale-green </td><td> </td><td align=left colspan=1> pale-turquoise </td><td> </td><td align=left colspan=1> pale-violet-red</td><td> </td></tr>
+<tr valign="baseline"><td align=left colspan=1>papaya-whip </td><td> </td><td align=left colspan=1> peach-puff </td><td> </td><td align=left colspan=1> peru</td><td> </td></tr>
+<tr valign="baseline"><td align=left colspan=1>pink </td><td> </td><td align=left colspan=1> plum </td><td> </td><td align=left colspan=1> powder-blue</td><td> </td></tr>
+<tr valign="baseline"><td align=left colspan=1>purple </td><td> </td><td align=left colspan=1> red </td><td> </td><td align=left colspan=1> rosy-brown</td><td> </td></tr>
+<tr valign="baseline"><td align=left colspan=1>royal-blue </td><td> </td><td align=left colspan=1> saddle-brown </td><td> </td><td align=left colspan=1> salmon</td><td> </td></tr>
+<tr valign="baseline"><td align=left colspan=1>sandy-brown </td><td> </td><td align=left colspan=1> sea-green </td><td> </td><td align=left colspan=1> seashell</td><td> </td></tr>
+<tr valign="baseline"><td align=left colspan=1>sienna </td><td> </td><td align=left colspan=1> sky-blue </td><td> </td><td align=left colspan=1> slate-blue</td><td> </td></tr>
+<tr valign="baseline"><td align=left colspan=1>slate-gray </td><td> </td><td align=left colspan=1> snow </td><td> </td><td align=left colspan=1> spring-green</td><td> </td></tr>
+<tr valign="baseline"><td align=left colspan=1>steel-blue </td><td> </td><td align=left colspan=1> tan </td><td> </td><td align=left colspan=1> thistle</td><td> </td></tr>
+<tr valign="baseline"><td align=left colspan=1>tomato </td><td> </td><td align=left colspan=1> turquoise </td><td> </td><td align=left colspan=1> violet</td><td> </td></tr>
+<tr valign="baseline"><td align=left colspan=1>violet-red </td><td> </td><td align=left colspan=1> wheat </td><td> </td><td align=left colspan=1> white</td><td> </td></tr>
+<tr valign="baseline"><td align=left colspan=1>white-smoke </td><td> </td><td align=left colspan=1> yellow </td><td> </td><td align=left colspan=1> yellow-green</td><td> </td></tr>
+<tr valign="baseline"></tr>
+</table></center>
+</tt> <center><b>Table 13.1: </b><a name="LABEL=color-names"></a> Standard color names.</center>
+<br><br> <hr></center><br>In addition, the following color constants are provided.
+<p>
+<a name="Constant +red+"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>+red+</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Constant]</b></td></tr></table><a name="Constant +green+"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>+green+</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Constant]</b></td></tr></table><a name="Constant +blue+"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>+blue+</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Constant]</b></td></tr></table><a name="Constant +cyan+"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>+cyan+</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Constant]</b></td></tr></table><a name="Constant +magenta+"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>+magenta+</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Constant]</b></td></tr></table><a name="Constant +yellow+"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>+yellow+</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Constant]</b></td></tr></table><a name="Constant +black+"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>+black+</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Constant]</b></td></tr></table><a name="Constant +white+"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>+white+</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Constant]</b></td></tr></table>Constants corresponding to the usual definitions of red, green, blue, cyan,
+magenta, yellow, black, and white.
+<p>
+
+<a name="13.3.2"><h3>13.3.2 Contrasting Colors</h3></a>
+<a name="Function make-contrasting-inks"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>make-contrasting-inks</b></td><td valign="baseline" width="100%"><i>n <tt>&amp;optional</tt> k</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>If <i>k</i> is not supplied, this returns a vector of <i>n</i> designs with
+recognizably different appearance.  Elements of the vector are guaranteed to be
+acceptable values for the <tt>:ink</tt> argument to the drawing functions, and will
+not include <tt>+foreground-ink+</tt> , <tt>+background-ink+</tt> , or <tt>nil</tt> .  Their
+class is otherwise unspecified.  The vector is a fresh object that may be
+modified.
+<p>
+If <i>k</i> is supplied, it must be an integer between 0 and <tt><i>n</i> -1</tt>
+(inclusive), in which case <tt>make-contrasting-inks</tt> returns the <i>k</i> 'th
+design rather than returning a vector of designs.
+<p>
+If the implementation does not have <i>n</i> different contrasting inks,
+<tt>make-contrasting-inks</tt> signals an error.  This will not happen unless
+<i>n</i> is greater than eight.
+<p>
+The rendering of the design may be a color or a stippled pattern, depending on
+whether the output medium supports color.
+<p>
+<a name="Generic function contrasting-inks-limit"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>contrasting-inks-limit</b></td><td valign="baseline" width="100%"><i>port</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the number of contrasting colors (or stipple patterns if <i>port</i> is
+monochrome or grayscale) that can be rendered on any medium on the <a href="silica.html#CONCEPT=port"><i>port</i></a> <i>port</i> .  Implementations are encouraged to make this as large as possible,
+but it must be at least 8.  All classes that obey the medium protocol must
+implement a method for this generic function.
+<p>
+
+<a name="13.4"><h2>13.4 Opacity</h2></a>
+<a name="Protocol&nbsp;Class opacity"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>opacity</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Protocol&nbsp;Class]</b></td></tr></table>A member of the class <tt>opacity</tt> is a completely colorless design that is
+typically used as the second argument to <tt>compose-in</tt> to adjust the opacity
+of another design.  See Chapter <a href="designs.html#LABEL=designs"><b><i>General Designs</i></b></i></a> for the details of
+<tt>compose-in</tt> .  The <tt>opacity</tt> class is the protocol class for an opacity,
+and is a subclass of <tt>design</tt> .
+If you want to create a new class that behaves like an opacity, it should be a subclass of <b>opacity</b>. Subclasses of <b>opacity</b> must obey the opacity protocol.All of the standard instantiable opacity classes provided by CLIM are immutable.
+<p>
+Opacity controls how graphical output covers previous output.  Opacity can vary
+from totally opaque to totally transparent.  Intermediate opacity values result
+in color blending so that the earlier picture shows through what is drawn on top
+of it.
+<p>
+An opacity may be specified by a real number between 0 and 1 (inclusive).  0 is
+completely transparent, 1 is completely opaque, fractions are translucent.  The
+opacity of a design is the degree to which it hides the previous contents of the
+drawing plane when it is drawn.
+<p>
+The fully transparent and fully opaque opacity levels (that is, opacities 0 and
+1) must always be supported, but a valid CLIM implementation might only support
+a handful of opacity levels in between (including none).  A valid CLIM
+implementation might implement color blending and unsaturated colors by
+stippling, although it is preferred, when possible, for a viewport to display a
+uniform color as a uniform color rather than as a perceptible stipple.
+<p>
+<a name="Predicate opacityp"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>opacityp</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Predicate]</b></td></tr></table>Returns <a href="colors.html#CONCEPT=true"><i>true</i></a> if <i>object</i> is an <a href="colors.html#CONCEPT=opacity"><i>opacity</i></a> , otherwise returns
+<a href="colors.html#CONCEPT=false"><i>false</i></a> .
+<p>
+
+The following function returns an opacity:
+<p>
+<a name="Function make-opacity"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>make-opacity</b></td><td valign="baseline" width="100%"><i>value</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Returns a member of class <tt>opacity</tt> whose opacity is <i>value</i> , which is a
+real number in the range from 0 to 1 (inclusive), where 0 is fully transparent
+and 1 is fully opaque.
+<p>
+<a name="Constant +transparent-ink+"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>+transparent-ink+</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Constant]</b></td></tr></table>An fully transparent ink, that is, an opacity whose value is 0.  This is
+typically used as the ``background'' ink in a call to <tt>make-pattern</tt> .
+<p>
+
+The following function returns the sole component of an opacity.  This is the
+only function in the opacity protocol.  All subclasses of <tt>opacity</tt> must
+implement methods for this generic function.
+<p>
+<a name="Generic function opacity-value"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>opacity-value</b></td><td valign="baseline" width="100%"><i>opacity</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the opacity value of the <a href="colors.html#CONCEPT=opacity"><i>opacity</i></a> <i>opacity</i> , which is a real
+number in the range from 0 to 1 (inclusive).
+<p>
+
+<a name="13.5"><h2>13.5 Color Blending</h2></a>
+Drawing a design that is not completely opaque at all points allows the previous
+contents of the drawing plane to show through.  The simplest case is drawing a
+solid design:  where the design is opaque, it replaces the previous contents of
+the drawing plane; where the design is transparent, it leaves the drawing plane
+unchanged.  In the more general case of drawing a translucent design, the
+resulting color is a blend of the design's color and the previous color of the
+drawing plane.  For purposes of color blending, the drawn design is called the
+foreground and the drawing plane is called the background.
+<p>
+The function <tt>compose-over</tt> performs a similar operation: it combines two
+designs to produce a design, rather than combining a design and the contents of
+the drawing plane to produce the new contents of the drawing plane.  For
+purposes of color blending, the first argument to <tt>compose-over</tt> is called
+the foreground and the second argument is called the background.  See
+Chapter <a href="designs.html#LABEL=designs"><b><i>General Designs</i></b></i></a> for the details of <tt>compose-over</tt> .
+<p>
+Color blending is defined by an ideal function
+<tt><b><i>F</i></b><i>:</i>(r<sub>1</sub>,g<sub>1</sub>,b<sub>1</sub>,o<sub>1</sub>,r<sub>2</sub>,g<sub>2</sub>,b<sub>2</sub>,o<sub>2</sub>) <b><i>=&gt;</i></b>(r<sub>3</sub>,g<sub>3</sub>,b<sub>3</sub>,o<sub>3</sub>)</tt>
+that operates on the color and opacity at a single point.
+<tt>(r<sub>1</sub>,g<sub>1</sub>,b<sub>1</sub>,o<sub>1</sub>)</tt> are the foreground color and opacity.
+<tt>(r<sub>2</sub>,g<sub>2</sub>,b<sub>2</sub>,o<sub>2</sub>)</tt> are the background color and opacity.
+<tt>(r<sub>3</sub>,g<sub>3</sub>,b<sub>3</sub>,o<sub>3</sub>)</tt> are the resulting color and opacity.  The color
+blending function <tt><b><i>F</i></b></tt> is conceptually applied at every point in the
+drawing plane.
+<p>
+<tt><b><i>F</i></b></tt> performs linear interpolation on all four components:
+ <center><center><table>
+<tr valign="baseline"><td align=right colspan=1><tt>o<sub>3</sub> </tt></td><td> </td><td align=center colspan=1><tt> = </tt></td><td> </td><td align=right colspan=1><tt>        o<sub>1</sub> </tt></td><td> </td><td align=center colspan=1><tt> + </tt></td><td> </td><td align=left colspan=1><tt> (1 - o<sub>1</sub>) * o<sub>2</sub></tt></td><td> </td></tr>
+<tr valign="baseline"><td align=right colspan=1><tt>r<sub>3</sub> </tt></td><td> </td><td align=center colspan=1><tt> = </tt></td><td> </td><td align=right colspan=1><tt> (o<sub>1</sub> * r<sub>1</sub> </tt></td><td> </td><td align=center colspan=1><tt> + </tt></td><td> </td><td align=left colspan=1><tt> (1 - o<sub>1</sub>) * o<sub>2</sub> * r<sub>2</sub>) / o<sub>3</sub></tt></td><td> </td></tr>
+<tr valign="baseline"><td align=right colspan=1><tt>g<sub>3</sub> </tt></td><td> </td><td align=center colspan=1><tt> = </tt></td><td> </td><td align=right colspan=1><tt> (o<sub>1</sub> * g<sub>1</sub> </tt></td><td> </td><td align=center colspan=1><tt> + </tt></td><td> </td><td align=left colspan=1><tt> (1 - o<sub>1</sub>) * o<sub>2</sub> * g<sub>2</sub>) / o<sub>3</sub></tt></td><td> </td></tr>
+<tr valign="baseline"><td align=right colspan=1><tt>b<sub>3</sub> </tt></td><td> </td><td align=center colspan=1><tt> = </tt></td><td> </td><td align=right colspan=1><tt> (o<sub>1</sub> * b<sub>1</sub> </tt></td><td> </td><td align=center colspan=1><tt> + </tt></td><td> </td><td colspan=1><tt> (1 - o<sub>1</sub>) * o<sub>2</sub> * b<sub>2</sub>) / o<sub>3</sub></tt></td><td> </td></tr>
+<tr valign="baseline"></tr>
+</table></center>
+</center>Note that if <tt>o<sub>3</sub></tt> is zero, these equations would divide zero by zero.
+In that case <tt>r<sub>3</sub></tt>, <tt>g<sub>3</sub></tt>, and <tt>b<sub>3</sub></tt> are defined to be zero.
+<p>
+CLIM requires that <tt><b><i>F</i></b></tt> be implemented exactly if <tt>o<sub>1</sub></tt> is zero or one or
+if <tt>o<sub>2</sub></tt> is zero.  If <tt>o<sub>1</sub></tt> is zero, the result is the background.  If <tt>o<sub>1</sub></tt> is
+one or <tt>o<sub>2</sub></tt> is zero, the result is the foreground.  For fractional opacity
+values, an implementation can deviate from the ideal color blending function
+either because the implementation has limited opacity resolution or because the
+implementation can compute a different color blending function much more
+quickly.
+<p>
+If a medium's background design is not completely opaque at all points, the
+consequences are unspecified.  Consequently, a drawing plane is always opaque
+and drawing can use simplified color blending that assumes <tt>o<sub>2</sub> = 1</tt> and
+<tt>o<sub>3</sub> = 1</tt>.  However, <tt>compose-over</tt> must handle a non-opaque background
+correctly. 
+<p>
+Note that these <tt>(r,g,b,o)</tt> quadruples of real numbers between 0 and 1 are
+mathematical and an implementation need not store information in this form.
+Most implementations are expected to use a different representation.
+<p>
+
+<a name="13.6"><h2>13.6 Indirect Inks</h2></a>
+Drawing with an <a name="CONCEPT=indirect ink"><b><i>indirect ink</i></b></a> is the same as drawing another design
+named directly.  For example, <tt>+foreground-ink+</tt> is a design that draws the
+medium's foreground design and is the default value of the <tt>:ink</tt> drawing
+option.  Indirect inks exist for the benefit of output recording.  For example,
+one can draw with <tt>+foreground-ink+</tt> , change to a different
+<tt>medium-foreground</tt> , and replay the output record; the replayed output will
+come out in the new color.
+<p>
+You can change the foreground or background design of a medium at any time.
+This changes the contents of the medium's drawing plane.  The effect is as if
+everything on the drawing plane is erased, the background design is drawn onto
+the drawing plane, and then everything that was ever drawn (provided it was
+saved in the output history) is drawn over again, using the medium's new
+foreground and background.
+<p>
+If an infinite recursion is created using an indirect ink, an error is
+signalled when the recursion is created, when the design is used for drawing,
+or both.
+<p>
+Two indirect inks are defined, but no advertised way is provided to create more
+of them.
+<p>
+<a name="Constant +foreground-ink+"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>+foreground-ink+</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Constant]</b></td></tr></table>An indirect ink that uses the medium's foreground design.
+<p>
+<a name="Constant +background-ink+"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>+background-ink+</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Constant]</b></td></tr></table>An indirect ink that uses the medium's background design.
+<p>
+
+<a name="13.7"><h2>13.7 Flipping Ink</h2></a>
+<a name="Function make-flipping-ink"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>make-flipping-ink</b></td><td valign="baseline" width="100%"><i>design1 design2</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Returns a design that interchanges occurrences of the two <a href="regions.html#CONCEPT=designs"><i>designs</i></a> <i>design1</i> and <i>design2</i> .  Drawing the resulting design over a background
+(either by drawing or with <tt>compose-over</tt> ) is defined to change the color in
+the background that would have been drawn by <i>design1</i> at that point into
+the color that would have been drawn by <i>design2</i> at that point, and vice
+versa.  The effect on any color other than the colors determined by those two
+designs is unspecified; however, drawing the same figure twice using the same
+flipping ink is guaranteed to be an ``identity'' operation.  If either
+<i>design1</i> or <i>design2</i> is not solid, the consequences are unspecified.
+The purpose of flipping is to allow the use of ``XOR hacks'' for temporary
+changes to the display.
+<p>
+The opacity of a flipping ink is zero at points where the opacity of either
+<i>design1</i> or <i>design2</i> is zero.  Otherwise the opacity of a flipping ink
+is 1.  If <i>design1</i> or <i>design2</i> is translucent, the consequences are
+unspecified.  If <tt>compose-in</tt> or <tt>compose-out</tt> is used to make a flipping
+ink translucent, the consequences are unspecified.
+<p>
+If <i>design1</i> and <i>design2</i> are equivalent, the result can be
+<tt>+nowhere+</tt> .
+<p>
+In Release 2, <tt>make-flipping-ink</tt> might require <i>design1</i> and
+<i>design2</i> to be colors.
+<p>
+
+<a name="Constant +flipping-ink+"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>+flipping-ink+</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Constant]</b></td></tr></table>A flipping ink that flips <tt>+foreground-ink+</tt> and <tt>+background-ink+</tt> .
+<p>
+
+<a name="13.8"><h2>13.8 Examples of Simple Drawing Effects</h2></a>
+<p><b>Drawing in the foreground color.</b><br>
+Use the default, or specify <tt>:ink +foreground-ink+</tt> .
+<p>
+<p><b>Erasing.</b><br>
+Specify <tt>:ink +background-ink+</tt> .
+<p>
+<p><b>Drawing in color.</b><br>
+Specify <tt>:ink +green+</tt> , <tt>:ink (make-rgb-color 0.6 0.0 0.4)</tt> , and so forth.
+<p>
+<p><b>Drawing an opaque gray.</b><br>
+Specify <tt>:ink (make-gray-color 0.25)</tt> to draw in a shade of gray independent
+of the window's foreground color.  On a non-color, non-grayscale display this
+will generally turn into a stipple.
+<br><hr><br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="graphics.html">Graphics</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="designs.html">General Designs</a></td>
+</tr></table>
+</body></html>

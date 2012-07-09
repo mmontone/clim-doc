@@ -1,0 +1,452 @@
+<html><head><title>CLIM: 10 Drawing Options</title></head><body>
+<br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="silica.html">Overview of Window Facilities</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="text-styles.html">Text Styles</a></td>
+</tr></table><br><hr><br>
+<p>
+<br><a name="10"><h1>10 Drawing Options</h1></a>
+<a name="LABEL=drawing-options"></a> This chapter describes the drawing options that are used by CLIM's drawing
+functions, and the relationship between drawing options, sheets, and mediums.
+These drawing options control various aspects of the drawing process, and can be
+provided as keyword arguments to all of the drawing functions.
+<p>
+
+<a name="10.1"><h2>10.1 Medium Components</h2></a>
+Medium objects contain components that correspond to the drawing options; when
+no value for a drawing option is explicitly provided to a drawing function, it
+is taken from the medium.  These values can be directly queried or modified
+using accessors defined on the sheet or medium.  They can also be temporarily
+bound within a dynamic context using <tt>with-drawing-options</tt> ,
+<tt>with-text-style</tt> , and related forms.
+<p>
+<tt>setf</tt> of one of these components while it is temporarily bound (via
+<tt>with-drawing-options</tt> , for instance) takes effect immediately but is undone
+when the dynamic binding context is exited.
+<p>
+In systems that support multiple processes, the consequences are unspecified if
+one process reads or writes a medium component that is temporarily bound by
+another process.
+<p>
+The following functions read and write components of a medium related to drawing
+options.  While these functions are defined for mediums, they can also be called
+on sheets support the sheet output protocol and on streams that output to such
+sheets.  All classes that support the medium protocol must implement methods for
+these generic functions.  Often, a sheet class that supports the output protocol
+will implement a ``trampoline'' method that passes the operation on to
+<tt>sheet-medium</tt> of the sheet.
+<p>
+
+<a name="Generic function medium-foreground"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>medium-foreground</b></td><td valign="baseline" width="100%"><i>medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function medium-background"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>medium-background</b></td><td valign="baseline" width="100%"><i>medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the foreground and background inks (which are designs) for the
+<a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> , respectively.  The foreground ink is the default ink
+used when drawing.  The background ink is the ink used when erasing.  See
+Chapter <a href="colors.html#LABEL=color"><b><i>Drawing in Color</i></b></i></a> for a more complete description of designs.
+<p>
+Any indirect inks are resolved against the foreground and background at the time
+a design is rendered.
+<p>
+<a name="Generic function (setf medium-foreground)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf medium-foreground)</b></td><td valign="baseline" width="100%"><i>design medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function (setf medium-background)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf medium-background)</b></td><td valign="baseline" width="100%"><i>design medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Sets the foreground and background ink, respectively, for the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> to <i>design</i> .  You may not set <tt>medium-foreground</tt> or
+<tt>medium-background</tt> to an indirect ink.  
+<p>
+<i>design</i> is an unbounded design.  If the background design is not completely
+opaque at all points, the consequences are unspecified.
+<p>
+Changing the foreground or background of a sheet that supports output recording
+causes the contents of the stream's viewport to be erased and redrawn using the
+new foreground and background.
+<p>
+
+<a name="Generic function medium-ink"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>medium-ink</b></td><td valign="baseline" width="100%"><i>medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>The current drawing ink for the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> , which can be any
+design.  The drawing functions draw with the color and pattern that this
+specifies.  See Chapter <a href="colors.html#LABEL=color"><b><i>Drawing in Color</i></b></i></a> for a more complete description of inks.
+The <tt>:ink</tt> drawing option temporarily changes the value of <tt>medium-ink</tt> .
+<p>
+<a name="Generic function (setf medium-ink)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf medium-ink)</b></td><td valign="baseline" width="100%"><i>design medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Sets the current drawing ink for the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> to <i>design</i> .
+<i>design</i> is as for <tt>medium-foreground</tt> , and may be an indirect ink as
+well.
+<p>
+
+<a name="Generic function medium-transformation"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>medium-transformation</b></td><td valign="baseline" width="100%"><i>medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>The current user transformation for the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> .  This
+transformation is used to transform the coordinates supplied as arguments to
+drawing functions to the coordinate system of the drawing plane.  See
+Chapter <a href="transforms.html#LABEL=transforms"><b><i>Affine Transformations</i></b></i></a> for a complete description of transformations.  The
+<tt>:transformation</tt> drawing option temporarily changes the value of
+<tt>medium-transformation</tt> .
+<p>
+<a name="Generic function (setf medium-transformation)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf medium-transformation)</b></td><td valign="baseline" width="100%"><i>transformation medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Sets the current user transformation for the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> to the
+<a href="drawing-options.html#CONCEPT=transformation"><i>transformation</i></a> <i>transformation</i> .
+<p>
+
+<a name="Generic function medium-clipping-region"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>medium-clipping-region</b></td><td valign="baseline" width="100%"><i>medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>The current clipping region for the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> .  The drawing
+functions do not affect the drawing plane outside this region.  The
+<tt>:clipping-region</tt> drawing option temporarily changes the value of
+<tt>medium-clipping-region</tt> .
+<p>
+The clipping region is expressed in user coordinates.
+<p>
+<a name="Generic function (setf medium-clipping-region)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf medium-clipping-region)</b></td><td valign="baseline" width="100%"><i>region medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Sets the current clipping region for the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> to
+<i>region</i> .  <i>region</i> must be a subclass of <tt>area</tt> .  Furthermore, some
+implementations may signal an error if the clipping region is not a rectangle or
+a region set composed entirely of rectangles.
+<p>
+
+<a name="Generic function medium-line-style"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>medium-line-style</b></td><td valign="baseline" width="100%"><i>medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>The current line style for the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> .  The line and arc
+drawing functions render according to this line style.  See
+Section <a href="drawing-options.html#LABEL=line-styles"><b><i>Line Styles</i></b></i></a> for a complete description of line styles.  The
+<tt>:line-style</tt> drawing option temporarily changes the value of
+<tt>medium-line-style</tt> .
+<p>
+<a name="Generic function (setf medium-line-style)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf medium-line-style)</b></td><td valign="baseline" width="100%"><i>line-style medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Sets the current line style for the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> to the <a href="drawing-options.html#CONCEPT=line
+style"><i>line
+style</i></a> <i>line-style</i> .
+<p>
+
+<a name="Generic function medium-default-text-style"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>medium-default-text-style</b></td><td valign="baseline" width="100%"><i>medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>The default text style for the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> .
+<tt>medium-default-text-style</tt> will return a fully specified text style, unlike
+<tt>medium-text-style</tt> , which may return a text style with null components.  Any
+text styles that are not fully specified by the time they are used for rendering
+are merged against <tt>medium-default-text-style</tt> using <tt>merge-text-styles</tt> .
+<p>
+The default value for <tt>medium-default-text-style</tt> for any medium is
+<tt>*default-text-style*</tt> .
+<p>
+See Chapter <a href="text-styles.html#LABEL=text-styles"><b><i>Text Styles</i></b></i></a> for a complete description of text styles.
+<p>
+<a name="Generic function (setf medium-default-text-style)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf medium-default-text-style)</b></td><td valign="baseline" width="100%"><i>text-style medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Sets the default text style for the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> to the <a href="drawing-options.html#CONCEPT=text
+style"><i>text
+style</i></a> <i>text-style</i> .  <i>text-style</i> must be a fully specified text style.
+<p>
+Some CLIM implementations may arrange to erase and redraw the output on an
+output recording stream when the default text style of the stream is changed.
+Implementations that do this must obey the proper vertical spacing for output
+streams, and must reformat tables, graphs, and so forth, as necessary.  Because
+of the expense of this operation, CLIM implementations are not required to
+support this.
+<p>
+
+<a name="Generic function medium-text-style"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>medium-text-style</b></td><td valign="baseline" width="100%"><i>medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>The current text style for the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> .  The text drawing
+functions, including ordinary stream output, render text as directed by this
+text style merged against the default text style.  This controls both graphical
+text (such as that drawn by <tt>draw-text*</tt> ) and stream text (such as that
+written by <tt>write-string</tt> ).  See Chapter <a href="text-styles.html#LABEL=text-styles"><b><i>Text Styles</i></b></i></a> for a complete
+description of text styles.  The <tt>:text-style</tt> drawing option temporarily
+changes the value of <tt>medium-text-style</tt> .
+<p>
+<a name="Generic function (setf medium-text-style)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf medium-text-style)</b></td><td valign="baseline" width="100%"><i>text-style medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Sets the current text style for the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> to the <a href="drawing-options.html#CONCEPT=text
+style"><i>text
+style</i></a> <i>text-style</i> .  <i>text-style</i> need not be a fully merged text
+style.
+<p>
+
+<a name="Generic function medium-current-text-style"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>medium-current-text-style</b></td><td valign="baseline" width="100%"><i>medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>The current, fully merged text style for the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> .  This
+is the text style that will be used when drawing text output, and is the result
+of merging <tt>medium-text-style</tt> against <tt>medium-default-text-style</tt> .
+<p>
+
+<a name="10.2"><h2>10.2 Drawing Option Binding Forms</h2></a>
+<a name="Macro with-drawing-options"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>with-drawing-options</b></td><td valign="baseline" width="100%"><i>(medium <tt>&amp;rest</tt> drawing-options) <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Binds the state of the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> designated by <i>medium</i> to correspond to
+the supplied drawing options, and executes the body with the new drawing options
+specified by <i>drawing-options</i> in effect.  Each option causes binding of the
+corresponding component of the medium for the dynamic extent of the body.  The
+drawing functions effectively do a <tt>with-drawing-options</tt> when drawing option
+arguments are supplied to them.
+<p>
+<i>medium</i> can be a medium, a sheet that supports the sheet output protocol,
+or a stream that outputs to such a sheet.  The <i>medium</i> argument is not
+evaluated, and must be a symbol that is bound to a sheet or medium.  If
+<i>medium</i> is <tt>t</tt> , <tt>*standard-output*</tt> is used.  <i>body</i> may have
+zero or more declarations as its first forms.
+<p>
+<tt>with-drawing-options</tt> must be implemented by expanding into a call to
+<tt>invoke-with-drawing-options</tt> , supplying a function that executes <i>body</i> as the <i>continuation</i> argument to <tt>invoke-with-drawing-options</tt> .  The exact
+behavior of this macro is described under <tt>invoke-with-drawing-options</tt> .
+<p>
+<a name="Generic function invoke-with-drawing-options"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>invoke-with-drawing-options</b></td><td valign="baseline" width="100%"><i>medium continuation <tt>&amp;rest</tt> drawing-options</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Binds the state of the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> to correspond to the supplied
+drawing options, and then calls the function <i>continuation</i> with the new
+drawing options in effect.  <i>continuation</i> is a function of one argument,
+the medium; it has dynamic extent.  <i>drawing-options</i> is a list of
+alternating keyword-value pairs, and must have even length.  Each option in
+<i>drawing-options</i> causes binding of the corresponding component of the
+medium for the dynamic extent of the body.
+<p>
+<i>medium</i> can be a medium, a sheet that supports the sheet output protocol,
+or a stream that outputs to such a sheet.  All classes that obey the medium
+protocol must implement a method for <tt>invoke-with-drawing-options</tt> .
+<p>
+The drawing options can be any of the following, plus any of the suboptions for
+line styles and text styles.  The default value specified for a drawing option
+is the value to which the corresponding component of a medium is normally
+initialized.
+<p>
+<a name="Option :ink"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:ink</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Option]</b></td></tr></table>A design that will be used as the ink for drawing operations.  The drawing
+functions draw with the color and pattern that this specifies.  The default
+value is <tt>+foreground-ink+</tt> .  See Chapter <a href="colors.html#LABEL=color"><b><i>Drawing in Color</i></b></i></a> for a complete
+description of inks.
+<p>
+The <tt>:ink</tt> <i>ink</i> drawing option temporarily changes the value of
+<tt>(medium-ink <i>medium</i> )</tt> to <i>ink</i> , replacing the previous ink; the
+new and old inks are not combined in any way.
+<p>
+
+<a name="Option :transformation"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:transformation</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Option]</b></td></tr></table>This transforms the coordinates used as arguments to drawing functions to the
+coordinate system of the drawing plane.  The default value is
+<tt>+identity-transformation+</tt> .  See Chapter <a href="transforms.html#LABEL=transforms"><b><i>Affine Transformations</i></b></i></a> for a complete
+description of transformations.
+<p>
+The <tt>:transformation</tt> <i>xform</i> drawing option temporarily changes the
+value of<tt>(medium-transformation <i>medium</i> )</tt> to
+<tt>(compose-transformations (medium-transformation <i>medium</i> ) <i>xform</i> )</tt> .
+<p>
+
+<a name="Option :clipping-region"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:clipping-region</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Option]</b></td></tr></table>The drawing functions do not affect the drawing plane outside this region.  The
+clipping region must be an <tt>area</tt> .  Furthermore, some implementations might
+signal an error if the clipping region is not a rectangle or a region set
+composed entirely of rectangles.  Rendering is clipped both by this clipping
+region and by other clipping regions associated with the mapping from the target
+drawing plane to the viewport that displays a portion of the drawing plane.  The
+default is <tt>+everywhere+</tt> , or in other words, no clipping occurs in the
+drawing plane, only in the viewport.
+<p>
+The <tt>:clipping-region</tt> <i>region</i> drawing option temporarily changes the
+value of <tt>(medium-clipping-region <i>medium</i> )</tt> to <tt>(region-intersection
+(transform-region (medium-transformation <i>medium</i> ) <i>region</i> )
+(medium-clipping-region <i>medium</i> ))</tt> .  If both a clipping region and a
+transformation are supplied in the same set of drawing options, the clipping
+region argument is transformed by the newly composed transformation before
+calling <tt>region-intersection</tt> .
+<p>
+<hr><b>Issue:</b> DCPL<br><i>A better explanation is needed.  It does the right thing, but
+it's hard to tell that from this description.  That is, the clipping region is
+expressed in user coordinates.</i><hr>
+<a name="Option :line-style"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:line-style</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Option]</b></td></tr></table>The line and arc drawing functions render according to this line style.  The
+line style suboptions and default are defined in Section <a href="drawing-options.html#LABEL=line-styles"><b><i>Line Styles</i></b></i></a> .
+<p>
+The <tt>:line-style</tt> <i>ls</i> drawing option temporarily changes the value of
+<tt>(medium-line-style <i>medium</i> )</tt> to <i>ls</i> , replacing the previous line
+style; the new and old line styles are not combined in any way.
+<p>
+If line style suboptions are supplied, they temporarily change the value of
+<tt>(medium-line-style <i>medium</i> )</tt> to a line style constructed from the
+specified suboptions.  Components not specified by suboptions are defaulted from
+the <tt>:line-style</tt> drawing option, if it is supplied, or else from the
+previous value of <tt>(medium-line-style <i>medium</i> )</tt> .  That is, if both the
+<tt>:line-style</tt> option and line style suboptions are supplied, the suboptions
+take precedence over the components of the <tt>:line-style</tt> option.
+<p>
+
+<a name="Option :text-style"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:text-style</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Option]</b></td></tr></table>The text drawing functions, including ordinary stream output, render text as
+directed by this text style merged against the default text style.  The default
+value has all null components.  See Chapter <a href="text-styles.html#LABEL=text-styles"><b><i>Text Styles</i></b></i></a> for a complete
+description of text styles, including the text style suboptions.
+<p>
+The <tt>:text-style</tt> <i>ts</i> drawing option temporarily changes the value of
+<tt>(medium-text-style <i>medium</i> )</tt> to <tt>(merge-text-styles <i>ts</i> (medium-text-style <i>medium</i> ))</tt> .
+<p>
+If text style suboptions are supplied, they temporarily change the value of
+<tt>(medium-text-style <i>medium</i> )</tt> to a text style constructed from the
+specified suboptions, merged with the <tt>:text-style</tt> drawing option if it is
+specified, and then merged with the previous value of <tt>(medium-text-style
+<i>medium</i> )</tt> .  That is, if both the <tt>:text-style</tt> option and text style
+suboptions are supplied, the suboptions take precedence over the components of
+the <tt>:text-style</tt> option.
+<p>
+
+<a name="10.2.1"><h3>10.2.1 Transformation ``Convenience'' Forms</h3></a>
+The following three functions are no different than using
+<tt>with-drawing-options</tt> with the <tt>:transformation</tt> keyword argument
+supplied.  However, they are sufficiently useful that they are provided as a
+convenience to programmers.
+<p>
+In order to preserve referential transparency, these three forms apply the
+translation, rotation, or scaling transformation first, then the rest of the
+transformation from <tt>(medium-transformation <i>medium</i> )</tt> .  That is, the
+following two forms would return the same transformation (assuming that the
+medium's transformation in the second example is the identity transformation):
+<p>
+<pre>(compose-transformations
+  (make-translation-transformation dx dy)
+  (make-rotation-transformation angle))
+<p>
+(with-translation (medium dx dy)
+  (with-rotation (medium angle)
+    (medium-transformation medium)))
+</pre> <a name="Macro with-translation"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>with-translation</b></td><td valign="baseline" width="100%"><i>(medium dx dy) <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Establishes a translation on the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> designated by <i>medium</i> that
+translates by <i>dx</i> in the <tt>x</tt> direction and <i>dy</i> in the <tt>y</tt> direction,
+and then executes <i>body</i> with that transformation in effect.
+<p>
+<i>dx</i> and <i>dy</i> are as for <tt>make-translation-transformation</tt> .
+<p>
+The <i>medium</i> argument is not evaluated, and must be a symbol that is bound
+to a sheet or medium.  If <i>medium</i> is <tt>t</tt> , <tt>*standard-output*</tt> is
+used.  <i>body</i> may have zero or more declarations as its first forms.
+<p>
+<a name="Macro with-scaling"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>with-scaling</b></td><td valign="baseline" width="100%"><i>(medium sx <tt>&amp;optional</tt> sy origin) <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Establishes a scaling transformation on the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> designated by
+<i>medium</i> that scales by <i>sx</i> in the <tt>x</tt> direction and <i>sy</i> in the
+<tt>y</tt> direction, and then executes <i>body</i> with that transformation in effect.
+If <i>sy</i> is not supplied, it defaults to <i>sx</i> .  If <i>origin</i> is
+supplied, the scaling is about that point; if it is not supplied, it defaults to
+<tt>(0,0)</tt>.
+<p>
+<i>sx</i> and <i>sy</i> are as for <tt>make-scaling-transformation</tt> .
+<p>
+The <i>medium</i> argument is not evaluated, and must be a symbol that is bound
+to a sheet or medium.  If <i>medium</i> is <tt>t</tt> , <tt>*standard-output*</tt> is
+used.  <i>body</i> may have zero or more declarations as its first forms.
+<p>
+<a name="Macro with-rotation"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>with-rotation</b></td><td valign="baseline" width="100%"><i>(medium angle <tt>&amp;optional</tt> origin) <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Establishes a rotation on the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> designated by <i>medium</i> that
+rotates by <i>angle</i> , and then executes <i>body</i> with that transformation in
+effect.  If <i>origin</i> is supplied, the rotation is about that point; if it is
+not supplied, it defaults to <tt>(0,0)</tt>.
+<p>
+<i>angle</i> and <i>origin</i> are as for <tt>make-rotation-transformation</tt> .
+<p>
+The <i>medium</i> argument is not evaluated, and must be a symbol that is bound
+to a sheet or medium.  If <i>medium</i> is <tt>t</tt> , <tt>*standard-output*</tt> is
+used.  <i>body</i> may have zero or more declarations as its first forms.
+<p>
+<a name="Macro with-identity-transformation"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>with-identity-transformation</b></td><td valign="baseline" width="100%"><i>(medium) <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Establishes the identity transformation on the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> designated
+by <i>medium</i> .
+<p>
+The <i>medium</i> argument is not evaluated, and must be a symbol that is bound
+to a sheet or medium.  If <i>medium</i> is <tt>t</tt> , <tt>*standard-output*</tt> is
+used.  <i>body</i> may have zero or more declarations as its first forms.
+<p>
+
+<p>
+<a name="10.2.2"><h3>10.2.2 Establishing Local Coordinate Systems</h3></a>
+<a name="Macro with-local-coordinates"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>with-local-coordinates</b></td><td valign="baseline" width="100%"><i>(medium <tt>&amp;optional</tt> x y) <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Binds the dynamic environment to establish a local coordinate system on the
+<a href="silica.html#CONCEPT=medium"><i>medium</i></a> designated by <i>medium</i> with the origin of the new coordinate
+system at the position <tt>(x,y)</tt>.  The ``directionality'' of the coordinate system
+is otherwise unchanged.  <i>x</i> and <i>y</i> are real numbers, and both default
+to 0.
+<p>
+The <i>medium</i> argument is not evaluated, and must be a symbol that is bound
+to a sheet or medium.  If <i>medium</i> is <tt>t</tt> , <tt>*standard-output*</tt> is
+used.  <i>body</i> may have zero or more declarations as its first forms.
+<p>
+<a name="Macro with-first-quadrant-coordinates"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>with-first-quadrant-coordinates</b></td><td valign="baseline" width="100%"><i>(medium <tt>&amp;optional</tt> x y) <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Binds the dynamic environment to establish a local coordinate system on the
+<a href="silica.html#CONCEPT=medium"><i>medium</i></a> designated by <i>medium</i> with the positive <tt>x</tt> axis extending to
+the right and the positive <tt>y</tt> axis extending upward, with the origin of the new
+coordinate system at the position <tt>(x,y)</tt>.  <i>x</i> and <i>y</i> are real
+numbers, and both default to 0.
+<p>
+The <i>medium</i> argument is not evaluated, and must be a symbol that is bound
+to a sheet or medium.  If <i>medium</i> is <tt>t</tt> , <tt>*standard-output*</tt> is
+used.  <i>body</i> may have zero or more declarations as its first forms.
+<p>
+
+<a name="LABEL=line-styles"></a> 
+<a name="10.3"><h2>10.3 Line Styles</h2></a>
+A line or other path is a one-dimensional object.  However in order to be
+visible, the rendering of a line must occupy some non-zero area on the display
+hardware.  A <a name="CONCEPT=line style"><b><i>line style</i></b></a> represents the advice of CLIM to the rendering
+substrate on how to perform the rendering.
+<p>
+<a name="Protocol&nbsp;Class line-style"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>line-style</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Protocol&nbsp;Class]</b></td></tr></table>The protocol class for line styles.
+If you want to create a new class that behaves like a line style, it should be a subclass of <b>line-style</b>. Subclasses of <b>line-style</b> must obey the line style protocol.<a name="Predicate line-style-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>line-style-p</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Predicate]</b></td></tr></table>Returns <a href="drawing-options.html#CONCEPT=true"><i>true</i></a> if <i>object</i> is a <a href="drawing-options.html#CONCEPT=line style"><i>line style</i></a> , otherwise returns
+<a href="drawing-options.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Class standard-line-style"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>standard-line-style</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>An instantiable class that implements line styles.  A subclass of
+<tt>line-style</tt> .  This is the class that <tt>make-line-style</tt> instantiates.
+<i>Members of this class are immutable. </i><a name="Function make-line-style"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>make-line-style</b></td><td valign="baseline" width="100%"><i><tt>&amp;key</tt> unit thickness joint-shape cap-shape dashes</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Returns an object of class <tt>standard-line-style</tt> with the supplied
+characteristics.  The arguments and their default values are described in
+Section <a href="drawing-options.html#LABEL=line-style-options"><b><i>Line Style Protocol and Line Style Suboptions</i></b></i></a> .
+<p>
+
+<a name="LABEL=line-style-options"></a> 
+<a name="10.3.1"><h3>10.3.1 Line Style Protocol and Line Style Suboptions</h3></a>
+Each of these suboptions has a corresponding reader that can be used to extract
+a particular component from a line style.  The generic functions decribed below
+comprise the line style protocol; all subclasses of <tt>line-style</tt> must
+implement methods for these generic functions.
+<p>
+<a name="Option :line-unit"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:line-unit</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Option]</b></td></tr></table><a name="Generic function line-style-unit"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>line-style-unit</b></td><td valign="baseline" width="100%"><i>line-style</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Gives the unit used for measuring line thickness and dash pattern length for the
+line style.  Possible values are <tt>:normal</tt> , <tt>:point</tt> , or <tt>:coordinate</tt> .
+The meaning of these options is:
+<p>
+<ul> <li> <tt>:normal</tt> ---thicknesses and lengths are given in a relative measure in
+terms of the usual or ``normal'' line thickness.  The normal line thickness is
+the thickness of the ``comfortably visible thin line'',
+<a name="footnote 1"><sup><a href="drawing-options.html#Note 1"><i>1</i></a></sup></a> which is a property of the underlying rendering substrate.  This is the default. 
+<p>
+<li> <tt>:point</tt> ---thicknesses and lengths are given in an absolute measure in
+terms of printer's points (approximately <tt>1/72</tt> of an inch).
+<a name="footnote 2"><sup><a href="drawing-options.html#Note 2"><i>2</i></a></sup></a> <li> <tt>:coordinate</tt> ---this means that the same units should be used for line
+thickness as are used for coordinates.  In this case, the line thickness is
+scaled by the medium's current transformation, whereas <tt>:normal</tt> and
+<tt>:point</tt> do not scale the line thickness.
+</ul> <a name="Option :line-thickness"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:line-thickness</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Option]</b></td></tr></table><a name="Generic function line-style-thickness"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>line-style-thickness</b></td><td valign="baseline" width="100%"><i>line-style</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>The thickness, in the units indicated by <tt>line-style-unit</tt> , of the lines or
+arcs drawn by a drawing function.  The thickness must be a real number.  The
+default is 1, which combined with the default unit of <tt>:normal</tt> , means that
+the default line drawn is the ``comfortably visible thin line''.
+<p>
+<a name="Option :line-joint-shape"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:line-joint-shape</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Option]</b></td></tr></table><a name="Generic function line-style-joint-shape"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>line-style-joint-shape</b></td><td valign="baseline" width="100%"><i>line-style</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Specifies the shape of joints between segments of unfilled figures.  The
+possible shapes are <tt>:miter</tt> , <tt>:bevel</tt> , <tt>:round</tt> , and <tt>:none</tt> ; the
+default is <tt>:miter</tt> .  Note that the joint shape is implemented by the host
+window system, so not all platforms will necessarily fully support it.
+<p>
+<center><img src="line-joint-shapes.jpg"></center>
+<center><b>Figure 10.1: </b>Line joint shapes.</center>
+<a name="Option :line-cap-shape"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:line-cap-shape</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Option]</b></td></tr></table><a name="Generic function line-style-cap-shape"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>line-style-cap-shape</b></td><td valign="baseline" width="100%"><i>line-style</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Specifies the shape for the ends of lines and arcs drawn by a drawing function,
+one of <tt>:butt</tt> , :<tt>square</tt> , <tt>:round</tt> , or <tt>:no-end-point</tt> ; the default
+is <tt>:butt</tt> .  Note that the cap shape is implemented by the host window
+system, so not all platforms will necessarily fully support it.
+<p>
+<center><img src="line-cap-shapes.jpg"></center>
+<center><b>Figure 10.2: </b>Line cap shapes.</center>
+<a name="Option :line-dashes"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:line-dashes</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Option]</b></td></tr></table><a name="Generic function line-style-dashes"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>line-style-dashes</b></td><td valign="baseline" width="100%"><i>line-style</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Controls whether lines or arcs are drawn as dashed figures, and if so, what the
+dashing pattern is.  Possible values are:
+<p>
+<ul> <li> <tt>nil</tt> ---lines are drawn solid, with no dashing.  This is the default.
+<p>
+<li> <tt>t</tt> ---lines are drawn dashed, with a dash pattern that is unspecified
+and may vary with the rendering engine.  This allows the underlying display
+substrate to provide a default dashed line for the programmer whose only
+requirement is to draw a line that is visually distinguishable from the default
+solid line.
+<p>
+<li> A sequence---specifies a sequence, usually a vector, controlling the dash
+pattern of a drawing function.  It is an error if the sequence does not contain
+an even number of elements.  The elements of the sequence are lengths (as real
+numbers) of individual components of the dashed line or arc.  The odd elements
+specify the length of inked components, the even elements specify the gaps.  All
+lengths are expressed in the units described by <tt>line-style-unit</tt> .
+</ul> (See also <tt>make-contrasting-dash-patterns</tt> .)
+<p>
+<a name="10.3.2"><h3>10.3.2 Contrasting Dash Patterns</h3></a>
+<a name="Function make-contrasting-dash-patterns"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>make-contrasting-dash-patterns</b></td><td valign="baseline" width="100%"><i>n <tt>&amp;optional</tt> k</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>If <i>k</i> is not supplied, this returns a vector of <i>n</i> dash patterns with
+recognizably different appearance.  Elements of the vector are guaranteed to be
+acceptable values for <tt>:dashes</tt> , and do not include <tt>nil</tt> , but their class
+is not otherwise specified.  The vector is a fresh object that may be modified.
+<p>
+If <i>k</i> is supplied, it must be an integer between 0 and <tt><i>n</i> -1</tt>
+(inclusive), in which case <tt>make-contrasting-dash-patterns</tt> returns the
+<i>k</i> 'th dash-pattern rather than returning a vector of dash-patterns.
+<p>
+If the implementation does not have <i>n</i> different contrasting dash patterns,
+<tt>make-contrasting-dash-patterns</tt> signals an error.  This will not happen
+unless <i>n</i> is greater than eight.
+<p>
+<a name="Generic function contrasting-dash-pattern-limit"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>contrasting-dash-pattern-limit</b></td><td valign="baseline" width="100%"><i>port</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the number of contrasting dash patterns that can be rendered on any
+medium on the <a href="silica.html#CONCEPT=port"><i>port</i></a> <i>port</i> .  Implementations are encouraged to make
+this as large as possible, but it must be at least 8.  All classes that obey the
+port protocol must implement a method for this generic function.
+<br><hr><b>Notes:</b><br>
+<br><a name="Note 1"><b><a href="drawing-options.html#footnote 1">1:</b></a> In some window systems, the phrase ``thinnest
+visible line'' is used.  This is not appropriate for CLIM, which intends to be
+device independent.  (For instance, the thinnest visible line on a 400 d.p.i.
+laser printer is a function of the user's viewing distance from the paper.)
+Another attribute of a ``normal'' line is that its thickness should
+approximately match the stroke thickness of ``normal'' text, where again the
+exact measurements are the province of the rendering engine, not of CLIM.</a><br>
+<br><a name="Note 2"><b><a href="drawing-options.html#footnote 2">2:</b></a> This measure was chosen so that CLIM implementors who interface CLIM
+to an underlying rendering engine (the window system) may legitimately choose to
+make it render as 1 pixel on current (1990) display devices.</a><br>
+<br><hr><br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="silica.html">Overview of Window Facilities</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="text-styles.html">Text Styles</a></td>
+</tr></table>
+</body></html>

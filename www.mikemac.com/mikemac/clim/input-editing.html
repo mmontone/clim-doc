@@ -1,0 +1,706 @@
+<html><head><title>CLIM: 24 Input Editing and Completion Facilities</title></head><body>
+<br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="presentation-types.html">Presentation Types</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="menus.html">Menu Facilities</a></td>
+</tr></table><br><hr><br>
+<p>
+<br><a name="24"><h1>24 Input Editing and Completion Facilities</h1></a>
+<a name="LABEL=input-editing"></a> CLIM provides number of facilities to assist in writing presentation type parser
+functions, such as an interactive input editor and some ``completion''
+facilities.
+<p>
+
+<a name="24.1"><h2>24.1 The Input Editor</h2></a>
+An input editing stream ``encapsulates'' an interactive stream, that is, most
+operations are handled by the encapsulated interactive stream, but some
+operations are handled directly by the input editing stream itself.  (See
+Appendix <a href="encapsulating-streams.html#LABEL=encapsulating-streams"><b><i>Encapsulating Streams</i></b></i></a> for a discussion of encapsulating streams.)
+<p>
+An input editing stream will have the following components:
+<p>
+<ul> <li> The encapsulated interactive stream.
+<p>
+<li> A buffer with a fill pointer, which we shall refer to as <tt>FP</tt>.  The buffer
+contains all of the user's input, and <tt>FP</tt> is the length of that input.
+<p>
+<li> An insertion pointer, which we shall refer to as <tt>IP</tt>.  The insertion
+pointer is the point in the buffer at which the ``editing cursor'' is.
+<p>
+<li> A scan pointer, which we shall refer to as <tt>SP</tt>.  The scan pointer is the
+point in the buffer from which CLIM will get the next input gesture object (in
+the sense of <tt>read-gesture</tt> ).
+<p>
+<li> A ``rescan queued'' flag indicating that the programmer (or CLIM)
+requested that a ``rescan'' operation should take place before the next gesture
+is read from the user.
+<p>
+<li> A ``rescan in progress'' flag that indicates that CLIM is rescanning the
+user's input, rather than reading freshly supplied gestures from the user.
+</ul> The input editing stream may also have other components to store internal state,
+such as a slot to accumulate a numeric argument or remember the most recently
+used presentation history, and so forth.  These other components are explicitly
+left unspecified.
+<p>
+The high level description of the operation of the input editor is that it reads
+either ``real'' gestures from the user (such as characters from the keyboard or
+pointer button events) or input editing commands.  The input editing commands
+can modify the state of the input buffer.  When such modifications take place,
+it is necessary to ``rescan'' the input buffer, that is, reset the scan pointer
+<tt>SP</tt> to its original state and reparse the contents of the input editor buffer
+before reading any other gestures from the user.  While this rescanning
+operation is taking place, the ``rescan in progress'' flag is set to
+<a href="input-editing.html#CONCEPT=true"><i>true</i></a> .  The relationship <tt>SP <i>&lt;=</i> IP <i>&lt;=</i> FP</tt> always holds.
+<p>
+The overall control structure of the input editor is:
+<p>
+<pre>(catch 'rescan                  ;thrown to when a rescan is invoked
+  (reset-scan-pointer stream)   ;sets STREAM-RESCANNING-P to T
+  (loop
+     (funcall continuation stream)))
+</pre> where <i>stream</i> is the input editing stream and <i>continuation</i> is the
+code supplied by the programmer, and typically contains calls to such functions
+as <tt>accept</tt> and <tt>read-token</tt> (which will eventually call
+<tt>stream-read-gesture</tt> ).  When a rescan operation is invoked, it has the
+effect of throwing to the <tt>rescan</tt> tag in the example above.  The loop is
+terminated when an activation gesture is seen, and at that point the values
+produced by <i>continuation</i> are returned as values from the input editor.
+<p>
+The important point is that functions such as <tt>accept</tt> , <tt>read-gesture</tt> ,
+and <tt>unread-gesture</tt> read (or restore) the next gesture object from the
+buffer at the position pointed to by the scan pointer <tt>SP</tt>.  However, insertion
+and input editing commands take place at the position pointed to by <tt>IP</tt>.  The
+purpose of the rescanning operation is to eventually ensure that all the input
+gestures issued by the user (typed characters, pointer button presses, and so
+forth) have been read by CLIM.  During input editing, the input editor should
+maintain some sort of visible cursor to remind the user of the position of <tt>IP</tt>.
+<p>
+The overall structure of <tt>stream-read-gesture</tt> on an input editing stream is:
+<p>
+<pre>(progn
+  (rescan-if-necessary stream)
+  (loop
+    ;; If SP is less than FP
+    ;;   Then get the next gesture from the input editor buffer at SP
+    ;;   and increment SP
+    ;;   Else read the next gesture from the encapsulated stream
+    ;;   and insert it into the buffer at IP
+    ;; Set the "rescan in progress" flag to false
+    ;; Call STREAM-PROCESS-GESTURE on the gesture
+    ;;   If it was a "real" gesture
+    ;;     Then exit with the gesture as the result
+    ;;     Else it was an input editing command (which has already been
+    ;;     processed), so continue looping
+    ))
+</pre> When a new gesture object is inserted into the input editor buffer, it is
+inserted at the insertion pointer <tt>IP</tt>.  If <tt>IP = FP</tt>, this is accomplished by a
+<tt>vector-push-extend</tt> -like operation on the input buffer and <tt>FP</tt>, and then
+incrementing <tt>IP</tt>.  If <tt>IP < FP</tt>, CLIM must first ``make room'' for the new
+gesture in the input buffer, then insert the gesture at <tt>IP</tt>, then increment
+both <tt>IP</tt> and <tt>FP</tt>.
+<p>
+When the user requests an input editor motion command, only the insertion
+pointer <tt>IP</tt> is affected.  Motion commands do not need to request a rescan
+operation.
+<p>
+When the user requests an input editor deletion command, the sequence of gesture
+objects at <tt>IP</tt> are removed, and <tt>IP</tt> and <tt>FP</tt> must be modified to reflect the
+new state of the input buffer.  Deletion commands (and other commands that
+modify the input buffer) must arrange for a rescan to occur when they are done
+modifying the buffer, either by calling <tt>queue-rescan</tt> or
+<tt>immediate-rescan</tt> .
+<p>
+CLIM implementations are free to put special objects in the input editor buffer,
+such as ``noise strings'' and ``accept results''.  A ``noise string'' is used to
+represent some sort of in-line prompt and is never seen as input; the
+<tt>prompt-for-accept</tt> method may insert a noise string into the input buffer.
+An ``accept result'' is an object in the input buffer that is used to represent
+some object that was inserted into the input buffer (typically via a pointer
+gesture) that has no readable representation (in the Lisp sense);
+<tt>presentation-replace-input</tt> may create accept results.  Noise strings are
+skipped over by input editing commands, and accept results are treated as a
+single gesture.
+<p>
+
+<a name="Predicate interactive-stream-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>interactive-stream-p</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Predicate]</b></td></tr></table>Returns <a href="input-editing.html#CONCEPT=true"><i>true</i></a> if <i>object</i> is an interactive stream, that is, a
+bidrectional stream intended for user interactions.  Otherwise it returns
+<a href="input-editing.html#CONCEPT=false"><i>false</i></a> .  This is exactly the same function as in X3J13 Common Lisp,
+except that in CLIM it is a generic function.
+<p>
+The input editor need only be fully implemented for interactive streams.
+<p>
+<a name="Protocol&nbsp;Class input-editing-stream"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>input-editing-stream</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Protocol&nbsp;Class]</b></td></tr></table>The protocol class that corresponds to an input editing stream.
+If you want to create a new class that behaves like an input editing stream, it should be a subclass of <b>input-editing-stream</b>. Subclasses of <b>input-editing-stream</b> must obey the input editing stream protocol.<a name="Predicate input-editing-stream-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>input-editing-stream-p</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Predicate]</b></td></tr></table>Returns <a href="input-editing.html#CONCEPT=true"><i>true</i></a> if <i>object</i> is an <a href="input-editing.html#CONCEPT=input editing stream"><i>input editing stream</i></a> (that is,
+a stream of the sort created by a call to <tt>with-input-editing</tt> ), otherwise
+returns <a href="input-editing.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Class standard-input-editing-stream"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>standard-input-editing-stream</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>The instantiable class that implements CLIM's standard input editor.  This is
+the class of stream created by calling <tt>with-input-editing</tt> .
+<p>
+<i>Members of this class are mutable. </i><a name="Macro with-input-editing"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>with-input-editing</b></td><td valign="baseline" width="100%"><i>(<tt>&amp;optional</tt> stream 
+                                 <tt>&amp;key</tt> input-sensitizer initial-contents class)
+                                <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Establishes a context in which the user can edit the input typed in on the
+interactive stream <i>stream</i> .  <i>body</i> is then executed in this context,
+and the values returned by <i>body</i> are returned as the values of
+<tt>with-input-editing</tt> .  <i>body</i> may have zero or more declarations as its
+first forms.
+<p>
+The <i>stream</i> argument is not evaluated, and must be a symbol that is bound
+to an input stream.  If <i>stream</i> is <tt>t</tt> (the default),
+<tt>*standard-input*</tt> is used.  If <i>stream</i> is a stream that is not an
+interactive stream, then <tt>with-input-editing</tt> is equivalent to <tt>progn</tt> .
+<p>
+<i>input-sensitizer</i> , if supplied, is a function of two arguments, a stream
+and a continuation function; the function has dynamic extent.  The continuation,
+supplied by CLIM, is responsible for displaying output corresponding to the
+user's input on the stream.  The <i>input-sensitizer</i> function will typically call
+<tt>with-output-as-presentation</tt> in order to make the output produced by the
+continuation sensitive.
+<p>
+If <i>initial-contents</i> is supplied, it must be either a string or a list of
+two elements, an object and a presentation type.  If it is a string, the string
+will be inserted into the input buffer using <tt>replace-input</tt> .  If it is a
+list, the printed representation of the object will be inserted into the input
+buffer using <tt>presentation-replace-input</tt> .
+<p>
+
+<a name="Macro with-input-editor-typeout"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>with-input-editor-typeout</b></td><td valign="baseline" width="100%"><i>(<tt>&amp;optional</tt> stream <tt>&amp;key</tt> erase) <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Establishes a context inside of <tt>with-input-editing</tt> in which output can be
+done by <i>body</i> to the input editing stream <i>stream</i> .  If <i>erase</i> is
+<a href="input-editing.html#CONCEPT=true"><i>true</i></a> , the area underneath the typeout will be erased before the typeout
+is done.  <tt>with-input-editor-typeout</tt> should call <tt>fresh-line</tt> before and
+after evaluating the body.  <i>body</i> may have zero or more declarations as its
+first forms.
+<p>
+The <i>stream</i> argument is not evaluated, and must be a symbol that is bound
+to a stream.  If <i>stream</i> is <tt>t</tt> (the default), <tt>*standard-input*</tt> is
+used.  If <i>stream</i> is a stream that is not an input editing stream, then
+<tt>with-input-editor-typeout</tt> is equivalent to calling <tt>fresh-line</tt> ,
+evaluating the body, and then calling <tt>fresh-line</tt> again.
+<p>
+<a name="Generic function input-editor-format"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>input-editor-format</b></td><td valign="baseline" width="100%"><i>stream format-string <tt>&amp;rest</tt> format-args</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>This function is like <tt>format</tt> , except that it is intended to be called on
+input editing streams.  It arranges to insert ``noise strings'' in the input
+editor's input buffer.  Programmers can use this to display in-line prompts in
+<tt>accept</tt> methods.
+<p>
+If <i>stream</i> is a stream that is not an input editing stream, then
+<tt>input-editor-format</tt> is equivalent to <tt>format</tt> .
+<p>
+
+<a name="24.1.1"><h3>24.1.1 The Input Editing Stream Protocol</h3></a>
+Input editing streams obey both the extended input and extended output stream
+protocols, and must support the generic functions that comprise those protocols.
+For the most part, this will simply entail ``trampolining'' those operations to
+the encapsulated interactive stream.  However, some generic functions as
+<tt>stream-read-gesture</tt> and <tt>stream-unread-gesture</tt> will need methods that
+observe the use of the input editor's scan pointer.
+<p>
+Input editing streams will typically also implement methods for
+<tt>prompt-for-accept</tt> (in order to provide in-line prompting that interacts
+correctly with input editing) and <tt>stream-accept</tt> (in order to cause
+<tt>accept</tt> to obey the scan pointer).
+<p>
+The following generic functions comprise the remainder of the input editing
+protocol, and must be implemented for all classes that inherit from
+<tt>input-editing-stream</tt> .
+<p>
+
+<a name="Method stream-input-buffer"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-input-buffer</b></td><td valign="baseline" width="100%"><i>(stream <tt>input-editing-stream</tt> )</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Method]</b></td></tr></table>Returns the input buffer (that is, the string being edited) associated with the
+<a href="input-editing.html#CONCEPT=input editing stream"><i>input editing stream</i></a> <i>stream</i> .  This must be an unspecialized vector
+with a fill pointer.  The fill pointer of the vector points past the last gesture
+object in the buffer.  During input editing, this buffer is side-effected.  The
+consequences of modifying the input buffer by means other than the specified API
+(such as <tt>replace-input</tt> ) are unspecified.
+<p>
+<a name="Generic function stream-insertion-pointer"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-insertion-pointer</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns an integer corresponding to the current input position in the
+<a href="input-editing.html#CONCEPT=input editing stream"><i>input editing stream</i></a> <i>stream</i> 's buffer, that is, the point in the
+buffer at which the next user input gesture will be inserted.  The insertion
+pointer will always be less than <tt>(fill-pointer (stream-input-buffer
+<i>stream</i> ))</tt> .  The insertion pointer can also be thought of as an editing
+cursor.
+<p>
+<a name="Generic function (setf stream-insertion-pointer)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf stream-insertion-pointer)</b></td><td valign="baseline" width="100%"><i>pointer stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Changes the input position of the <a href="input-editing.html#CONCEPT=input editing stream"><i>input editing stream</i></a> <i>stream</i> to
+<i>pointer</i> .  <i>pointer</i> is an integer, and must be less than
+<tt>(fill-pointer (stream-input-buffer <i>stream</i> ))</tt> .
+<p>
+<a name="Generic function stream-scan-pointer"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-scan-pointer</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns an integer corresponding to the current scan pointer in the <a href="input-editing.html#CONCEPT=input
+editing stream"><i>input
+editing stream</i></a> <i>stream</i> 's buffer, that is, the point in the buffer at which
+calls to <tt>accept</tt> have stopped parsing input.  The scan pointer will always
+be less than or equal to <tt>(stream-insertion-pointer <i>stream</i> )</tt> .
+<p>
+<a name="Generic function (setf stream-scan-pointer)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf stream-scan-pointer)</b></td><td valign="baseline" width="100%"><i>pointer stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Changes the scan pointer of the <a href="input-editing.html#CONCEPT=input editing stream"><i>input editing stream</i></a> <i>stream</i> to
+<i>pointer</i> .  <i>pointer</i> is an integer, and must be less than or equal to
+<tt>(stream-insertion-pointer <i>stream</i> )</tt> .
+<p>
+
+<a name="Generic function stream-rescanning-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-rescanning-p</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the state of the <a href="input-editing.html#CONCEPT=input editing stream"><i>input editing stream</i></a> <i>stream</i> 's ``rescan in
+progress'' flag, which is <a href="input-editing.html#CONCEPT=true"><i>true</i></a> if <i>stream</i> is performing a rescan
+operation, otherwise it is <a href="input-editing.html#CONCEPT=false"><i>false</i></a> .  All extended input streams must
+implement a method for this, but non-input editing streams will always returns
+<a href="input-editing.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Generic function reset-scan-pointer"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>reset-scan-pointer</b></td><td valign="baseline" width="100%"><i>stream <tt>&amp;optional</tt> (scan-pointer <tt>0</tt> )</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Sets the <a href="input-editing.html#CONCEPT=input editing stream"><i>input editing stream</i></a> <i>stream</i> 's scan pointer to
+<i>scan-pointer</i> , and sets the state of <tt>stream-rescanning-p</tt> to
+<a href="input-editing.html#CONCEPT=true"><i>true</i></a> .
+<p>
+<a name="Generic function immediate-rescan"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>immediate-rescan</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Invokes a rescan operation immediately by ``throwing'' out to the most recent
+invocation of <tt>with-input-editing</tt> .
+<p>
+<a name="Generic function queue-rescan"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>queue-rescan</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Indicates that a rescan operation on the <a href="input-editing.html#CONCEPT=input editing stream"><i>input editing stream</i></a> <i>stream</i> should take place after the next non-input editing gesture is read
+by setting the ``rescan queued'' flag to <a href="input-editing.html#CONCEPT=true"><i>true</i></a> .
+<p>
+<a name="Generic function rescan-if-necessary"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>rescan-if-necessary</b></td><td valign="baseline" width="100%"><i>stream <tt>&amp;optional</tt> inhibit-activation</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Invokes a rescan operation on the <a href="input-editing.html#CONCEPT=input editing stream"><i>input editing stream</i></a> <i>stream</i> if
+<tt>queue-rescan</tt> was called on the same stream and no intervening rescan
+operation has taken place.  Resets the state of the ``rescan queued'' flag to
+<a href="input-editing.html#CONCEPT=false"><i>false</i></a> .
+<p>
+If <i>inhibit-activation</i> is <a href="input-editing.html#CONCEPT=false"><i>false</i></a> , the input line will not be
+activated even if there is an activation character in it.
+<p>
+<a name="Generic function erase-input-buffer"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>erase-input-buffer</b></td><td valign="baseline" width="100%"><i>stream <tt>&amp;optional</tt> (start-position <tt>0</tt> )</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Erases the part of the display that corresponds to the input editor's buffer
+starting at the position <i>start-position</i> .
+<p>
+<a name="Generic function redraw-input-buffer"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>redraw-input-buffer</b></td><td valign="baseline" width="100%"><i>stream <tt>&amp;optional</tt> (start-position <tt>0</tt> )</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Displays the input editor's buffer starting at the position <i>start-position</i> on the interactive stream that is encapsulated by the <a href="input-editing.html#CONCEPT=input editing
+stream"><i>input editing
+stream</i></a> <i>stream</i> .
+<p>
+
+<a name="Generic function stream-process-gesture"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-process-gesture</b></td><td valign="baseline" width="100%"><i>stream gesture type</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>If <i>gesture</i> is an input editing command, <tt>stream-process-gesture</tt> performs the input editing operation on the <a href="input-editing.html#CONCEPT=input editing stream"><i>input editing stream</i></a> <i>stream</i> and returns <tt>nil</tt> .  Otherwise, it returns the two values
+<i>gesture</i> and <i>type</i> .
+<p>
+<a name="Method stream-read-gesture"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-read-gesture</b></td><td valign="baseline" width="100%"><i>(stream <tt>standard-input-editing-stream</tt> ) <tt>&amp;key</tt> </i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Method]</b></td></tr></table>Reads and returns a gesture from the user on the <a href="input-editing.html#CONCEPT=input editing stream"><i>input editing stream</i></a> <i>stream</i> .
+<p>
+The <tt>stream-read-gesture</tt> method must call <tt>stream-process-gesture</tt> , which
+will either return a ``real'' gesture (such as a typed character, a pointer
+gesture, or a timeout) or will return <tt>nil</tt> (indicating that some sort of
+input editing operation was performed).  <tt>stream-read-gesture</tt> must only
+return when a real gesture was been read; if an input editing operation was
+performed, <tt>stream-read-gesture</tt> will loop until a ``real'' gesture is
+typed by the user.
+<p>
+<a name="Method stream-unread-gesture"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-unread-gesture</b></td><td valign="baseline" width="100%"><i>(stream <tt>standard-input-editing-stream</tt> ) gesture</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Method]</b></td></tr></table>Inserts the gesture <i>gesture</i> back into the input editor's buffer,
+maintaining the scan pointer.
+<p>
+
+<a name="24.1.2"><h3>24.1.2 Suggestions for Input Editing Commands</h3></a>
+An implementation of the input editor should provide a set of generally useful
+input editing commands.  The exact set of these commands is unspecified, and the
+key bindings for these commands may vary from platform to platform.  The
+following is a suggested minimum set of input editing commands and key bindings,
+taken roughly from EMACS.
+<p>
+<center><table>
+<tr valign="baseline"><td>|</td><td colspan=3><hr></td><td>|</td></tr>
+<tr valign="baseline"><td>|</td><td align=center colspan=1><center></center></td><td>|</td><td align=center colspan=1> <center>Suggested</center></td><td>|</td></tr>
+<tr valign="baseline"><td>|</td><td align=center colspan=1><center>Input editor command</center></td><td>|</td><td align=center colspan=1> <center>key binding</center></td><td>|</td></tr>
+<tr valign="baseline"><td>|</td><td colspan=3><hr></td><td>|</td></tr>
+<tr valign="baseline"><td>|</td><td align=left colspan=1>Forward character   </td><td>|</td><td align=left colspan=1> <tt>control-F</tt></td><td>|</td></tr>
+<tr valign="baseline"><td>|</td><td align=left colspan=1>Forward word        </td><td>|</td><td align=left colspan=1> <tt>meta-F</tt>   </td><td>|</td></tr>
+<tr valign="baseline"><td>|</td><td align=left colspan=1>Backward character  </td><td>|</td><td align=left colspan=1> <tt>control-B</tt></td><td>|</td></tr>
+<tr valign="baseline"><td>|</td><td align=left colspan=1>Backward word       </td><td>|</td><td align=left colspan=1> <tt>meta-B</tt>   </td><td>|</td></tr>
+<tr valign="baseline"><td>|</td><td align=left colspan=1>Beginning of line   </td><td>|</td><td align=left colspan=1> <tt>control-A</tt></td><td>|</td></tr>
+<tr valign="baseline"><td>|</td><td align=left colspan=1>End of line         </td><td>|</td><td align=left colspan=1> <tt>control-E</tt></td><td>|</td></tr>
+<tr valign="baseline"><td>|</td><td align=left colspan=1>Next line           </td><td>|</td><td align=left colspan=1> <tt>control-N</tt></td><td>|</td></tr>
+<tr valign="baseline"><td>|</td><td align=left colspan=1>Previous line       </td><td>|</td><td align=left colspan=1> <tt>control-P</tt></td><td>|</td></tr>
+<tr valign="baseline"><td>|</td><td align=left colspan=1>Beginning of buffer </td><td>|</td><td align=left colspan=1> <tt>meta-<</tt>   </td><td>|</td></tr>
+<tr valign="baseline"><td>|</td><td align=left colspan=1>End of buffer       </td><td>|</td><td align=left colspan=1> <tt>meta-<</tt>   </td><td>|</td></tr>
+<tr valign="baseline"><td>|</td><td align=left colspan=1>Delete next character     </td><td>|</td><td align=left colspan=1> <tt>control-D</tt></td><td>|</td></tr>
+<tr valign="baseline"><td>|</td><td align=left colspan=1>Delete next word          </td><td>|</td><td align=left colspan=1> <tt>meta-D</tt>   </td><td>|</td></tr>
+<tr valign="baseline"><td>|</td><td align=left colspan=1>Delete previous character </td><td>|</td><td align=left colspan=1> <tt>Rubout</tt>   </td><td>|</td></tr>
+<tr valign="baseline"><td>|</td><td align=left colspan=1>Delete previous word      </td><td>|</td><td align=left colspan=1> <tt>m-Rubout</tt> </td><td>|</td></tr>
+<tr valign="baseline"><td>|</td><td align=left colspan=1>Kill to end of line       </td><td>|</td><td align=left colspan=1> <tt>control-K</tt></td><td>|</td></tr>
+<tr valign="baseline"><td>|</td><td align=left colspan=1>Clear input buffer        </td><td>|</td><td align=left colspan=1> <b><i>varies</i></b>   </td><td>|</td></tr>
+<tr valign="baseline"><td>|</td><td align=left colspan=1>Insert new line           </td><td>|</td><td align=left colspan=1> <tt>control-O</tt></td><td>|</td></tr>
+<tr valign="baseline"><td>|</td><td align=left colspan=1>Transpose adjacent characters  </td><td>|</td><td align=left colspan=1> <tt>control-T</tt> </td><td>|</td></tr>
+<tr valign="baseline"><td>|</td><td align=left colspan=1>Transpose adjacent words       </td><td>|</td><td align=left colspan=1> <tt>meta-T</tt>    </td><td>|</td></tr>
+<tr valign="baseline"><td>|</td><td align=left colspan=1>Yank from kill ring            </td><td>|</td><td align=left colspan=1> <tt>control-Y</tt> </td><td>|</td></tr>
+<tr valign="baseline"><td>|</td><td align=left colspan=1>Yank from presentation history </td><td>|</td><td align=left colspan=1> <tt>control-meta-Y</tt></td><td>|</td></tr>
+<tr valign="baseline"><td>|</td><td align=left colspan=1>Yank next item                 </td><td>|</td><td align=left colspan=1> <tt>meta-Y</tt>    </td><td>|</td></tr>
+<tr valign="baseline"><td>|</td><td align=left colspan=1>Scroll output history forward   </td><td>|</td><td align=left colspan=1> <tt>control-V</tt></td><td>|</td></tr>
+<tr valign="baseline"><td>|</td><td align=left colspan=1>Scroll output history backward  </td><td>|</td><td align=left colspan=1> <tt>meta-V</tt>   </td><td>|</td></tr>
+<tr valign="baseline"><td>|</td><td colspan=3><hr></td><td>|</td></tr>
+<tr valign="baseline"></tr>
+</table></center>
+
+An implementation of the input may also support ``numeric arguments'' (such as
+<tt>control-0</tt>, <tt>control-1</tt>, <tt>meta-0</tt>, and so forth) that modify the
+behavior of the input editing commands.  For instance, the motion and deletion
+commands should be repeated as many times as specified by the numeric argument.
+Furthermore, the accumulated numeric argument should be passed to the command
+processor in such a way that <tt>substitute-numeric-argument-marker</tt> can be used
+to insert the numeric argument into a command that was read via a keystroke
+accelerator.
+<p>
+<a name="Function add-input-editor-command"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>add-input-editor-command</b></td><td valign="baseline" width="100%"><i>gestures function</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Adds an input editing command that causes <i>function</i> to be executed when the
+specified gesture(s) are typed by the user.  <i>gestures</i> is either a single
+gesture name, or a list of gesture names.  When <i>gestures</i> is a sequence of
+gesture names, the function is executed only after all of the gestures are typed
+in order with no intervening gestures.  (This is used to implement ``prefixed''
+commands, such as the <tt>control-X control-F</tt> command one might fix in EMACS.)
+<p>
+
+<a name="24.2"><h2>24.2 Activation and Delimiter Gestures</h2></a>
+Activation gestures terminate an input ``sentence'', such as a command or
+anything else being read by <tt>accept</tt> .  When an activation gesture is entered
+by the user, CLIM will cease reading input and ``execute'' the input that has
+been entered.
+<p>
+Delimiter gestures terminate an input ``word'', such as a recursive call to
+<tt>accept</tt> .
+<p>
+
+<a name="Variable *activation-gestures*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>*activation-gestures*</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Variable]</b></td></tr></table>The set of currently active activation gestures.  The global value of this must
+be <tt>nil</tt> .  The exact format of <tt>*activation-gestures*</tt> is unspecified.
+<tt>*activation-gestures*</tt> and the elements in it may have dynamic extent.
+<p>
+<a name="Variable *standard-activation-gestures*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>*standard-activation-gestures*</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Variable]</b></td></tr></table>The default set of activation gestures.  The exact set of standard activation
+is unspecified, but must include the gesture that corresponds to the
+<tt><huge>#\Newline</huge></tt> character.
+<p>
+<a name="Macro with-activation-gestures"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>with-activation-gestures</b></td><td valign="baseline" width="100%"><i>(gestures <tt>&amp;key</tt> override) <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Specifies a list of gestures that terminate input during the execution of
+<i>body</i> .  <i>body</i> may have zero or more declarations as its first forms.
+<i>gestures</i> must be either a single gesture name or a form that evaluates to
+a list of gesture names.
+<p>
+If the boolean <i>override</i> is <a href="input-editing.html#CONCEPT=true"><i>true</i></a> , then <i>gestures</i> will override
+the current activation gestures.  If it is <a href="input-editing.html#CONCEPT=false"><i>false</i></a> (the default), then
+<i>gestures</i> will be added to the existing set of activation gestures.
+<tt>with-activation-gestures</tt> must bind <tt>*activation-gestures*</tt> to the new
+set of activation gestures.
+<p>
+See also the <tt>:activation-gestures</tt> and <tt>:additional-activation-gestures</tt> options to <tt>accept</tt> .
+<p>
+<a name="Function activation-gesture-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>activation-gesture-p</b></td><td valign="baseline" width="100%"><i>gesture</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Returns <a href="input-editing.html#CONCEPT=true"><i>true</i></a> if the gesture object <i>gesture</i> is an activation
+gesture, otherwise returns <a href="input-editing.html#CONCEPT=false"><i>false</i></a> .
+<p>
+
+<a name="Variable *delimiter-gestures*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>*delimiter-gestures*</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Variable]</b></td></tr></table>The set of currently active delimiter gestures.  The global value of this must
+be <tt>nil</tt> .  The exact format of <tt>*delimiter-gestures*</tt> is unspecified.
+<tt>*delimiter-gestures*</tt> and the elements in it may have dynamic extent.
+<p>
+<a name="Macro with-delimiter-gestures"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>with-delimiter-gestures</b></td><td valign="baseline" width="100%"><i>(gestures <tt>&amp;key</tt> override) <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Specifies a list of gestures that terminate an individual token, but not the
+entire input, during the execution of <i>body</i> .  <i>body</i> may have zero or
+more declarations as its first forms.  <i>gestures</i> must be either a single
+gesture name or a form that evaluates to a list of gesture names.
+<p>
+If the boolean <i>override</i> is <a href="input-editing.html#CONCEPT=true"><i>true</i></a> , then <i>gestures</i> will override
+the current delimiter gestures.  If it is <a href="input-editing.html#CONCEPT=false"><i>false</i></a> (the default), then
+<i>gestures</i> will be added to the existing set of delimiter gestures.
+<tt>with-delimiter-gestures</tt> must bind <tt>*delimiter-gestures*</tt> to the new set
+of delimiter gestures.
+<p>
+See also the <tt>:delimiter-gestures</tt> and <tt>:additional-delimiter-gestures</tt> options to <tt>accept</tt> .
+<p>
+<a name="Function delimiter-gesture-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>delimiter-gesture-p</b></td><td valign="baseline" width="100%"><i>gesture</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Returns <a href="input-editing.html#CONCEPT=true"><i>true</i></a> if the gesture object <i>gesture</i> is a delimiter gesture,
+otherwise returns <a href="input-editing.html#CONCEPT=false"><i>false</i></a> .
+<p>
+
+<a name="24.3"><h2>24.3 Signalling Errors Inside <tt>present</tt> Methods</h2></a>
+<a name="Error simple-parse-error"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>simple-parse-error</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Error]</b></td></tr></table>The error that is signalled by <tt>simple-parse-error</tt> .  This is a subclass of
+<tt>parse-error</tt> .  
+<p>
+This condition handles two initargs, <tt>:format-string</tt> and
+<tt>:format-arguments</tt> , which are used to specify a control string and arguments
+for a call to <tt>format</tt> .
+<p>
+<a name="Function simple-parse-error"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>simple-parse-error</b></td><td valign="baseline" width="100%"><i>format-string <tt>&amp;rest</tt> format-arguments</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Signals a <tt>simple-parse-error</tt> error while parsing an input token.  Does not
+return.  <i>format-string</i> and <i>format-args</i> are as for <tt>format</tt> .
+<p>
+<a name="Error input-not-of-required-type"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>input-not-of-required-type</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Error]</b></td></tr></table>The error that is signalled by <tt>input-not-of-required-type</tt> .  This is a
+subclass of <tt>parse-error</tt> .
+<p>
+This condition handles two initargs, <tt>:string</tt> and <tt>:type</tt> , which specify
+a string to be used in an error message and the expected presentation type.
+<p>
+<a name="Function input-not-of-required-type"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>input-not-of-required-type</b></td><td valign="baseline" width="100%"><i>object type</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Reports that input does not satisfy the specified type by signalling an
+<tt>input-not-of-required-type</tt> error.  <i>object</i> is a parsed object or an
+unparsed token (a string).  <i>type</i> is a presentation type specifier.  Does
+not return.
+ 
+<p>
+<a name="24.4"><h2>24.4 Reading and Writing of Tokens</h2></a>
+<a name="Generic function replace-input"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>replace-input</b></td><td valign="baseline" width="100%"><i>stream new-input 
+                             <tt>&amp;key</tt> start end buffer-start rescan</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Replaces the part of the <a href="input-editing.html#CONCEPT=input editing stream"><i>input editing stream</i></a> <i>stream</i> 's input buffer
+that extends from <i>buffer-start</i> to its scan pointer with the string
+<i>new-input</i> .  <i>buffer-start</i> defaults to the current input position of
+<i>stream</i> .  <i>start</i> and <i>end</i> can be supplied to specify a
+subsequence of <i>new-input</i> ; <i>start</i> defaults to 0 and <i>end</i> defaults
+to the length of <i>new-input</i> .
+<p>
+<tt>replace-input</tt> must queue a rescan by calling <tt>queue-rescan</tt> if the new
+input does not match the old input, or <i>rescan</i> is <a href="input-editing.html#CONCEPT=true"><i>true</i></a> .
+<p>
+The returned value is the position in the input buffer.
+<p>
+All input editing streams must implement a method for this function.
+<p>
+<a name="Generic function presentation-replace-input"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>presentation-replace-input</b></td><td valign="baseline" width="100%"><i>stream object type view
+                                          <tt>&amp;key</tt> buffer-start rescan 
+                                               query-identifier for-context-type</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Like <tt>replace-input</tt> , except that the new input to insert into the input
+buffer is gotten by presenting <i>object</i> with the presentation type
+<i>type</i> and view <i>view</i> . <i>buffer-start</i> and <i>rescan</i> are as for
+<tt>replace-input</tt> , and <i>query-identifier</i> and <i>for-context-type</i> as as
+for <tt>present</tt> .
+<p>
+All input editing streams must implement a method for this function.  Typically,
+this will be implemented by calling <tt>present-to-string</tt> on <i>object</i> ,
+<i>type</i> , <i>view</i> , and <i>for-context-type</i> , and then calling
+<tt>replace-input</tt> on the resulting string.
+<p>
+If the object does not have a readable representation (in the Lisp sense),
+<tt>presentation-replace-input</tt> may create an ``accept result'' to represent the
+object, and insert that into the input buffer.  For the purposes of input
+editing, ``accept results'' must be treated as a single input gesture.
+<p>
+
+<a name="Function read-token"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>read-token</b></td><td valign="baseline" width="100%"><i>stream <tt>&amp;key</tt> input-wait-handler pointer-button-press-handler click-only</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Reads characters from the <a href="input-editing.html#CONCEPT=interactive stream"><i>interactive stream</i></a> <i>stream</i> until it
+encounters a delimiter or activation gesture, or a pointer gesture.  Returns the
+accumulated string that was delimited by the delimiter or activation gesture,
+leaving the delimiter unread.
+<p>
+If the first character of typed input is a quotation mark (<tt><huge>#\"</huge></tt>), then
+<tt>read-token</tt> will ignore delimiter gestures until until another quotation
+mark is seen.  When the closing quotation mark is seen, <tt>read-token</tt> will
+proceed as above.
+<p>
+If the boolean <i>click-only</i> is <a href="input-editing.html#CONCEPT=true"><i>true</i></a> , then no keyboard input is
+allowed.  In this case <tt>read-token</tt> will simply ignore any typed characters.
+<p>
+<i>input-wait-handler</i> and <i>pointer-button-press-handler</i> are as for
+<tt>stream-read-gesture</tt> .
+<p>
+<a name="Function write-token"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>write-token</b></td><td valign="baseline" width="100%"><i>token stream <tt>&amp;key</tt> acceptably</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table><tt>write-token</tt> is the opposite of <tt>read-token</tt> given the string
+<i>token</i> , it writes it to the <a href="input-editing.html#CONCEPT=interactive stream"><i>interactive stream</i></a> <i>stream</i> .  If
+<i>acceptably</i> is <a href="input-editing.html#CONCEPT=true"><i>true</i></a> and there are any characters in the token that
+are delimiter gestures (see the macro <tt>with-delimiter-gestures</tt> ), then
+<tt>write-token</tt> will surround the token with quotation marks (<tt><huge>#\"</huge></tt>).
+<p>
+Typically, <tt>present</tt> methods will use <tt>write-token</tt> instead of
+<tt>write-string</tt> .
+<p>
+
+<a name="24.5"><h2>24.5 Completion</h2></a>
+CLIM provides a <a name="CONCEPT=completion"><b><i>completion</i></b></a> facility that completes a string provided
+by a user against some set of possible completions (which are themselves
+strings).  Each completion is associated with some Lisp object.  CLIM
+implementations are encouraged to provide ``chunkwise'' completion, that is, if
+the user input consists of several tokens separated by ``partial delimiters'',
+CLIM should complete each token separately against the set of possibilities.
+<p>
+
+<a name="Variable *completion-gestures*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>*completion-gestures*</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Variable]</b></td></tr></table>A list of the gesture names that cause <tt>complete-input</tt> to complete the
+user's input as fully as possible.  The exact global contents of this list is
+unspecified, but must include the <tt>:complete</tt> gesture name.
+<p>
+<a name="Variable *help-gestures*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>*help-gestures*</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Variable]</b></td></tr></table>A list of the gesture names that cause <tt>accept</tt> and <tt>complete-input</tt> to
+display a (possibly input context-sensitive) help message, and for some
+presentation types a list of possibilities as well.  The exact global contents
+of this list is unspecified, but must include the <tt>:help</tt> gesture name.
+<p>
+<a name="Variable *possibilities-gestures*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>*possibilities-gestures*</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Variable]</b></td></tr></table>A list of the gesture names that cause <tt>complete-input</tt> to display a
+(possibly input context-sensitive) help message and a list of possibilities.
+The exact global contents of this list is unspecified, but must include the
+<tt>:possibilities</tt> gesture name.
+<p>
+<a name="Function complete-input"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>complete-input</b></td><td valign="baseline" width="100%"><i>stream function 
+                         <tt>&amp;key</tt> partial-completers allow-any-input
+                              possibility-printer (help-displays-possibilities t)</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Reads input from the user from the <a href="input-editing.html#CONCEPT=input editing stream"><i>input editing stream</i></a> <i>stream</i> ,
+completing over a set of possibilities.  <tt>complete-input</tt> is only required to
+work on input editing streams, but implementations may extend it to work on
+interactive streams as well.
+<p>
+<i>function</i> is a function of two arguments.  It is called to generate the
+completion possibilities that match the user's input; it has dynamic extent.
+Usually, programmers will pass either <tt>complete-from-possibilities</tt> or
+<tt>complete-from-generator</tt> as the value of <i>function</i> .  Its first argument
+is a string containing the user's input ``so far''.  Its second argument is the
+completion mode, one of the following:
+<p>
+<ul> <li> <tt>:complete-limited</tt> ---the function must complete the input up to the
+next partial delimiter.  This is the mode used when the user types one of the
+partial completers.
+<p>
+<li> <tt>:complete-maximal</tt> ---the function must complete the input as much as
+possible.  This is the mode used when the user issues a gesture that matches any
+of the gesture names in <tt>*completion-gestures*</tt> .
+<p>
+<li> <tt>:complete</tt> ---the function must complete the input as much as possible,
+except that if the user's input exactly matches one of the possibilities, even
+if it is a left substring of another possibility, the shorter possibility is
+returned as the result.  This is the mode used when the user issues a delimiter
+or activation gesture that is not a partial completer.
+<p>
+<li> <tt>:possibilities</tt> ---the function must return an alist of the possible
+completions as its fifth value.  This is the mode used when the user a gesture
+that matches any of the gesture names in <tt>*possibilities-gestures*</tt> or
+<tt>*help-gestures*</tt> (if <i>help-displays-possibilities</i> is <a href="input-editing.html#CONCEPT=true"><i>true</i></a> ).
+</ul> <i>function</i> must return five values:
+<p>
+<ul> <li> <i>string</i> ---the completed input string.
+<p>
+<li> <i>success</i> ---<a href="input-editing.html#CONCEPT=true"><i>true</i></a> if completion was successful, otherwise
+<a href="input-editing.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<li> <i>object</i> ---the object corresponding to the completion, or <tt>nil</tt> if
+the completion was unsuccessful.
+<p>
+<li> <i>nmatches</i> ---the number of possible completions of the input.
+<p>
+<li> <i>possibilities</i> ---an alist of completions whose entries are a list
+of a string and an object, returned only when the completion mode is
+<tt>:possibilities</tt> .  This list will be freshly created.
+</ul> <tt>complete-input</tt> returns three values: <i>object</i> , <i>success</i> , and
+<i>string</i> .  In addition, the printed representation of the completed input
+will be inserted into the input buffer of <i>stream</i> in place of the
+user-supplied string by calling <tt>replace-input</tt> .
+<p>
+<i>partial-completers</i> is a list of characters that delimit portions of a name
+that can be completed separately.  The default is an empty list.
+<p>
+If the boolean <i>allow-any-input</i> is <a href="input-editing.html#CONCEPT=true"><i>true</i></a> , then <tt>complete-input</tt> will return as soon as the user issues an activation gesture, even if the input
+is not any of the possibilities.  If the input is not one of the possibilities,
+the three values returned by <tt>complete-input</tt> will be <tt>nil</tt> , <tt>t</tt> , and
+the string.  The default for <i>allow-any-input</i> is <a href="input-editing.html#CONCEPT=false"><i>false</i></a> .
+<p>
+If <i>possibility-printer</i> is supplied, it must be a function of three
+arguments, a possibility, a presentation type, and a stream; it has dynamic
+extent.  The function displays the possibility on the stream.  The possibility
+will be a list of two elements, the first being a string and the second being
+the object corresponding to the string.
+<p>
+If <i>help-display-possibilities</i> is <a href="input-editing.html#CONCEPT=true"><i>true</i></a> (the default), then when the
+user issues a help gesture (a gesture that matches one of the gesture names in
+<tt>*help-gestures*</tt> ), CLIM will display all the matching possibilities. If it
+is <a href="input-editing.html#CONCEPT=false"><i>false</i></a> , then CLIM will not display the possibilities unless the user
+issues a possibility gesture (a gesture that matches one of the gesture names in
+<tt>*possibilities-gestures*</tt> ).
+<p>
+
+<a name="Condition simple-completion-error"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>simple-completion-error</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Condition]</b></td></tr></table>The error that is signalled by <tt>complete-input</tt> when no completion is found.
+This is a subclass of <tt>simple-parse-error</tt> .
+<p>
+
+<a name="Macro completing-from-suggestions"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>completing-from-suggestions</b></td><td valign="baseline" width="100%"><i>(stream
+                                          <tt>&amp;key</tt> partial-completers allow-any-input
+                                               possibility-printer
+                                               (help-displays-possibilities <tt>t</tt> ))
+                                         <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Reads input from the <a href="input-editing.html#CONCEPT=input editing stream"><i>input editing stream</i></a> <i>stream</i> , completing over a
+set of possibilities generated by calls to <tt>suggest</tt> within <i>body</i> .
+<i>body</i> may have zero or more declarations as its first forms.
+<p>
+<tt>completing-from-suggestions</tt> returns three values, <i>object</i> ,
+<i>success</i> , and <i>string</i> The <i>stream</i> argument is not evaluated, and must be a symbol that is bound
+to a stream.  If <i>stream</i> is <tt>t</tt> (the default), <tt>*standard-input*</tt> is
+used.
+<p>
+<i>partial-completers</i> , <i>allow-any-input</i> , and <i>possibility-printer</i> are as for <tt>complete-input</tt> .
+<p>
+Implementations will probably use <tt>complete-from-generator</tt> to implement
+this.
+<p>
+<a name="Function suggest"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>suggest</b></td><td valign="baseline" width="100%"><i>completion object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Specifies one possibility for <tt>completing-from-suggestions</tt> .  <i>completion</i> is a string, the printed representation of <i>object</i> .  <i>object</i> is the
+internal representation.
+<p>
+It is permitted for this function to have lexical scope, and be defined only
+within the body of <tt>completing-from-suggestions</tt> .
+<p>
+
+<a name="Function complete-from-generator"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>complete-from-generator</b></td><td valign="baseline" width="100%"><i>string function delimiters
+                                  <tt>&amp;key</tt> (action <tt>:complete</tt> ) predicate</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Given an input string <i>string</i> and a list of delimiter characters
+<i>delimiters</i> that act as partial completion characters,
+<tt>complete-from-generator</tt> completes against the possibilities that are
+generated by the function <i>generator</i> .  <i>generator</i> is a function of two
+arguments, the string <i>string</i> and another function that it calls in order
+to process the possibility; it has dynamic extent.
+<p>
+<i>action</i> will be one of <tt>:complete</tt> , <tt>:complete-maximal</tt> ,
+<tt>:complete-limited</tt> , or <tt>:possibilities</tt> .  These are described under the
+function <tt>complete-input</tt> .
+<p>
+<i>predicate</i> must be a function of one argument, an object.  If the predicate
+returns <a href="input-editing.html#CONCEPT=true"><i>true</i></a> , the possibility corresponding to the object is processed,
+otherwise it is not.  It has dynamic extent.
+<p>
+<tt>complete-from-generator</tt> returns five values, the completed input string,
+the success value (<a href="input-editing.html#CONCEPT=true"><i>true</i></a> if the completion was successful, otherwise
+<a href="input-editing.html#CONCEPT=false"><i>false</i></a> ), the object matching the completion (or <tt>nil</tt> if unsuccessful),
+the number of matches, and a list of possible completions if <i>action</i> was
+<tt>:possibilities</tt> .
+<p>
+This function is one that will typically be passed as the second argument to
+<tt>complete-input</tt> .
+<p>
+<a name="Function complete-from-possibilities"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>complete-from-possibilities</b></td><td valign="baseline" width="100%"><i>string completions delimiters
+                                      <tt>&amp;key</tt> (action <tt>:complete</tt> ) predicate
+                                           name-key value-key</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Given an input string <i>string</i> and a list of delimiter characters
+<i>delimiters</i> that act as partial completion characters,
+<tt>complete-from-possibilities</tt> completes against the possibilities in the
+sequence <i>completions</i> .  The completion string is extracted from the
+possibilities in completions by applying <i>name-key</i> , which is a function of
+one argument.  The object is extracted by applying <i>value-key</i> , which is a
+function of one argument.  <i>name-key</i> defaults to <tt>first</tt> , and
+<i>value-key</i> defaults to <tt>second</tt> .
+<p>
+<i>action</i> will be one of <tt>:complete</tt> , <tt>:complete-maximal</tt> ,
+<tt>:complete-limited</tt> , or <tt>:possibilities</tt> .  These are described under the
+function <tt>complete-input</tt> .
+<p>
+<i>predicate</i> must be a function of one argument, an object.  If the predicate
+returns <a href="input-editing.html#CONCEPT=true"><i>true</i></a> , the possibility corresponding to the object is processed,
+otherwise it is not.
+<p>
+<i>predicate</i> , <i>name-key</i> , and <i>value-key</i> have dynamic extent.
+<p>
+<tt>complete-from-possibilities</tt> returns five values, the completed input
+string, the success value (<a href="input-editing.html#CONCEPT=true"><i>true</i></a> if the completion was successful,
+otherwise <a href="input-editing.html#CONCEPT=false"><i>false</i></a> ), the object matching the completion (or <tt>nil</tt> if
+unsuccessful), the number of matches, and a list of possible completions if
+<i>action</i> was <tt>:possibilities</tt> .
+<p>
+This function is one that will typically be passed as the second argument to
+<tt>complete-input</tt> .
+<p>
+
+<a name="Macro with-accept-help"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>with-accept-help</b></td><td valign="baseline" width="100%"><i>options <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Binds the dynamic environment to control the documentation produced by help and
+possibilities gestures during user input in calls to <tt>accept</tt> with the
+dynamic scope of <i>body</i> .  <i>body</i> may have zero or more declarations as
+its first forms.
+<p>
+<i>options</i> is a list of option specifications.  Each specification is itself
+a list of the form <i>(help-option help-string)</i> .  <i>help-option</i> is either
+a symbol that is a <i>help-type</i> or a list of the form <i>(help-type
+mode-flag)</i> .
+<p>
+<i>help-type</i> must be one of:
+<p>
+<ul> <li> <tt>:top-level-help</tt> ---specifies that <i>help-string</i> be used instead of
+the default help documentation provided by <tt>accept</tt> .
+<p>
+<li> <tt>:subhelp</tt> ---specifies that <i>help-string</i> be used in addition to
+the default help documentation provided by <tt>accept</tt> .
+</ul> <i>mode-flag</i> must be one of:
+<p>
+<ul> <li> <tt>:append</tt> ---specifies that the current help string be appended to any
+previous help strings of the same help type. This is the default mode.
+<p>
+<li> <tt>:override</tt> ---specifies that the current help string is the help for
+this help type; no lower-level calls to <tt>with-accept-help</tt> can override this.
+(<tt>:override</tt> works from the out-side in.)
+<p>
+<li> <tt>:establish-unless-overridden</tt> ---specifies that the current help string
+be the help for this help type unless a higher-level call to
+<tt>with-accept-help</tt> has already established a help string for this help type
+in the <tt>:override</tt> mode. This is what <tt>accept</tt> uses to establish the
+default help.
+</ul> <i>help-string</i> is a string or a function that returns a string.  If it is a
+function, it receives three arguments, the stream, an action (either <tt>:help</tt> or <tt>:possibilities</tt> ) and the help string generated so far.
+<p>
+None of the arguments is evaluated. 
+<br><hr><br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="presentation-types.html">Presentation Types</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="menus.html">Menu Facilities</a></td>
+</tr></table>
+</body></html>

@@ -1,0 +1,119 @@
+<html><head><title>CLIM: 33 Encapsulating Streams</title></head><body>
+<br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="clim-sys.html">The CLIM-SYS Package</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="gray-streams.html">Common Lisp Streams</a></td>
+</tr></table><br><hr><br>
+<p>
+<br><a name="33"><h1>33 Encapsulating Streams</h1></a>
+<a name="LABEL=encapsulating-streams"></a> An <a name="CONCEPT=encapsulating stream"><b><i>encapsulating stream</i></b></a> is a special kind of stream that ``closes
+over'' another stream, handling some of the usual stream protocol operations
+itself, and delegating the remaining operations to the ``encapsulated'' stream.
+Encapsulating streams may be used by some CLIM implementations in order to
+facilitate the implementation of features that require the dynamic modification
+of a stream's state and operations.  For example, <tt>accepting-values</tt> dialogs
+can be implemented by using an encapsulating stream that tailors calls to
+<tt>accept</tt> and <tt>prompt-for-accept</tt> in such a way that the output is captured
+and formatted into a dialog that contains prompts and fields that can be clicked
+on and modified by the user.  Input editing can also be implemented using an
+encapsulating stream that manages the interaction between <tt>read-gesture</tt> and
+the input editing commands and rescanning.  The form <tt>filling-output</tt> can be
+implemented by having an encapsulating stream that buffers output and inserts
+line breaks appropriately.
+<p>
+CLIM implementations need not use encapsulating streams at all.  If
+encapsulating streams are used, they must adhere to the following protocols.
+Encapsulating streams are not part of CLIM's API.
+<p>
+<a name="33.1"><h2>33.1 Encapsulating Stream Classes</h2></a>
+<a name="Protocol&nbsp;Class encapsulating-stream"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>encapsulating-stream</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Protocol&nbsp;Class]</b></td></tr></table>The protocol class that corresponds to an encapsulating stream.
+If you want to create a new class that behaves like an encapsulating stream, it should be a subclass of <b>encapsulating-stream</b>. Subclasses of <b>encapsulating-stream</b> must obey the encapsulating stream protocol.<i>Members of this class are mutable. </i><a name="Predicate encapsulating-stream-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>encapsulating-stream-p</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Predicate]</b></td></tr></table>Returns <a href="encapsulating-streams.html#CONCEPT=true"><i>true</i></a> if <i>object</i> is an <a href="encapsulating-streams.html#CONCEPT=encapsulating stream"><i>encapsulating stream</i></a> , otherwise
+returns <a href="encapsulating-streams.html#CONCEPT=false"><i>false</i></a> .  
+<p>
+<a name="Init&nbsp;arg :stream"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:stream</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table>All encapsulating streams must handle the <tt>:stream</tt> initarg, which is used to
+specify the stream to be encapsulated.
+<p>
+<a name="Class standard-encapsulating-stream"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>standard-encapsulating-stream</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>This instantiable class provides a standard implementation of an encapsulating
+stream.
+<p>
+
+<a name="33.1.1"><h3>33.1.1 Encapsulating Stream Protocol</h3></a>
+The <tt>standard-encapsulating-stream</tt> class must provide ``trampoline'' methods
+for <b><i>all</i></b> stream protocol operations.  These ``trampolines'' will simply
+call the same generic function on the encapsulated stream.  In particular, all
+of the generic functions in the following protocols must have trampolines.
+<p>
+<ul> <li> The basic input and output stream protocols, as specified by the Gray
+stream proposal in Chapter <a href="gray-streams.html#LABEL=gray-streams"><b><i>Common Lisp Streams</i></b></i></a> .
+<p>
+<li> The sheet protocols, as specified in Chapters <a href="silica.html#LABEL=sheet-properties"><b><i>Properties of Sheets</i></b></i></a> and
+<a href="silica.html#LABEL=sheet-protocols"><b><i>Sheet Protocols</i></b></i></a> .
+<p>
+<li> The medium protocol, as specified in Chapter <a href="drawing-options.html#LABEL=drawing-options"><b><i>Drawing Options</i></b></i></a> .
+<p>
+<li> The text style binding forms, as specified in Chapter <a href="text-styles.html#LABEL=text-styles"><b><i>Text Styles</i></b></i></a> .
+<p>
+<li> The drawing functions, as specified in Chapter <a href="graphics.html#LABEL=graphics"><b><i>Graphics</i></b></i></a> .
+<p>
+<li> The extended output stream protocol, as specified in
+Chapter <a href="extended-output.html#LABEL=extended-output"><b><i>Extended Stream Output</i></b></i></a> .
+<p>
+<li> The output recording stream protocol, as specified in
+Chapter <a href="output-recording.html#LABEL=output-recording"><b><i>Output Recording</i></b></i></a> .
+<p>
+<li> The incremental redisplay stream protocol, as specified in
+Chapter <a href="redisplay.html#LABEL=incremental-redisplay"><b><i>Incremental Redisplay</i></b></i></a> .
+<p>
+<li> The extended input stream protocol, as specified in
+Chapter <a href="extended-input.html#LABEL=extended-input"><b><i>Extended Stream Input</i></b></i></a> .
+<p>
+<li> The stream generics for presentation types, as specified in
+Chapter <a href="presentation-types.html#LABEL=presentation-types"><b><i>Presentation Types</i></b></i></a> .
+</ul> The following generic function must also be implemented for all encapsulating
+stream classes.
+<p>
+<a name="Generic function encapsulating-stream-stream"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>encapsulating-stream-stream</b></td><td valign="baseline" width="100%"><i>encapsulating-stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the stream encapsulated by the <a href="encapsulating-streams.html#CONCEPT=encapsulating stream"><i>encapsulating stream</i></a> <i>encapsulating-stream</i> .
+<p>
+
+<a name="33.1.2"><h3>33.1.2 The ``Delegation Problem''</h3></a>
+The suggested implementation of encapsulating streams has a potential problem
+that we label the ``delegation'' or ``multiple self'' problem.  Here is an
+example of the problem.
+<p>
+Suppose we implement <tt>accepting-values</tt> by using an encapsulating stream
+class called <tt>accepting-values-stream</tt> that will be used to close over an
+ordinary extended input and output stream.  Let us examine two generic
+functions, <tt>stream-accept</tt> and <tt>prompt-for-accept</tt> .  The
+<tt>stream-accept</tt> method on an ordinary stream calls <tt>prompt-for-accept</tt> .
+Now suppose that <tt>accepting-values-stream</tt> specializes
+<tt>prompt-for-accept</tt> .  If we now create a stream of type
+<tt>accepting-values-stream</tt> (which we will designate <tt>A</tt>) which encapsulates an
+ordinary stream <tt>S</tt>, and then call <tt>stream-accept</tt> on the stream <tt>E</tt>, it will
+trampoline to <tt>stream-accept</tt> on the stream <tt>S</tt>.  The desired behavior is
+for <tt>stream-accept</tt> to call the <tt>prompt-for-accept</tt> method on the stream
+<tt>E</tt>, but instead what happens is that the <tt>prompt-for-accept</tt> method on the
+stream <tt>S</tt> is called.
+<p>
+In order to side-step this problem without attempting to solve a difficult
+general problem in object-oriented programming, CLIM implementations may
+introduce a special variable, <tt>*original-stream*</tt> , which is bound by
+trampoline functions to the original encapsulating stream.  Therefore, the
+<tt>stream-accept</tt> on the ordinary stream <tt>S</tt> will call <tt>prompt-for-accept</tt> on the value of <tt>(or *original-stream* <i>stream</i> )</tt> .  This idiom only needs
+to be used in places where one stream protocol function calls a second stream
+protocol function that some encapsulating stream specializes.
+<p>
+This ``solution'' does not solve the more general problem of multiple levels of
+encapsulation, but the complete stream protocol provided by CLIM should allow
+implementors to avoid using nested encapsulating streams.
+<p>
+<a name="Variable *original-stream*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>*original-stream*</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Variable]</b></td></tr></table>This variable is bound by the trampoline methods on encapsulating streams to the
+encapsulating stream, before the operation is delegated to the underlying,
+encapsulated stream.
+<br><hr><br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="clim-sys.html">The CLIM-SYS Package</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="gray-streams.html">Common Lisp Streams</a></td>
+</tr></table>
+</body></html>

@@ -1,0 +1,140 @@
+<html><head><title>Common Lisp Interface Manager (CLIM) -- Panes</title>
+<LINK REL=STYLESHEET HREF="clim-primer.css" TYPE="text/css"></head><body>
+
+
+<h1>CLIM Panes</h1>
+
+part of <a href="index.htm">Common Lisp Interface Manager (CLIM)</a>
+by <a href="http://jason.kantz.com">Jason Kantz</a>
+
+<hr>
+<!--"The roaring of the wind is my wife and the stars through the window pane are my children."
+<br>--John Keats, Letter to G. and G. Keats, 14 Oct. 1818 -->
+
+<h2>Questions</h2>
+<li>What are panes?
+<li>What are some of the different kinds of panes available?
+<li>How are panes constructed?
+<li>How does one define the layout of panes within an application frame?
+
+<h2>Reading</h2>
+
+<li><a href="http://www.lispworks.com/reference/lw44/CLIM/html/climguide-141.htm#70089">Using the :panes and :layouts Options</a>
+
+<h2>panes</h2>
+
+<ul>
+<li class=separate> are rectangular objects 
+<li class=separate> divide up the application frame's screen space
+<li class=separate> are similar to the gadgets or widgets of other toolkits
+<li class=separate> can be used to compose the top-level user interface of applications
+<li class=separate> can be used to compose auxiliary components such as menus and dialogs
+<li class=separate> can be structurally classified according to their location in pane hierarchies
+<li class=separate> are implemented as special sheet classes
+</ul>
+
+<h2>Kinds of Panes</h2>
+
+<ul>
+
+<li class=separate> composite panes
+
+<ul>
+  <li class=separate> are used to provide a mechanism for spatially organizing ("laying out") other panes
+</ul>
+
+<li class=separate> leaf panes
+
+<ul>
+  <li class=separate> may implement gadgets that have some appearance and react to user input by invoking application code
+  <li class=separate> extended stream pane
+  <ul>
+    <li class=separate> provides an area of the application's screen real estate for the presentation of text and graphics
+  </ul></ul>
+
+<li class=separate> abstract panes
+
+<ul>
+  <li class=separate> are panes that are defined only in terms of their programmer interface or behavior
+  <li class=separate> have a protocol (that is, the specified set of initialization
+    options, accessors, and callbacks) that is designed to specify the
+    pane in terms of its overall purpose, rather then in terms of its
+    specific appearance or particular interactive details
+  <li class=separate> allow multiple implementations to define their own specific look
+    and feel individually
+  <li class=separate> adaptive panes
+    <ul>
+    <li class=separate> have been defined to integrate well across all CLIM operating platforms</ul>
+</ul>
+
+</ul>
+
+<h2>Constructing Panes</h2>
+<ul>
+<li class=separate> use make-pane of an abstract class name
+
+<ul>
+  <li class=separate> results in more portable code
+  <li class=separate> invokes the "look and feel" realization process to select and
+    construct a pane
+  <li class=separate> invoked using an abstract pane class name, which by convention is
+    a symbol in the CLIM package that doesn't include the -pane suffix
+  <li class=separate> however, you are allowed to pass any pane class name to make-pane
+</ul>
+
+<li class=separate> use make-instance to create a concrete pane
+
+<ul>
+  <li class=separate> requires the application programmer to know the name of the
+    specific pane implementation class that is desired, and so is
+    inherently less portable
+  <li class=separate> By convention, all of the concrete pane class names, including
+    those of the implementations of abstract pane protocol
+    specifications, end in -pane
+</ul>
+
+</ul>
+<h2>Using the <code>:panes</code> and <code>:layouts</code> options within <code>define-application-frame</code></h2>
+
+<pre>
+(defun press (button) (accepting-values (*query-io* :own-window t) (format *query-io* "~A" arg)))
+(defun squeeze (button) (accepting-values (*query-io* :own-window t) (format *query-io* "~A" arg)))
+
+(define-application-frame buttons	;name
+    ()					;superclasses
+  ()					;slots
+  ;; options
+  (:panes (button 
+	   (horizontally ()
+	     (make-pane 'push-button :label "squeeze" :activate-callback #'squeeze)
+	     (make-pane 'push-button :label "press" :activate-callback #'press))) 
+	  (application			;pane name 
+	   :application))		;pane type ... :application is an extended-stream-pane
+  (:layouts (default			;layout name
+	     (vertically ()		;layout macros
+	       (1/8 button) (7/8 application)))
+	    (alternate			;layout name
+	     (horizontally ()		;layout macros
+	       (1/8 button) (7/8 application)))))
+ </pre>
+
+
+<h2>Laying Out Panes</h2>
+
+<p class=noi>You can change between layouts with something like this:
+<pre>(let* ((layouts (frame-all-layouts *application-frame*))
+       (old-layout (frame-current-layout *application-frame*))
+       (new-layout (or (second (member old-layout layouts))
+		       (car layouts))))
+  (setf (frame-current-layout *application-frame*) new-layout)) </pre>
+
+</ul>
+<h2>Exercises</h2>
+<li>At the top-level, make and run the <code>buttons</code> application frame.
+
+<li>From the top-level, change the layout of the <code>buttons</code>
+application frame while it is running.  
+
+<p class=mtb>
+Next: <a href="drawing.htm">Drawing Text and Graphics</a>
+

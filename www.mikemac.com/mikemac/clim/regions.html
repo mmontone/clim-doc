@@ -1,0 +1,626 @@
+<html><head><title>CLIM: 3 Regions</title></head><body>
+<br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="conventions.html">Conventions</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="bboxes.html">Bounding Rectangles</a></td>
+</tr></table><br><hr><br>
+<p>
+<br><a name="3"><h1>3 Regions</h1></a>
+<a name="LABEL=regions"></a> CLIM provides definitions for a variety of geometric objects, including points,
+lines, elliptical arcs, regions, and transformations.  Both the graphics and
+windowing modules use the same set of geometric objects and functions.  In this
+section, we describe regions, points, and the basic region classes.
+Transformations will be described in Chapter <a href="transforms.html#LABEL=transforms"><b><i>Affine Transformations</i></b></i></a> .
+<p>
+Most of these objects are described as if they are implemented using standard
+classes.  However, this need not be the case.  In particular, they may be
+implemented using structure classes, and some classes may exist only to name a
+place in the hierarchy---all members of such a class will be instances of that
+class's subclasses.  The most important concern is that these classes must allow
+specializing generic functions.
+<p>
+The coordinate system in which the geometric objects reside is an abstract,
+continuous coordinate system.  This abstract coordinate system is converted into
+``real world'' coordinates only during operations such as rendering one of the
+objects on a display device.
+<p>
+Angles are measured in radians.  Following standard conventions, when an angle
+is measured relative to a given line, a positive angle indicates an angle
+counter-clockwise from the line in the plane.  When the angle from the positive
+<tt>x</tt> axis to the positive <tt>y</tt> axis is positive (that is, the positive <tt>y</tt> axis is
+counter-clockwise from the positive <tt>x</tt> axis), the coordinate system is said to
+be <a name="CONCEPT=right-handed"><b><i>right-handed</i></b></a> .  When this angle is negative, the coordinate system
+is said to be <a name="CONCEPT=left-handed"><b><i>left-handed</i></b></a> .  Thus, the cartesian coordinate system with
+<tt>x</tt> increasing to the right and <tt>y</tt> increasing upward is right-handed.  A
+coordinate system with <tt>y</tt> increasing down is left-handed.  (By default, CLIM
+streams are left handed, but no such default exists for sheets in general.)
+<p>
+
+<a name="3.1"><h2>3.1 General Regions</h2></a>
+A <a name="CONCEPT=region"><b><i>region</i></b></a> is an object that denotes a set of mathematical points in the
+plane.  Regions include their boundaries, that is, they are closed.  Regions
+have infinite resolution.
+<p>
+A <a name="CONCEPT=bounded region"><b><i>bounded region</i></b></a> is a region that contains at least one point and for
+which there exists a number, <tt>d</tt>, called the region's diameter, such that if
+<tt>p1</tt> and <tt>p2</tt> are points in the region, the distance between <tt>p1</tt> and <tt>p2</tt> is
+always less than or equal to <tt>d</tt>.
+<p>
+An <a name="CONCEPT=unbounded region"><b><i>unbounded region</i></b></a> either contains no points or contains points
+arbitrarily far apart.
+<p>
+Another way to describe a region is that it maps every <tt>(x,y)</tt> pair into either
+<a href="regions.html#CONCEPT=true"><i>true</i></a> or <a href="regions.html#CONCEPT=false"><i>false</i></a> (meaning member or not a member, respectively, of
+the region).  Later, in Chapter <a href="designs.html#LABEL=designs"><b><i>General Designs</i></b></i></a> , we will generalize a region to
+something called a <a name="CONCEPT=design"><b><i>design</i></b></a> that maps every point <tt>(x,y)</tt> into color and
+opacity values.
+<p>
+<a name="Protocol&nbsp;Class region"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>region</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Protocol&nbsp;Class]</b></td></tr></table>The protocol class that corresponds to a set of points.  This includes both
+bounded and unbounded regions.  This is a subclass of <tt>design</tt> (see
+Chapter <a href="colors.html#LABEL=color"><b><i>Drawing in Color</i></b></i></a> ).
+<p>
+If you want to create a new class that behaves like a region, it should be a subclass of <b>region</b>. Subclasses of <b>region</b> must obey the region protocol.There is no general constructor called <tt>make-region</tt> because of the
+impossibility of a uniform way to specify the arguments to such a function.
+<p>
+<a name="Predicate regionp"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>regionp</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Predicate]</b></td></tr></table>Returns <a href="regions.html#CONCEPT=true"><i>true</i></a> if <i>object</i> is a <a href="regions.html#CONCEPT=region"><i>region</i></a> , otherwise returns
+<a href="regions.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Protocol&nbsp;Class path"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>path</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Protocol&nbsp;Class]</b></td></tr></table>The protocol class <tt>path</tt> denotes bounded regions that have
+<a name="CONCEPT=dimensionality"><b><i>dimensionality</i></b></a> 1 (that is, have length).  It is a subclass of
+<tt>region</tt> and <tt>bounding-rectangle</tt> .
+If you want to create a new class that behaves like a path, it should be a subclass of <b>path</b>. Subclasses of <b>path</b> must obey the path protocol.Constructing a <tt>path</tt> object with no length (via <tt>make-line*</tt> , for
+example) may canonicalize it to <tt>+nowhere+</tt> .
+<p>
+Some rendering models support the constructing of areas by filling a closed
+path.  In this case, the path needs a direction associated with it.  Since CLIM
+does not currently support the path-filling model, paths are directionless.
+<p>
+<a name="Predicate pathp"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>pathp</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Predicate]</b></td></tr></table>Returns <a href="regions.html#CONCEPT=true"><i>true</i></a> if <i>object</i> is a <a href="regions.html#CONCEPT=path"><i>path</i></a> , otherwise returns
+<a href="regions.html#CONCEPT=false"><i>false</i></a> .
+<p>
+Note that constructing a <tt>path</tt> object with no length (such as calling
+<tt>make-line</tt> with two coincident points), for example) may canonicalize it to
+<tt>+nowhere+</tt> .
+<p>
+<a name="Protocol&nbsp;Class area"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>area</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Protocol&nbsp;Class]</b></td></tr></table>The protocol class <tt>area</tt> denotes bounded regions that have dimensionality 2
+(that is, have area).  It is a subclass of <tt>region</tt> and <tt>bounding-rectangle</tt> .
+If you want to create a new class that behaves like an area, it should be a subclass of <b>area</b>. Subclasses of <b>area</b> must obey the area protocol.Note that constructing an <tt>area</tt> object with no area (such as calling
+<tt>make-rectangle</tt> with two coincident points), for example) may canonicalize
+it to <tt>+nowhere+</tt> .
+<p>
+<a name="Predicate areap"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>areap</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Predicate]</b></td></tr></table>Returns <a href="regions.html#CONCEPT=true"><i>true</i></a> if <i>object</i> is an <a href="regions.html#CONCEPT=area"><i>area</i></a> , otherwise returns
+<a href="regions.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Type coordinate"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>coordinate</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Type]</b></td></tr></table>The type that represents a coordinate.  This must either be <tt>t</tt> , or a
+subtype of <tt>real</tt> .  CLIM implementations may use a more specific subtype of
+<tt>real</tt> , such as <tt>single-float</tt> , for reasons of efficiency.
+<p>
+All of the specific region classes and subclasses of <tt>bounding-rectangle</tt> will use this type to store their coordinates.  However, the constructor
+functions for the region classes and for bounding rectangles must accept numbers
+of any type and coerce them to <tt>coordinate</tt> .
+<p>
+<a name="Function coordinate"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>coordinate</b></td><td valign="baseline" width="100%"><i>n</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Coerces the number <i>n</i> to be a coordinate.
+<p>
+
+<a name="Constant +everywhere+"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>+everywhere+</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Constant]</b></td></tr></table><a name="Constant +nowhere+"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>+nowhere+</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Constant]</b></td></tr></table><tt>+everywhere+</tt> is the region that includes all the points on the
+two-dimensional infinite drawing plane. <tt>+nowhere+</tt> is the empty region, the
+opposite of <tt>+everywhere+</tt> .
+<p>
+
+<a name="3.1.1"><h3>3.1.1 The Region Predicate Protocol</h3></a>
+The following generic functions comprise the region predicate protocol.  All
+classes that are subclasses of <tt>region</tt> must either inherit or implement
+methods for these generic functions.
+<p>
+The methods for <tt>region-equal</tt> , <tt>region-contains-region-p</tt> , and
+<tt>region-intersects-region-p</tt> will typically specialize both the <i>region1</i> and <i>region2</i> arguments.
+<p>
+
+<a name="Generic function region-equal"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>region-equal</b></td><td valign="baseline" width="100%"><i>region1 region2</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns <a href="regions.html#CONCEPT=true"><i>true</i></a> if the two <a href="regions.html#CONCEPT=regions"><i>regions</i></a> <i>region1</i> and <i>region2</i> contain exactly the same set of points, otherwise returns <a href="regions.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Generic function region-contains-region-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>region-contains-region-p</b></td><td valign="baseline" width="100%"><i>region1 region2</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns <a href="regions.html#CONCEPT=true"><i>true</i></a> if all points in the <a href="regions.html#CONCEPT=region"><i>region</i></a> <i>region2</i> are members
+of the <a href="regions.html#CONCEPT=region"><i>region</i></a> <i>region1</i> , otherwise returns <a href="regions.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Generic function region-contains-position-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>region-contains-position-p</b></td><td valign="baseline" width="100%"><i>region x y</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns <a href="regions.html#CONCEPT=true"><i>true</i></a> if the point at <tt>(x,y)</tt> is contained in the <a href="regions.html#CONCEPT=region"><i>region</i></a> <i>region</i> , otherwise returns <a href="regions.html#CONCEPT=false"><i>false</i></a> .  Since regions in CLIM are closed,
+this must return <a href="regions.html#CONCEPT=true"><i>true</i></a> if the point at <tt>(x,y)</tt> is on the region's
+boundary.  CLIM implementations are permitted to return different non-<tt>nil</tt> values depending on whether the point is completely inside the region or is on
+the border.
+<p>
+<tt>region-contains-position-p</tt> is a special case of <tt>region-contains-region-p</tt> in which the region is the point <tt>(x,y)</tt>.
+<p>
+<a name="Generic function region-intersects-region-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>region-intersects-region-p</b></td><td valign="baseline" width="100%"><i>region1 region2</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns <a href="regions.html#CONCEPT=false"><i>false</i></a> if <tt>region-intersection</tt> of the two <a href="regions.html#CONCEPT=regions"><i>regions</i></a> <i>region1</i> and <i>region2</i> would be <tt>+nowhere+</tt> , otherwise returns
+<a href="regions.html#CONCEPT=true"><i>true</i></a> .
+<p>
+
+<a name="3.1.2"><h3>3.1.2 Region Composition Protocol</h3></a>
+Region composition is not always equivalent to simple set operations.  Instead,
+composition attempts to return an object that has the same dimensionality as one
+of its arguments.  If this is not possible, then the result is defined to be an
+empty region, which is canonicalized to <tt>+nowhere+</tt> .  (The exact details of
+this are specified with each function.)
+<p>
+Sometimes, composition of regions can produce a result that is not a simple
+contiguous region.  For example, <tt>region-union</tt> of two rectangular regions
+might not be a single rectangle.  In order to support cases like this, CLIM has
+the concept of a <a name="CONCEPT=region set"><b><i>region set</i></b></a> , which is an object that represents one or
+more <tt>region</tt> objects related by some region operation, usually a union.
+CLIM provides standard classes to cover the cases of region union, intersection,
+and difference.
+<p>
+Some CLIM implementations might only implement a subset of full region
+composition.  Because of the importance of rectangular regions and region sets
+that are the union of rectangular regions, every CLIM implementation is required
+to fully support all functions that use regions for those cases.  (For example,
+CLIM implementations must be able do clipping and repainting on region sets
+composed entirely of axis-aligned rectangles.)  If a CLIM implementation does
+not support some functions on non-rectangular region sets (for example,
+clipping), it must signal an error when an unsupported case is encountered;
+the exact details of this depend on the particular CLIM implementation.
+<p>
+<a name="Protocol&nbsp;Class region-set"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>region-set</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Protocol&nbsp;Class]</b></td></tr></table>The protocol class that represents a region set; a subclass of <tt>region</tt> and
+<tt>bounding-rectangle</tt> .
+<p>
+In addition to the three classes below, there may be other instantiable
+subclasses of <tt>region-set</tt> that represent special cases, for instance, some
+implementations might have a <tt>standard-rectangle-set</tt> class that represents
+the union of several axis-aligned rectangles.
+<p>
+<i>Members of this class are immutable. </i><a name="Predicate region-set-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>region-set-p</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Predicate]</b></td></tr></table>Returns <a href="regions.html#CONCEPT=true"><i>true</i></a> if <i>object</i> is a <a href="http://www.mikemac.com/mikemac/clim/regions.htmlregions.html#CONCEPT=region set"><i>region set</i></a> , otherwise returns
+<a href="regions.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Class standard-region-union"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>standard-region-union</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table><a name="Class standard-region-intersection"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>standard-region-intersection</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table><a name="Class standard-region-difference"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>standard-region-difference</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>These three instantiable classes respectively implement the union, intersection,
+and differences of regions.  Implementations may, but are not required to, take
+advantage of the commutativity and associativity of union and intersection in
+order to ``collapse'' complicated region sets into simpler ones.
+<p>
+Region sets that are composed entirely of axis-aligned rectangles must be
+canonicalized into either a single rectangle or a union of rectangles.
+Furthermore, the rectangles in the union must not overlap each other.
+<p>
+
+The following generic functions comprise the region composition protocol.  All
+classes that are subclasses of <tt>region</tt> must implement methods for these
+generic functions.
+<p>
+The methods for <tt>region-union</tt> , <tt>region-intersection</tt> , and
+<tt>region-difference</tt> will typically specialize both the <i>region1</i> and
+<i>region2</i> arguments.
+<p>
+
+<a name="Generic function region-set-regions"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>region-set-regions</b></td><td valign="baseline" width="100%"><i>region <tt>&amp;key</tt> normalize</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns a sequence of the regions in the <a href="http://www.mikemac.com/mikemac/clim/regions.htmlregions.html#CONCEPT=region set"><i>region set</i></a> <i>region</i> .
+<i>region</i> can be either a <a href="http://www.mikemac.com/mikemac/clim/regions.htmlregions.html#CONCEPT=region set"><i>region set</i></a> or a ``simple'' region, in which
+case the result is simply a sequence of one element: <i>region</i> .
+<i>This function returns objects that reveal CLIM's internal state; do not modify those objects. </i>For the case of region sets that are unions of axis-aligned rectangles, the
+rectangles returned by <tt>region-set-regions</tt> are guaranteed not to overlap.
+<p>
+If <i>normalize</i> is supplied, it must be either <tt>:x-banding</tt> or
+<tt>:y-banding</tt> .  If it is <tt>:x-banding</tt> and all the regions in <i>region</i> are axis-aligned rectangles, the result is normalized by merging adjacent
+rectangles with banding done in the <tt>x</tt> direction.  If it is <tt>:y-banding</tt> and
+all the regions in <i>region</i> are rectangles, the result is normalized with
+banding done in the <tt>y</tt> direction.  Normalizing a region set that is not
+composed entirely of axis-aligned rectangles using x- or y-banding causes CLIM
+to signal the <tt>region-set-not-rectangular</tt> error.
+<p>
+<a name="Generic function map-over-region-set-regions"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>map-over-region-set-regions</b></td><td valign="baseline" width="100%"><i>function region <tt>&amp;key</tt> normalize</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Calls <i>function</i> on each region in the <a href="http://www.mikemac.com/mikemac/clim/regions.htmlregions.html#CONCEPT=region set"><i>region set</i></a> <i>region</i> .  This
+is often more efficient than calling <tt>region-set-regions</tt> .  <i>function</i> is
+a function of one argument, a region; it has dynamic extent.  <i>region</i> can
+be either a <a href="http://www.mikemac.com/mikemac/clim/regions.htmlregions.html#CONCEPT=region set"><i>region set</i></a> or a ``simple'' region, in which case
+<i>function</i> is called once on <i>region</i> itself.  <i>normalize</i> is as for
+<tt>region-set-regions</tt> .
+<p>
+
+<center><img src="region-normalization.jpg"></center>
+<center><b>Figure 3.1: </b>Normalization of rectangular region sets.</center>
+<a name="Generic function region-union"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>region-union</b></td><td valign="baseline" width="100%"><i>region1 region2</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns a region that contains all points that are in either of the
+<a href="regions.html#CONCEPT=regions"><i>regions</i></a> <i>region1</i> or <i>region2</i> (possibly with some points removed
+in order to satisfy the dimensionality rule).  The result of <tt>region-union</tt> always has dimensionality that is the maximum dimensionality of <i>region1</i> and <i>region2</i> .  For example, the union of a path and an area produces an
+area; the union of two paths is a path.
+<p>
+<tt>region-union</tt> will return either a simple region, a region set, or a member
+of the class <tt>standard-region-union</tt> .
+<p>
+<i>This function is permitted to capture its mutable inputs; the
+consequences of modifying those objects are unspecified. </i><a name="Generic function region-intersection"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>region-intersection</b></td><td valign="baseline" width="100%"><i>region1 region2</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns a region that contains all points that are in both of the <a href="regions.html#CONCEPT=regions"><i>regions</i></a> <i>region1</i> and <i>region2</i> (possibly with some points removed in order to
+satisfy the dimensionality rule).  The result of <tt>region-intersection</tt> has
+dimensionality that is the minimum dimensionality of <i>region1</i> and
+<i>region2</i> , or is <tt>+nowhere+</tt> .  For example, the intersection of two areas
+is either another area or <tt>+nowhere+</tt> ; the intersection of two paths is
+either another path or <tt>+nowhere+</tt> ; the intersection of a path and an area
+produces the path clipped to stay inside of the area.
+<p>
+<tt>region-intersection</tt> will return either a simple region or a member of the
+class <tt>standard-region-intersection</tt> .
+<p>
+<i>This function is permitted to capture its mutable inputs; the
+consequences of modifying those objects are unspecified. </i><a name="Generic function region-difference"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>region-difference</b></td><td valign="baseline" width="100%"><i>region1 region2</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns a region that contains all points in the <a href="regions.html#CONCEPT=region"><i>region</i></a> <i>region1</i> that are not in the <a href="regions.html#CONCEPT=region"><i>region</i></a> <i>region2</i> (possibly plus additional
+boundary points to make the result closed).  The result of
+<tt>region-difference</tt> has the same dimensionality as <i>region1</i> , or is
+<tt>+nowhere+</tt> .  For example, the difference of an area and a path produces the
+same area; the difference of a path and an area produces the path clipped to
+stay outside of the area.
+<p>
+<tt>region-difference</tt> will return either a simple region, a region set, or a
+member of the class <tt>standard-region-difference</tt> .
+<p>
+<i>This function is permitted to capture its mutable inputs; the
+consequences of modifying those objects are unspecified. </i><center><img src="region-composition.jpg"></center>
+<center><b>Figure 3.2: </b>Examples of region union, intersection, and difference.</center>
+<a name="3.2"><h2>3.2 Other Region Types</h2></a>
+The other types of regions are points, polylines, polygons, elliptical arcs, and
+ellipses.  All of these region types are closed under affine transformations.
+<p>
+<hr><b>Issue:</b> SWM, York<br><i>There is a proposal to remove the <tt>polygon</tt> ,
+<tt>polyline</tt> , <tt>line</tt> , <tt>ellipse</tt> , and <tt>elliptical-arc</tt> classes, since
+they are only of limited utility, and CLIM itself doesn't use the classes at
+all.  The advantage of removing these classes is that both the spec and CLIM
+itself become a little simpler, and there are fewer cases of the region protocol
+to implement.  However, removing these classes results in a geometric model that
+is no longer closed (in the mathematical sense).  This lack of closure makes it
+difficult to specify the design-based drawing model.  Furthermore, these are
+intuitive objects that are used by a small, but important, class of
+applications, and some people feel that CLIM should relieve programmers from
+having to implement these classes for himself or herself.
+<p>
+The advocates of of removing these classes also propose removing the
+design-based drawing model.  In this case, a more consistent proposal is to
+remove all of the geometric classes, including <tt>point</tt> and <tt>rectangle</tt> .
+<p>
+Again, the opposing point of view believes that the power and flexibility of the
+design-based drawing model does not justify the removal of any of these classes.
+One counter-proposal is to require CLIM not to use any of the extended region
+classes internally, and to move the implementation of the extended region
+classes to a separately loadable module (via <tt>provide</tt> and <tt>require</tt> ).</i><hr>
+<center><img src="region-structure.jpg"></center>
+<center><b>Figure 3.3: </b>The class structure for all regions.</center>
+<a name="3.2.1"><h3>3.2.1 Points</h3></a>
+A <a name="CONCEPT=point"><b><i>point</i></b></a> is a mathematical point in the plane, designated by its
+coordinates, which are a pair of real numbers (where a real number is defined as
+either an integer, a ratio, or a floating point number).  Points have neither
+area nor length (that is, they have dimensionality 0).
+<p>
+Note well that a point is <b><i>not</i></b> a pixel; CLIM models a drawing plane with
+continuous coordinates.  This is discussed in more detail in
+Chapter <a href="graphics.html#LABEL=graphics"><b><i>Graphics</i></b></i></a> .
+<p>
+<a name="Protocol&nbsp;Class point"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>point</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Protocol&nbsp;Class]</b></td></tr></table>The protocol class that corresponds to a mathematical point.  This is a subclass
+of <tt>region</tt> and <tt>bounding-rectangle</tt> .
+If you want to create a new class that behaves like a point, it should be a subclass of <b>point</b>. Subclasses of <b>point</b> must obey the point protocol.<a name="Predicate pointp"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>pointp</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Predicate]</b></td></tr></table>Returns <a href="regions.html#CONCEPT=true"><i>true</i></a> if <i>object</i> is a <a href="regions.html#CONCEPT=point"><i>point</i></a> , otherwise returns
+<a href="regions.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Class standard-point"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>standard-point</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>An instantiable class that implements a point.  This is a subclass of <tt>point</tt> .
+This is the class that <tt>make-point</tt> instantiates.  
+<i>Members of this class are immutable. </i><a name="Function make-point"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>make-point</b></td><td valign="baseline" width="100%"><i>x y</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Returns an object of class <tt>standard-point</tt> whose coordinates are <i>x</i> and
+<i>y</i> .  <i>x</i> and <i>y</i> must be real numbers.
+<p>
+
+<a name="3.2.1.1"><h4>3.2.1.1 The Point Protocol</h4></a>
+The following generic functions comprise the point API.  Only
+<tt>point-position</tt> is in the point protocol, that is, all classes that are
+subclasses of <tt>point</tt> must implement methods for <tt>point-position</tt> , but
+need not implement methods for <tt>point-x</tt> and <tt>point-y</tt> .
+<p>
+<a name="Generic function point-position"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>point-position</b></td><td valign="baseline" width="100%"><i>point</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns both the <tt>x</tt> and <tt>y</tt> coordinates of the point <i>point</i> as two values.
+<p>
+<a name="Generic function point-x"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>point-x</b></td><td valign="baseline" width="100%"><i>point</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function point-y"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>point-y</b></td><td valign="baseline" width="100%"><i>point</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the <tt>x</tt> or <tt>y</tt> coordinate of the <a href="regions.html#CONCEPT=point"><i>point</i></a> <i>point</i> , respectively.
+CLIM will supply default methods for <tt>point-x</tt> and <tt>point-y</tt> on the
+protocol class <tt>point</tt> that are implemented by calling <tt>point-position</tt> .
+<p>
+
+<a name="3.2.2"><h3>3.2.2 Polygons and Polylines</h3></a>
+A <a name="CONCEPT=polyline"><b><i>polyline</i></b></a> is a path that consists of one or more line segments joined
+consecutively at their end-points.
+<p>
+Polylines that have the end-point of their last line segment coincident with the
+start-point of their first line segment are called <a name="CONCEPT=closed"><b><i>closed</i></b></a> ; this use of
+the term ``closed'' should not be confused with closed sets of points.
+<p>
+A <a name="CONCEPT=polygon"><b><i>polygon</i></b></a> is an area bounded by a closed polyline. 
+<p>
+If the boundary of a polygon intersects itself, the odd-even winding-rule
+defines the polygon: a point is inside the polygon if a ray from the point to
+infinity crosses the boundary an odd number of times.
+<p>
+<a name="Protocol&nbsp;Class polyline"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>polyline</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Protocol&nbsp;Class]</b></td></tr></table>The protocol class that corresponds to a polyline.  This is a subclass of
+<tt>path</tt> .
+If you want to create a new class that behaves like a polyline, it should be a subclass of <b>polyline</b>. Subclasses of <b>polyline</b> must obey the polyline protocol.<a name="Predicate polylinep"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>polylinep</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Predicate]</b></td></tr></table>Returns <a href="regions.html#CONCEPT=true"><i>true</i></a> if <i>object</i> is a <a href="regions.html#CONCEPT=polyline"><i>polyline</i></a> , otherwise returns
+<a href="regions.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Class standard-polyline"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>standard-polyline</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>An instantiable class that implements a polyline.  This is a subclass of
+<tt>polyline</tt> .  This is the class that <tt>make-polyline</tt> and
+<tt>make-polyline*</tt> instantiate.
+<i>Members of this class are immutable. </i><a name="Function make-polyline"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>make-polyline</b></td><td valign="baseline" width="100%"><i>point-seq <tt>&amp;key</tt> closed</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table><a name="Function make-polyline*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>make-polyline*</b></td><td valign="baseline" width="100%"><i>coord-seq <tt>&amp;key</tt> closed</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Returns an object of class <tt>standard-polyline</tt> consisting of the segments
+connecting each of the points in <i>point-seq</i> (or the points represented by
+the coordinate pairs in <i>coord-seq</i> ).  <i>point-seq</i> is a sequence of
+<a href="regions.html#CONCEPT=points"><i>points</i></a> ; <i>coord-seq</i> is a sequence of coordinate pairs, which are real
+numbers.  It is an error if <i>coord-seq</i> does not contain an even number of
+elements.
+<p>
+If <i>closed</i> is <a href="regions.html#CONCEPT=true"><i>true</i></a> , then the segment connecting the first point and
+the last point is included in the polyline.  The default for <i>closed</i> is
+<a href="regions.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<i>This function is permitted to capture its mutable inputs; the
+consequences of modifying those objects are unspecified. </i><a name="Protocol&nbsp;Class polygon"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>polygon</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Protocol&nbsp;Class]</b></td></tr></table>The protocol class that corresponds to a mathematical polygon.  This is a
+subclass of <tt>area</tt> .
+If you want to create a new class that behaves like a polygon, it should be a subclass of <b>polygon</b>. Subclasses of <b>polygon</b> must obey the polygon protocol.<a name="Predicate polygonp"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>polygonp</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Predicate]</b></td></tr></table>Returns <a href="regions.html#CONCEPT=true"><i>true</i></a> if <i>object</i> is a <a href="regions.html#CONCEPT=polygon"><i>polygon</i></a> , otherwise returns
+<a href="regions.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Class standard-polygon"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>standard-polygon</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>An instantiable class that implements a polygon.  This is a subclass of
+<tt>polygon</tt> .  This is the class that <tt>make-polygon</tt> and <tt>make-polygon*</tt> instantiate.
+<i>Members of this class are immutable. </i><a name="Function make-polygon"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>make-polygon</b></td><td valign="baseline" width="100%"><i>point-seq</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table><a name="Function make-polygon*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>make-polygon*</b></td><td valign="baseline" width="100%"><i>coord-seq</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Returns an object of class <tt>standard-polygon</tt> consisting of the area
+contained in the boundary that is specified by the segments connecting each of
+the points in <i>point-seq</i> (or the points represented by the coordinate pairs
+in <i>coord-seq</i> ).  <i>point-seq</i> is a sequence of <a href="regions.html#CONCEPT=points"><i>points</i></a> ;
+<i>coord-seq</i> is a sequence of coordinate pairs, which are real numbers.  It
+is an error if <i>coord-seq</i> does not contain an even number of elements.
+<p>
+<i>This function is permitted to capture its mutable inputs; the
+consequences of modifying those objects are unspecified. </i><a name="3.2.2.1"><h4>3.2.2.1 The Polygon and Polyline Protocol</h4></a>
+The following generic functions comprise the polygon and polyline protocol.  All
+classes that are subclasses of either <tt>polygon</tt> or <tt>polyline</tt> must
+implement methods for these generic functions.  Some of the functions below take
+an argument named <i>polygon-or-polyline</i> ; this argument may be either a
+<a href="regions.html#CONCEPT=polygon"><i>polygon</i></a> or a <a href="regions.html#CONCEPT=polyline"><i>polyline</i></a> .
+<p>
+<a name="Generic function polygon-points"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>polygon-points</b></td><td valign="baseline" width="100%"><i>polygon-or-polyline</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns a sequence of points that specify the segments in <i>polygon-or-polyline</i> .
+<i>This function returns objects that reveal CLIM's internal state; do not modify those objects. </i><a name="Generic function map-over-polygon-coordinates"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>map-over-polygon-coordinates</b></td><td valign="baseline" width="100%"><i>function polygon-or-polyline</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Applies <i>function</i> to all of the coordinates of the vertices of
+<i>polygon-or-polyline</i> .  <i>function</i> is a function of two arguments, the
+<tt>x</tt> and <tt>y</tt> coordinates of the vertex; it has dynamic extent.
+<p>
+<a name="Generic function map-over-polygon-segments"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>map-over-polygon-segments</b></td><td valign="baseline" width="100%"><i>function polygon-or-polyline</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Applies <i>function</i> to the segments that compose <i>polygon-or-polyline</i> .
+<i>function</i> is a function of four arguments, the <tt>x</tt> and <tt>y</tt> coordinates of
+the start of the segment, and the <tt>x</tt> and <tt>y</tt> coordinates of the end of the
+segment; it has dynamic extent.  When <tt>map-over-polygon-segments</tt> is called
+on a closed polyline, it will call <i>function</i> on the segment that connects
+the last point back to the first point.
+<p>
+<a name="Generic function polyline-closed"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>polyline-closed</b></td><td valign="baseline" width="100%"><i>polyline</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns <a href="regions.html#CONCEPT=true"><i>true</i></a> if the polyline <i>polyline</i> is closed, otherwise returns
+<a href="regions.html#CONCEPT=false"><i>false</i></a> .  This function need be implemented only for <a href="regions.html#CONCEPT=polylines"><i>polylines</i></a> , not
+for <a href="regions.html#CONCEPT=polygons"><i>polygons</i></a> .
+<p>
+
+<a name="3.2.3"><h3>3.2.3 Lines</h3></a>
+A line is a polyline consisting of a single segment.
+<p>
+<a name="Protocol&nbsp;Class line"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>line</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Protocol&nbsp;Class]</b></td></tr></table>The protocol class that corresponds to a mathematical line segment, that is, a
+polyline with only a single segment.  This is a subclass of <tt>polyline</tt> .
+If you want to create a new class that behaves like a line, it should be a subclass of <b>line</b>. Subclasses of <b>line</b> must obey the line protocol.<a name="Predicate linep"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>linep</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Predicate]</b></td></tr></table>Returns <a href="regions.html#CONCEPT=true"><i>true</i></a> if <i>object</i> is a <a href="regions.html#CONCEPT=line"><i>line</i></a> , otherwise returns
+<a href="regions.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Class standard-line"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>standard-line</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>An instantiable class that implements a line segment.  This is a subclass of
+<tt>line</tt> .  This is the class that <tt>make-line</tt> and <tt>make-line*</tt> instantiate.
+<i>Members of this class are immutable. </i><a name="Function make-line"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>make-line</b></td><td valign="baseline" width="100%"><i>start-point end-point</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table><a name="Function make-line*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>make-line*</b></td><td valign="baseline" width="100%"><i>start-x start-y end-x end-y</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Returns an object of class <tt>standard-line</tt> that connects the two
+<a href="regions.html#CONCEPT=points"><i>points</i></a> <i>start-point</i> and <i>end-point</i> (or the positions
+(<i>start-x</i> ,<i>start-y</i> ) and (<i>end-x</i> ,<i>end-y</i> )).
+<p>
+<i>This function is permitted to capture its mutable inputs; the
+consequences of modifying those objects are unspecified. </i><a name="3.2.3.1"><h4>3.2.3.1 The Line Protocol</h4></a>
+The following generic functions comprise the line API.  Only
+<tt>line-start-point*</tt> and <tt>line-end-point*</tt> are in the line protocol, that
+is, all classes that are subclasses of <tt>line</tt> must implement methods for
+<tt>line-start-point*</tt> and <tt>line-end-point*</tt> , but need not implement methods
+for <tt>line-start-point</tt> and <tt>line-end-point</tt> .
+<p>
+<a name="Generic function line-start-point*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>line-start-point*</b></td><td valign="baseline" width="100%"><i>line</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function line-end-point*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>line-end-point*</b></td><td valign="baseline" width="100%"><i>line</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the starting or ending point, respectively, of the <a href="regions.html#CONCEPT=line"><i>line</i></a> <i>line</i> as two real numbers representing the coordinates of the point.
+<p>
+<a name="Generic function line-start-point"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>line-start-point</b></td><td valign="baseline" width="100%"><i>line</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function line-end-point"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>line-end-point</b></td><td valign="baseline" width="100%"><i>line</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the starting or ending point of the <a href="regions.html#CONCEPT=line"><i>line</i></a> <i>line</i> ,
+respectively.
+<p>
+CLIM will supply default methods for <tt>line-start-point</tt> and
+<tt>line-end-point</tt> on the protocol class <tt>line</tt> that are implemented by
+calling <tt>line-start-point*</tt> and <tt>line-end-point*</tt> .
+<p>
+
+<a name="3.2.4"><h3>3.2.4 Rectangles</h3></a>
+<a name="LABEL=rect"></a> Rectangles whose edges are parallel to the coordinate axes are a special case of
+polygon that can be specified completely by four real numbers
+(<i>x1</i> ,<i>y1</i> ,<i>x2</i> ,<i>y2</i> ).  They are <b><i>not</i></b> closed under general
+affine transformations (although they are closed under rectilinear
+transformations).
+<p>
+<a name="Protocol&nbsp;Class rectangle"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>rectangle</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Protocol&nbsp;Class]</b></td></tr></table>The protocol class that corresponds to a mathematical rectangle, that is,
+rectangular polygons whose sides are parallel to the coordinate axes.  This is a
+subclass of <tt>polygon</tt> .
+If you want to create a new class that behaves like a rectangle, it should be a subclass of <b>rectangle</b>. Subclasses of <b>rectangle</b> must obey the rectangle protocol.<a name="Predicate rectanglep"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>rectanglep</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Predicate]</b></td></tr></table>Returns <a href="regions.html#CONCEPT=true"><i>true</i></a> if <i>object</i> is a <a href="regions.html#CONCEPT=rectangle"><i>rectangle</i></a> , otherwise returns
+<a href="regions.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Class standard-rectangle"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>standard-rectangle</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>An instantiable class that implements an axis-aligned rectangle.  This is a
+subclass of <tt>rectangle</tt> .  This is the class that <tt>make-rectangle</tt> and
+<tt>make-rectangle*</tt> instantiate.
+<i>Members of this class are immutable. </i><a name="Function make-rectangle"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>make-rectangle</b></td><td valign="baseline" width="100%"><i>point1 point2</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table><a name="Function make-rectangle*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>make-rectangle*</b></td><td valign="baseline" width="100%"><i>x1 y1 x2 y2</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Returns an object of class <tt>standard-rectangle</tt> whose edges are parallel to
+the coordinate axes.  One corner is at the <a href="regions.html#CONCEPT=point"><i>point</i></a> <i>point1</i> (or the
+position (<i>x1</i> ,<i>y1</i> )) and the opposite corner is at the <a href="regions.html#CONCEPT=point"><i>point</i></a> <i>point2</i> (or the position (<i>x2</i> ,<i>y2</i> )).  There are no ordering
+constraints among <i>point1</i> and <i>point2</i> (or <i>x1</i> and <i>x2</i> , and
+<i>y1</i> and <i>y2</i> ).
+<p>
+Most CLIM implementations will choose to represent rectangles in the most
+efficient way, such as by storing the coordinates of two opposing corners of the
+rectangle.  Because this representation is not sufficient to represent the
+result of arbitrary transformations of arbitrary rectangles, CLIM is allowed to
+return a polygon as the result of such a transformation.  (The most general
+class of transformations that is guaranteed to always turn a rectangle into
+another rectangle is the class of transformations that satisfy
+<tt>rectilinear-transformation-p</tt> .)
+<p>
+<i>This function is permitted to capture its mutable inputs; the
+consequences of modifying those objects are unspecified. </i><a name="3.2.4.1"><h4>3.2.4.1 The Rectangle Protocol</h4></a>
+The following generic functions comprise the rectangle API.  Only
+<tt>rectangle-edges*</tt> is in the rectangle protocol, that is, all classes that
+are subclasses of <tt>rectangle</tt> must implement methods for
+<tt>rectangle-edges*</tt> , but need not implement methods for the remaining
+functions.
+<p>
+<a name="Generic function rectangle-edges*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>rectangle-edges*</b></td><td valign="baseline" width="100%"><i>rectangle</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the coordinates of the minimum <tt>x</tt> and <tt>y</tt> and maximum <tt>x</tt> and <tt>y</tt> of
+the rectangle <i>rectangle</i> as four values, <i>min-x</i> , <i>min-y</i> ,
+<i>max-x</i> , and <i>max-y</i> .
+<p>
+<a name="Generic function rectangle-min-point"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>rectangle-min-point</b></td><td valign="baseline" width="100%"><i>rectangle</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function rectangle-max-point"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>rectangle-max-point</b></td><td valign="baseline" width="100%"><i>rectangle</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the min point and max point of the <a href="regions.html#CONCEPT=rectangle"><i>rectangle</i></a> <i>rectangle</i> ,
+respectively.  The position of a rectangle is specified by its min point.
+<p>
+CLIM will supply default methods for <tt>rectangle-min-point</tt> and
+<tt>rectangle-max-point</tt> on the protocol class <tt>rectangle</tt> that are
+implemented by calling <tt>rectangle-edges*</tt> .
+<p>
+
+<a name="Generic function rectangle-min-x"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>rectangle-min-x</b></td><td valign="baseline" width="100%"><i>rectangle</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function rectangle-min-y"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>rectangle-min-y</b></td><td valign="baseline" width="100%"><i>rectangle</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function rectangle-max-x"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>rectangle-max-x</b></td><td valign="baseline" width="100%"><i>rectangle</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function rectangle-max-y"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>rectangle-max-y</b></td><td valign="baseline" width="100%"><i>rectangle</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns (respectively) the minimum <tt>x</tt> and <tt>y</tt> coordinate and maximum <tt>x</tt> and
+<tt>y</tt> coordinate of the <a href="regions.html#CONCEPT=rectangle"><i>rectangle</i></a> <i>rectangle</i> .
+<p>
+CLIM will supply default methods for these four generic functions on the
+protocol class <tt>rectangle</tt> that are implemented by calling
+<tt>rectangle-edges*</tt> .
+<p>
+
+<a name="Generic function rectangle-width"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>rectangle-width</b></td><td valign="baseline" width="100%"><i>rectangle</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function rectangle-height"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>rectangle-height</b></td><td valign="baseline" width="100%"><i>rectangle</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function rectangle-size"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>rectangle-size</b></td><td valign="baseline" width="100%"><i>rectangle</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><tt>rectangle-width</tt> returns the width of the <a href="regions.html#CONCEPT=rectangle"><i>rectangle</i></a> <i>rectangle</i> ,
+which is the difference between the maximum <tt>x</tt> and its minimum <tt>x</tt>.
+<tt>rectangle-height</tt> returns the height, which is the difference between the
+maximum <tt>y</tt> and its minimum <tt>y</tt>.  <tt>rectangle-size</tt> returns two values, the
+width and the height.
+<p>
+CLIM will supply default methods for these four generic functions on the
+protocol class <tt>rectangle</tt> that are implemented by calling
+<tt>rectangle-edges*</tt> .
+<p>
+
+<a name="3.2.5"><h3>3.2.5 Ellipses and Elliptical Arcs</h3></a>
+An <a name="CONCEPT=ellipse"><b><i>ellipse</i></b></a> is an area that is the outline and interior of an ellipse.
+Circles are special cases of ellipses.
+<p>
+An <a name="CONCEPT=elliptical arc"><b><i>elliptical arc</i></b></a> is a path consisting of all or a portion of the
+outline of an ellipse.  Circular arcs are special cases of elliptical arcs.
+<p>
+An ellipse is specified in a manner that is easy to transform, and treats all
+ellipses on an equal basis.  An ellipse is specified by its center point and two
+vectors that describe a bounding parallelogram of the ellipse.  The bounding
+parallelogram is made by adding and subtracting the vectors from the the center
+point in the following manner:
+<p>
+<center><table>
+<tr valign="baseline"><td>|</td><td colspan=5><hr></td><td>|</td></tr>
+<tr valign="baseline"><td>|</td><td align=center colspan=1>   </td><td>|</td><td align=center colspan=1> <b><i><tt>x</tt> coordinate</i></b> </td><td> </td><td align=center colspan=1> <b><i><tt>y</tt> coordinate</i></b></td><td>|</td></tr>
+<tr valign="baseline"><td>|</td><td colspan=5> <hr></td><td>|</td></tr>
+<tr valign="baseline"><td>|</td><td align=center colspan=1> Center of Ellipse </td><td>|</td><td align=center colspan=1> <tt>x<sub>c</sub></tt> </td><td> </td><td align=center colspan=1> <tt>y<sub>c</sub></tt></td><td>|</td></tr>
+<tr valign="baseline"><td>|</td><td colspan=5> <hr></td><td>|</td></tr>
+<tr valign="baseline"><td>|</td><td align=center colspan=1> Vectors </td><td>|</td><td align=center colspan=1> <tt>dx<sub>1</sub></tt> </td><td> </td><td align=center colspan=1> <tt>dy<sub>1</sub></tt></td><td>|</td></tr>
+<tr valign="baseline"><td>|</td><td align=center colspan=1>         </td><td>|</td><td align=center colspan=1> <tt>dx<sub>2</sub></tt> </td><td> </td><td align=center colspan=1> <tt>dy<sub>2</sub></tt></td><td>|</td></tr>
+<tr valign="baseline"><td>|</td><td colspan=5> <hr></td><td>|</td></tr>
+<tr valign="baseline"><td>|</td><td align=center colspan=1> Corners of Parallelogram </td><td>|</td><td align=center colspan=1> <tt>x<sub>c</sub> + dx<sub>1</sub> + dx<sub>2</sub></tt> </td><td> </td><td align=center colspan=1> <tt>y<sub>c</sub> + dy<sub>1</sub> + dy<sub>2</sub></tt></td><td>|</td></tr>
+<tr valign="baseline"><td>|</td><td align=center colspan=1>                          </td><td>|</td><td align=center colspan=1> <tt>x<sub>c</sub> + dx<sub>1</sub> - dx<sub>2</sub></tt> </td><td> </td><td align=center colspan=1> <tt>y<sub>c</sub> + dy<sub>1</sub> - dy<sub>2</sub></tt></td><td>|</td></tr>
+<tr valign="baseline"><td>|</td><td align=center colspan=1>                          </td><td>|</td><td align=center colspan=1> <tt>x<sub>c</sub> - dx<sub>1</sub> - dx<sub>2</sub></tt> </td><td> </td><td align=center colspan=1> <tt>y<sub>c</sub> - dy<sub>1</sub> - dy<sub>2</sub></tt></td><td>|</td></tr>
+<tr valign="baseline"><td>|</td><td align=center colspan=1>                          </td><td>|</td><td align=center colspan=1> <tt>x<sub>c</sub> - dx<sub>1</sub> + dx<sub>2</sub></tt> </td><td> </td><td align=center colspan=1> <tt>y<sub>c</sub> - dy<sub>1</sub> + dy<sub>2</sub></tt></td><td>|</td></tr>
+<tr valign="baseline"><td>|</td><td colspan=5> <hr></td><td>|</td></tr>
+<tr valign="baseline"></tr>
+</table></center>
+
+Note that several different parallelograms specify the same ellipse.  One
+parallelogram is bound to be a rectangle---the vectors will be perpendicular
+and correspond to the semi-axes of the ellipse.
+<p>
+<center><img src="different-ellipses.jpg"></center>
+<center><b>Figure 3.4: </b>Different vectors may specify the same ellipse.</center>
+The special case of an ellipse with its axes aligned with the coordinate axes
+can be obtained by setting <tt>dx<sub>2</sub> = dy<sub>1</sub> = 0</tt> or <tt>dx<sub>1</sub> = dy<sub>2</sub> = 0</tt>.
+<p>
+
+<a name="Protocol&nbsp;Class ellipse"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>ellipse</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Protocol&nbsp;Class]</b></td></tr></table>The protocol class that corresponds to a mathematical ellipse.  This is a
+subclass of <tt>area</tt> .
+If you want to create a new class that behaves like an ellipse, it should be a subclass of <b>ellipse</b>. Subclasses of <b>ellipse</b> must obey the ellipse protocol.<a name="Predicate ellipsep"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>ellipsep</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Predicate]</b></td></tr></table>Returns <a href="regions.html#CONCEPT=true"><i>true</i></a> if <i>object</i> is an <a href="regions.html#CONCEPT=ellipse"><i>ellipse</i></a> , otherwise returns
+<a href="regions.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Class standard-ellipse"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>standard-ellipse</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>An instantiable class that implements an ellipse.  This is a subclass of
+<tt>ellipse</tt> .  This is the class that <tt>make-ellipse</tt> and <tt>make-ellipse*</tt> instantiate.
+<i>Members of this class are immutable. </i><a name="Function make-ellipse"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>make-ellipse</b></td><td valign="baseline" width="100%"><i>center-point 
+                        radius-1-dx radius-1-dy radius-2-dx radius-2-dy
+                        <tt>&amp;key</tt> start-angle end-angle</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table><a name="Function make-ellipse*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>make-ellipse*</b></td><td valign="baseline" width="100%"><i>center-x center-y 
+                        radius-1-dx radius-1-dy radius-2-dx radius-2-dy 
+                        <tt>&amp;key</tt> start-angle end-angle</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Returns an object of class <tt>standard-ellipse</tt> .  The center of the ellipse is
+at the <a href="regions.html#CONCEPT=point"><i>point</i></a> <i>center-point</i> (or the position
+(<i>center-x</i> ,<i>center-y</i> )).
+<p>
+Two vectors, (<i>radius-1-dx</i> ,<i>radius-1-dy</i> ) and
+(<i>radius-2-dx</i> ,<i>radius-2-dy</i> ) specify the bounding parallelogram of the
+ellipse as explained above.  All of the radii are real numbers.  If the two
+vectors are collinear, the ellipse is not well-defined and the
+<tt>ellipse-not-well-defined</tt> error will be signalled.  The special case of an
+ellipse with its axes aligned with the coordinate axes can be obtained by
+setting both <i>radius-1-dy</i> and <i>radius-2-dx</i> to 0.
+<p>
+If <i>start-angle</i> or <i>end-angle</i> are supplied, the ellipse is the ``pie
+slice'' area swept out by a line from the center of the ellipse to a point on
+the boundary as the boundary point moves from the angle <i>start-angle</i> to
+<i>end-angle</i> .  Angles are measured counter-clockwise with respect to the
+positive <tt>x</tt> axis.  If <i>end-angle</i> is supplied, the default for
+<i>start-angle</i> is <tt>0</tt>; if <i>start-angle</i> is supplied, the default for
+<i>end-angle</i> is <tt>2<i><huge>pi</huge></i> </tt>; if neither is supplied then the region is a full
+ellipse and the angles are meaningless.
+<p>
+<i>This function is permitted to capture its mutable inputs; the
+consequences of modifying those objects are unspecified. </i><a name="Protocol&nbsp;Class elliptical-arc"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>elliptical-arc</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Protocol&nbsp;Class]</b></td></tr></table>The protocol class that corresponds to a mathematical elliptical arc.  This is a
+subclass of <tt>path</tt> .
+If you want to create a new class that behaves like an elliptical arc, it should be a subclass of <b>elliptical-arc</b>. Subclasses of <b>elliptical-arc</b> must obey the elliptical arc protocol.<a name="Predicate elliptical-arc-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>elliptical-arc-p</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Predicate]</b></td></tr></table>Returns <a href="regions.html#CONCEPT=true"><i>true</i></a> if <i>object</i> is an <a href="regions.html#CONCEPT=elliptical arc"><i>elliptical arc</i></a> , otherwise
+returns <a href="regions.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Class standard-elliptical-arc"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>standard-elliptical-arc</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>An instantiable class that implements an elliptical arc.  This is a subclass of
+<tt>elliptical-arc</tt> .  This is the class that <tt>make-elliptical-arc</tt> and
+<tt>make-elliptical-arc*</tt> instantiate.
+<i>Members of this class are immutable. </i><a name="Function make-elliptical-arc"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>make-elliptical-arc</b></td><td valign="baseline" width="100%"><i>center-point
+                               radius-1-dx radius-1-dy radius-2-dx radius-2-dy
+                               <tt>&amp;key</tt> start-angle end-angle</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table><a name="Function make-elliptical-arc*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>make-elliptical-arc*</b></td><td valign="baseline" width="100%"><i>center-x center-y 
+                               radius-1-dx radius-1-dy radius-2-dx radius-2-dy
+                               <tt>&amp;key</tt> start-angle end-angle</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Returns an object of class <tt>standard-elliptical-arc</tt> .  The center of the
+ellipse is at the <a href="regions.html#CONCEPT=point"><i>point</i></a> <i>center-point</i> (or the position
+(<i>center-x</i> ,<i>center-y</i> )).
+<p>
+Two vectors, (<i>radius-1-dx</i> ,<i>radius-1-dy</i> ) and
+(<i>radius-2-dx</i> ,<i>radius-2-dy</i> ), specify the bounding parallelogram of the
+ellipse as explained above.  All of the radii are real numbers.   If the two
+vectors are collinear, the ellipse is not well-defined and the
+<tt>ellipse-not-well-defined</tt> error will be signalled.  The special case of
+an elliptical arc with its axes aligned with the coordinate axes can be obtained
+by setting both <i>radius-1-dy</i> and <i>radius-2-dx</i> to 0.
+<p>
+If <i>start-angle</i> and <i>start-angle</i> are supplied, the arc is swept from
+<i>start-angle</i> to <i>end-angle</i> .  Angles are measured counter-clockwise
+with respect to the positive <tt>x</tt> axis.  If <i>end-angle</i> is supplied, the
+default for <i>start-angle</i> is <tt>0</tt>; if <i>start-angle</i> is supplied, the
+default for <i>end-angle</i> is <tt>2<i><huge>pi</huge></i> </tt>; if neither is supplied then the region is
+a closed elliptical path and the angles are meaningless.
+<p>
+<i>This function is permitted to capture its mutable inputs; the
+consequences of modifying those objects are unspecified. </i><a name="3.2.5.1"><h4>3.2.5.1 The Ellipse and Elliptical Arc Protocol</h4></a>
+The following functions apply to both ellipses and elliptical arcs.  In all
+cases, the name <i>elliptical-object</i> means that the argument may be an
+<a href="regions.html#CONCEPT=ellipse"><i>ellipse</i></a> or an <a href="regions.html#CONCEPT=elliptical arc"><i>elliptical arc</i></a> .  These generic functions comprise
+the ellipse protocol.  All classes that are subclasses of either <tt>ellipse</tt> or
+<tt>elliptical-arc</tt> must implement methods for these functions.
+<p>
+<a name="Generic function ellipse-center-point*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>ellipse-center-point*</b></td><td valign="baseline" width="100%"><i>elliptical-object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the center point of <i>elliptical-object</i> as two values representing
+the coordinate pair.
+<p>
+<a name="Generic function ellipse-center-point"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>ellipse-center-point</b></td><td valign="baseline" width="100%"><i>elliptical-object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the center point of <i>elliptical-object</i> .  
+<p>
+<tt>ellipse-center-point</tt> is part of the ellipse API, but not part of the ellipse
+protocol.  CLIM will supply default methods for <tt>ellipse-center-point</tt> on the
+protocol classes <tt>ellipse</tt> and <tt>elliptical-arc</tt> that are implemented by
+calling <tt>ellipse-center-point*</tt> .
+<p>
+<a name="Generic function ellipse-radii"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>ellipse-radii</b></td><td valign="baseline" width="100%"><i>elliptical-object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns four values corresponding to the two radius vectors of
+<i>elliptical-arc</i> .  These values may be canonicalized in some way, and so may
+not be the same as the values passed to the constructor function.
+<p>
+<a name="Generic function ellipse-start-angle"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>ellipse-start-angle</b></td><td valign="baseline" width="100%"><i>elliptical-object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the start angle of <i>elliptical-object</i> .  If <i>elliptical-object</i> is a full ellipse or closed path then <tt>ellipse-start-angle</tt> will return
+<tt>nil</tt> ; otherwise the value will be a number greater than or equal to zero,
+and less than <tt>2<i><huge>pi</huge></i> </tt>.
+<p>
+<a name="Generic function ellipse-end-angle"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>ellipse-end-angle</b></td><td valign="baseline" width="100%"><i>elliptical-object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the end angle of <i>elliptical-object</i> .  If <i>elliptical-object</i> is
+a full ellipse or closed path then <tt>ellipse-end-angle</tt> will return <tt>nil</tt> ;
+otherwise the value will be a number greater than zero, and less than or equal
+to <tt>2<i><huge>pi</huge></i> </tt>.
+<p>
+<br><hr><br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="conventions.html">Conventions</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="bboxes.html">Bounding Rectangles</a></td>
+</tr></table>
+</body></html>

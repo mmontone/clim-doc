@@ -1,0 +1,7 @@
+User-agent: *
+Disallow: /jason/programs/vc-0.1.tar.gz
+Disallow: /jason/images/
+Disallow: /jason/programs/vc/_darcs/
+Disallow: /jason/programs/ergono/_darcs/
+Disallow: /jason/programs/vc/
+Allow: /jason/programs/vc/vc-for-lw.html

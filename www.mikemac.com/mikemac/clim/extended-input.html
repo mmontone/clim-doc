@@ -1,0 +1,603 @@
+<html><head><title>CLIM: 22 Extended Stream Input</title></head><body>
+<br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="redisplay.html">Incremental Redisplay</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="presentation-types.html">Presentation Types</a></td>
+</tr></table><br><hr><br>
+<p>
+<br><a name="22"><h1>22 Extended Stream Input</h1></a>
+<a name="LABEL=extended-input"></a> CLIM provides a stream-oriented input layer that is implemented on top of the
+sheet input architecture.  The basic CLIM input stream protocol is based on the
+character input stream protocol proposal submitted to the ANSI Common Lisp
+committee by David Gray.  This proposal was not approved by the committee, but
+has been implemented by most Lisp vendors.
+<p>
+<a name="22.1"><h2>22.1 Basic Input Streams</h2></a>
+CLIM provides an implementation of the basic input stream facilities (described
+in more detail in Appendix <a href="gray-streams.html#LABEL=gray-streams"><b><i>Common Lisp Streams</i></b></i></a> ), either by directly using the
+underlying Lisp implementation, or by implementing the facilities itself.
+<p>
+<a name="Class standard-input-stream"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>standard-input-stream</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>This class provides an implementation of the CLIM's basic input stream protocol
+based on CLIM's input kernel.  It defines a <tt>handle-event</tt> method for
+keystroke events and queues the resulting characters in a per-stream input
+buffer.
+<i>Members of this class are mutable. </i><a name="Generic function stream-read-char"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-read-char</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the next character available in the <a href="extended-input.html#CONCEPT=input stream"><i>input stream</i></a> <i>stream</i> , or
+<tt>:eof</tt> if the stream is at end-of-file.  If no character is available this
+function will wait until one becomes available.
+<p>
+<a name="Generic function stream-read-char-no-hang"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-read-char-no-hang</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Like <tt>stream-read-char</tt> , except that if no character is available the
+function returns <a href="extended-input.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Generic function stream-unread-char"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-unread-char</b></td><td valign="baseline" width="100%"><i>stream character</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Places the character <i>character</i> back into the <a href="extended-input.html#CONCEPT=input stream"><i>input stream</i></a> <i>stream</i> 's input buffer.  The next call to <tt>read-char</tt> on <i>stream</i> will return the unread character.  The character supplied must be the most
+recent character read from the stream.
+<p>
+<a name="Generic function stream-peek-char"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-peek-char</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the next character available in the <a href="extended-input.html#CONCEPT=input stream"><i>input stream</i></a> <i>stream</i> .
+The character is not removed from the input buffer.  Thus, the same character
+will be returned by a subsequent call to <tt>stream-read-char</tt> .
+<p>
+<a name="Generic function stream-listen"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-listen</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns <a href="extended-input.html#CONCEPT=true"><i>true</i></a> if there is input available on the <a href="extended-input.html#CONCEPT=input stream"><i>input stream</i></a> <i>stream</i> , <a href="extended-input.html#CONCEPT=false"><i>false</i></a> if not.
+<p>
+<a name="Generic function stream-read-line"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-read-line</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Reads and returns a string containing a line of text from the <a href="extended-input.html#CONCEPT=input
+stream"><i>input
+stream</i></a> <i>stream</i> , delimited by the <tt><huge>#\Newline</huge></tt> character.
+<p>
+<a name="Generic function stream-clear-input"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-clear-input</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Clears any buffered input associated with the <a href="extended-input.html#CONCEPT=input stream"><i>input stream</i></a> <i>stream</i> ,
+and returns <a href="extended-input.html#CONCEPT=false"><i>false</i></a> .
+<p>
+
+<a name="22.2"><h2>22.2 Extended Input Streams</h2></a>
+In addition to the basic input stream protocol, CLIM defines an extended input
+stream protocol.  This protocol extends the stream model to allow manipulation
+of non-character user gestures, such as pointer button presses.  The extended
+input protocol provides the programmer with more control over input processing,
+including the options of specifying input wait timeouts and auxiliary input test
+functions.
+<p>
+<a name="Protocol&nbsp;Class extended-input-stream"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>extended-input-stream</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Protocol&nbsp;Class]</b></td></tr></table>The protocol class for CLIM extended input streams.  This is a subclass of
+<tt>input-stream</tt> .
+If you want to create a new class that behaves like an extended input stream, it should be a subclass of <b>extended-input-stream</b>. Subclasses of <b>extended-input-stream</b> must obey the extended input stream protocol.<a name="Predicate extended-input-stream-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>extended-input-stream-p</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Predicate]</b></td></tr></table>Returns <a href="extended-input.html#CONCEPT=true"><i>true</i></a> if <i>object</i> is a CLIM <a href="extended-input.html#CONCEPT=extended input stream"><i>extended input stream</i></a> ,
+otherwise returns <a href="extended-input.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Init&nbsp;arg :input-buffer"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:input-buffer</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table><a name="Init&nbsp;arg :pointer"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:pointer</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table><a name="Init&nbsp;arg :text-cursor"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:text-cursor</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table>All subclasses of <tt>extended-input-stream</tt> must handle these initargs, which
+are used to specify, respectively, the input buffer, pointer, and text cursor
+for the extended input stream.
+<p>
+<a name="Class standard-extended-input-stream"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>standard-extended-input-stream</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>This class provides an implementation of the CLIM extended input stream protocol
+based on CLIM's input kernel.  The extended input stream maintains the state of
+the display's pointing devices (such as a mouse) in pointer objects associated
+with the stream.  It defines a <tt>handle-event</tt> methods for keystroke and
+pointer motion and button press events and updates the pointer object state and
+queues the resulting events in a per-stream input buffer.
+<p>
+<i>Members of this class are mutable. </i><a name="22.2.1"><h3>22.2.1 The Extended Input Stream Protocol</h3></a>
+The following generic functions comprise the extended input stream protocol.
+All extended input streams must implement methods for these generic functions.
+<p>
+<a name="Generic function stream-input-buffer"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-input-buffer</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function (setf stream-input-buffer)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf stream-input-buffer)</b></td><td valign="baseline" width="100%"><i>buffer stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>The functions provide access to the stream's input buffer.  Normally programs do
+not need to manipulate the input buffer directly.  It is sometimes useful to
+cause several streams to share the same input buffer so that input that comes in
+on one of them is available to an input call on any of the streams.  The input
+buffer must be vector with a fill pointer capable of holding general input
+gesture objects (such as characters and event objects).
+<p>
+<a name="Generic function stream-pointer-position"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-pointer-position</b></td><td valign="baseline" width="100%"><i>stream <tt>&amp;key</tt> pointer</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the current position of the pointing device <i>pointer</i> for the
+<a href="extended-input.html#CONCEPT=extended input stream"><i>extended input stream</i></a> <i>stream</i> as two values, the <tt>x</tt> and <tt>y</tt>
+positions in the stream's drawing surface coordinate system.  If <i>pointer</i> is not supplied, it defaults to <tt>port-pointer</tt> of the stream's port.
+<p>
+<a name="Generic function (setf* stream-pointer-position)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf* stream-pointer-position)</b></td><td valign="baseline" width="100%"><i>x y stream <tt>&amp;key</tt> pointer</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Sets the position of the pointing device for the <a href="extended-input.html#CONCEPT=extended input stream"><i>extended input stream</i></a> <i>stream</i> to <i>x</i> and <i>y</i> , which are integers.  <i>pointer</i> is as
+for <tt>stream-pointer-position</tt> .
+<p>
+For CLIM implementations that do not support <tt>setf*</tt> , the ``setter'' function
+for this is <tt>stream-set-pointer-position</tt> .
+<p>
+<a name="Generic function stream-set-input-focus"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-set-input-focus</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Sets the ``input focus'' to the <a href="extended-input.html#CONCEPT=extended input stream"><i>extended input stream</i></a> <i>stream</i> by
+changing the value of <tt>port-keyboard-input-focus</tt> and returns the old input
+focus as its value.
+<p>
+<a name="Macro with-input-focus"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>with-input-focus</b></td><td valign="baseline" width="100%"><i>(stream) <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Temporarily gives the keyboard input focus to the <a href="extended-input.html#CONCEPT=extended input stream"><i>extended input stream</i></a> <i>stream</i> .  By default, an application frame gives the input focus to the
+window associated with <tt>frame-query-io</tt> .
+<p>
+The <i>stream</i> argument is not evaluated, and must be a symbol that is bound
+to a stream.  If <i>stream</i> is <tt>t</tt> , <tt>*standard-input*</tt> is used.
+<i>body</i> may have zero or more declarations as its first forms.
+<p>
+
+<a name="Variable *input-wait-test*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>*input-wait-test*</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Variable]</b></td></tr></table><a name="Variable *input-wait-handler*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>*input-wait-handler*</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Variable]</b></td></tr></table><a name="Variable *pointer-button-press-handler*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>*pointer-button-press-handler*</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Variable]</b></td></tr></table>These three variables are used to hold the default values for the current input
+wait test, wait handler, and pointer button press handler.  These variables are
+globally bound to <tt>nil</tt> .
+<p>
+
+<a name="Function read-gesture"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>read-gesture</b></td><td valign="baseline" width="100%"><i><tt>&amp;key</tt> (stream <tt>*standard-input*</tt> )
+                            timeout peek-p 
+                            (input-wait-test <tt>*input-wait-test*</tt> )
+                            (input-wait-handler <tt>*input-wait-handler*</tt> )
+                            (pointer-button-press-handler <tt>*pointer-button-press-handler*</tt> )</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Calls <tt>stream-read-gesture</tt> on the <a href="extended-input.html#CONCEPT=extended input stream"><i>extended input stream</i></a> <i>stream</i> and all of the other keyword arguments.  These arguments are the same as for
+<tt>stream-read-gesture</tt> .
+<p>
+<a name="Generic function stream-read-gesture"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-read-gesture</b></td><td valign="baseline" width="100%"><i>stream
+                                   <tt>&amp;key</tt> timeout peek-p 
+                                        (input-wait-test <tt>*input-wait-test*</tt> )
+                                        (input-wait-handler <tt>*input-wait-handler*</tt> )
+                                        (pointer-button-press-handler <tt>*pointer-button-press-handler*</tt> )</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the next gesture available in the <a href="extended-input.html#CONCEPT=extended input stream"><i>extended input stream</i></a> <i>stream</i> ; the gesture will be either a character or an event (such as a
+pointer button event).  The input is not echoed.
+<p>
+If the user types an abort gesture (that is, a gesture that matches any of the
+gesture names in <tt>*abort-gestures*</tt> ), then the <tt>abort-gesture</tt> condition
+will be signalled.
+<p>
+If the user types an accelerator gesture (that is, a gesture that matches any of
+the gesture names in <tt>*accelerator-gestures*</tt> ), then the <tt>accelerator-gesture</tt> condition will be signalled.
+<p>
+<tt>stream-read-gesture</tt> works by invoking <tt>stream-input-wait</tt> on
+<i>stream</i> , <i>input-wait-test</i> , and <i>timeout</i> , and then processing the
+input, if there is any.  <tt>:around</tt> methods on this generic function can be
+used to implement some sort of a gesture preprocessing mechanism on every
+gesture; CLIM's input editor will typically be implemented this way.
+<p>
+<i>timeout</i> is either <tt>nil</tt> or an integer that specifies the number of
+seconds that <tt>stream-read-gesture</tt> will wait for input to become available.
+If no input is available, <tt>stream-read-gesture</tt> will return two values,
+<tt>nil</tt> and <tt>:timeout</tt> .
+<p>
+If the boolean <i>peek-p</i> is <a href="extended-input.html#CONCEPT=true"><i>true</i></a> , then the returned gesture will be
+left in the stream's input buffer.
+<p>
+<i>input-wait-test</i> is a function of one argument, the stream.  The function
+should return <a href="extended-input.html#CONCEPT=true"><i>true</i></a> when there is input to process, otherwise it should
+return <a href="extended-input.html#CONCEPT=false"><i>false</i></a> .  This argument will be passed on to <tt>stream-input-wait</tt> .
+<tt>stream-read-gesture</tt> will bind <tt>*input-wait-test*</tt> to <i>input-wait-test</i> .
+<p>
+<i>input-wait-handler</i> is a function of one argument, the stream.  It is
+called when <tt>stream-input-wait</tt> returns <a href="extended-input.html#CONCEPT=false"><i>false</i></a> (that is, no input is
+available).  This option can be used in conjunction with <i>input-wait-test</i> to handle conditions other than keyboard gestures, or to provide some sort of
+interactive behavior (such as highlighting applicable presentations).
+<tt>stream-read-gesture</tt> will bind <tt>*input-wait-handler*</tt> to
+<i>input-wait-handler</i> .
+<p>
+<i>pointer-button-press-handler</i> is a function of two arguments, the stream
+and a pointer button press event.  It is called when the user clicks a pointer
+button.  <tt>stream-read-gesture</tt> will bind <tt>*pointer-button-press-handler*</tt> to <i>pointer-button-press-handler</i> .
+<p>
+
+<i>input-wait-test</i> , <i>input-wait-handler</i> , and
+<i>pointer-button-press-handler</i> have dynamic extent.
+<p>
+
+<a name="Generic function stream-input-wait"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-input-wait</b></td><td valign="baseline" width="100%"><i>stream <tt>&amp;key</tt> timeout input-wait-test</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Waits for input to become available on the <a href="extended-input.html#CONCEPT=extended input stream"><i>extended input stream</i></a> <i>stream</i> .  <i>timeout</i> and <i>input-wait-test</i> are as for
+<tt>stream-read-gesture</tt> .
+<p>
+
+<a name="Function unread-gesture"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>unread-gesture</b></td><td valign="baseline" width="100%"><i>gesture <tt>&amp;key</tt> (stream <tt>*standard-input*</tt> )</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Calls <tt>stream-unread-gesture</tt> on <i>gesture</i> and <i>stream</i> .  These
+arguments are the same as for <tt>stream-unread-gesture</tt> .
+<p>
+<a name="Generic function stream-unread-gesture"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-unread-gesture</b></td><td valign="baseline" width="100%"><i>stream gesture</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Places <i>gesture</i> back into the <a href="extended-input.html#CONCEPT=extended input stream"><i>extended input stream</i></a> <i>stream</i> 's
+input buffer.  The next call to <tt>stream-read-gesture</tt> request will return the
+unread gesture.  The gesture supplied must be the most recent gesture read from
+the stream via <tt>read-gesture</tt> .
+<p>
+
+<a name="22.2.2"><h3>22.2.2 Extended Input Stream Conditions</h3></a>
+<a name="Variable *abort-gestures*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>*abort-gestures*</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Variable]</b></td></tr></table>A list of all of the gesture names that correspond to abort gestures.  The
+exact global set of standard abort gestures is unspecified, but must include
+the <tt>:abort</tt> gesture name.
+<p>
+<a name="Condition abort-gesture"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>abort-gesture</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Condition]</b></td></tr></table>This condition is signalled by <tt>read-gesture</tt> whenever an abort gesture (one
+of the gestures in <tt>*abort-gestures*</tt> is read from the user.  This condition
+will handle the <tt>:event</tt> initarg, which is used to supply the event
+corresponding to the abort gesture.
+<p>
+<a name="Generic function abort-gesture-event"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>abort-gesture-event</b></td><td valign="baseline" width="100%"><i>condition</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the event that cause the abort gesture condition to be signalled.
+<tt>condition</tt> is an object of type <tt>abort-gesture</tt> .
+<p>
+<a name="Variable *accelerator-gestures*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>*accelerator-gestures*</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Variable]</b></td></tr></table>A list of all of the gesture names that correspond to keystroke accelerators.
+The global value for this is <tt>nil</tt> .
+<p>
+<a name="Condition accelerator-gesture"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>accelerator-gesture</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Condition]</b></td></tr></table>This condition is signalled by <tt>read-gesture</tt> whenever an keystroke
+accelerator gesture (one of the gestures in <tt>*accelerator-gestures*</tt> is read
+from the user.  This condition will handle the <tt>:event</tt> and the
+<tt>:numeric-argument</tt> initargs, which are used to supply the event
+corresponding to the abort gesture and the accumulated numeric argument (which
+defaults to 1).
+<p>
+<a name="Generic function accelerator-gesture-event"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>accelerator-gesture-event</b></td><td valign="baseline" width="100%"><i>condition</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the event that caused the accelerator gesture condition to be signalled.
+<tt>condition</tt> is an object of type <tt>accelerator-gesture</tt> .
+<p>
+<a name="Generic function accelerator-gesture-numeric-argument"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>accelerator-gesture-numeric-argument</b></td><td valign="baseline" width="100%"><i>condition</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the accumlated numeric argument (maintained by the input editor) at the
+time the accelerator gesture condition was signalled.  <tt>condition</tt> is an
+object of type <tt>accelerator-gesture</tt> .
+<p>
+
+<a name="LABEL=gesture-names"></a> 
+<a name="22.3"><h2>22.3 Gestures and Gesture Names</h2></a>
+A <a name="CONCEPT=gesture"><b><i>gesture</i></b></a> is some sort of input action by the user, such as typing a
+character or clicking a pointer button.  A <a name="CONCEPT=keyboard gesture"><b><i>keyboard gesture</i></b></a> refers to
+those gestures that are input by typing something on the keyboard.  A
+<a name="CONCEPT=pointer gesture"><b><i>pointer gesture</i></b></a> refers to those gestures that are input by doing
+something with the pointer, such as clicking a button.
+<p>
+A <a name="CONCEPT=gesture name"><b><i>gesture name</i></b></a> is a symbol that gives a name to a set of similar
+gestures.  Gesture names are used in order to provide a level of abstraction
+above raw device events; greater portability can thus be achieved by avoiding
+referring directly to platform-dependent constructs, such as character objects
+that refer to a particular key on the keyboard.  For example, the <tt>:complete</tt> gesture is used to name the gesture that causes the <tt>complete-input</tt> complete
+the current input string; on Genera, this may correspond to the Complete key on
+the keyboard (which generates a <tt><huge>#\Complete</huge></tt> character), but on a Unix
+workstation, it may correspond to some other key.  Another example is
+<tt>:select</tt> , which is commonly used to indicate a left button click on the
+pointer.
+<p>
+Note that gesture names participate in a one-to-many mapping, that is, a single
+gesture name can name a group of physical gestures.  For example, an <tt>:edit</tt> might include both a pointer button click and a key press.
+<p>
+CLIM uses <a href="silica.html#CONCEPT=event"><i>event</i></a> objects to represent user gestures.  Some of the more
+common events are those of the class <tt>pointer-button-event</tt> .  Event objects
+store the sheet associated with the event, a timestamp, and the modifier key
+state (a quantity that indicates which modifier keys were held down on the
+keyboard at the time the event occurred).  Pointer button event objects also
+store the pointer object, the button that was clicked on the pointer, the window
+the pointer was over and the <tt>x</tt> and <tt>y</tt> position within that window.  Keyboard
+gestures store the key name.
+<p>
+In some contexts, the object used to represent a user gesture is referred to as
+an <a name="CONCEPT=gesture object"><b><i>gesture object</i></b></a> .  An gesture object might be exactly the same as an
+event object, or might contain less information.  For example, for a keyboard
+gesture that corresponds to a standard printing character, it may be enough to
+represent the gesture object as a character.
+<p>
+
+<a name="Macro define-gesture-name"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>define-gesture-name</b></td><td valign="baseline" width="100%"><i>name type gesture-spec <tt>&amp;key</tt> (unique <tt>t</tt> )</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Defines a new gesture named by the symbol <i>name</i> .  <i>type</i> is the type of
+gesture being created, and must be one of the symbols described below.
+<i>gesture-spec</i> specifies the physical gesture that corresponds to the named
+gesture; its syntax depends on the value of <i>type</i> .
+<tt>define-gesture-name</tt> must expand into a call to <tt>add-gesture-name</tt> .
+<p>
+If <i>unique</i> is <a href="extended-input.html#CONCEPT=true"><i>true</i></a> , all old gestures named by <i>name</i> are first
+removed.  <i>unique</i> defaults to <tt>t</tt> .
+<p>
+None of the arguments to <tt>define-gesture-name</tt> is evaluated.
+<p>
+<a name="Function add-gesture-name"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>add-gesture-name</b></td><td valign="baseline" width="100%"><i>name type gesture-spec <tt>&amp;key</tt> unique</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Adds a gesture named by the symbol <i>name</i> to the set of gesture names.
+<i>type</i> is the type of gesture being created, and must be one of the symbols
+described below.  <i>gesture-spec</i> specifies the physical gesture that
+corresponds to the named gesture; its syntax depends on the value of <i>type</i> .
+<p>
+If <i>unique</i> is <a href="extended-input.html#CONCEPT=true"><i>true</i></a> , all old gestures named by <i>name</i> are first
+removed.  <i>unique</i> defaults to <tt>nil</tt> .
+<p>
+When <i>type</i> is <tt>:keyboard</tt> , <i>gesture-spec</i> is a list of the form
+<i>(key-name . modifier-key-names)</i> .  <i>key-name</i> is the name of a
+non-modifier key on the keyboard (see below).  <i>modifier-key-names</i> is a
+(possibly empty) list of modifier key names (<tt>:shift</tt> , <tt>:control</tt> ,
+<tt>:meta</tt> , <tt>:super</tt> , and <tt>:hyper</tt> ).
+<p>
+For the standard Common Lisp characters (the 95 ASCII printing characters
+including <tt><huge>#\Space</huge></tt>), <i>key-name</i> is the character object itself.  For
+the other ``semi-standard'' characters, <i>key-name</i> is a keyword symbol
+naming the character (<tt>:newline</tt> , <tt>:linefeed</tt> , <tt>:return</tt> , <tt>:tab</tt> ,
+<tt>:backspace</tt> , <tt>:page</tt> , and <tt>:rubout</tt> ).  CLIM implementations may extend
+the set of key names on a per-port basic, but should choose a port-specific
+package.  For example, the Genera port might such gestures as include
+<tt>genera-clim:help</tt> and <tt>genera-clim:complete</tt> .
+<p>
+The names of the modifier keys have been chosen to be uniform across all
+platforms, even though not all platforms will have keys on the keyboard with
+these names.  The per-port part of a CLIM implementation must simply choose a
+sensible mapping from the modifier key names to the names of the keys on the
+keyboard.  For example, a CLIM implementation on the Macintosh might map
+<tt>:meta</tt> to the Command shift key, and <tt>:super</tt> to the Option shift key.
+<p>
+When <i>type</i> is <tt>:pointer-button</tt> , <tt>:pointer-button-press</tt> , or
+<tt>:pointer-button-release</tt> , <i>gesture-spec</i> is a list of the form
+<i>(button-name . modifier-key-names)</i> .  <i>button</i> is the name of a pointer
+button (<tt>:left</tt> , <tt>:middle</tt> , or <tt>:right</tt> ), and <i>modifier-key-names</i> is as above.
+<p>
+CLIM implementations are permitted to have other values of <i>type</i> as an
+extension, such as <tt>:pointer-motion</tt> or <tt>:timer</tt> .
+<p>
+As an example, the <tt>:edit</tt> gesture name above could be defined as follows
+using <tt>define-gesture-name</tt> :
+<p>
+<pre>(define-gesture-name :edit :pointer-button (:left :meta))
+(define-gesture-name :edit :keyboard (#<i><huge>e</huge></i> :control))
+</pre> <a name="Function delete-gesture-name"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>delete-gesture-name</b></td><td valign="baseline" width="100%"><i>name</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Removes the gesture named by the symbol <i>name</i> .
+<p>
+
+<a name="Function event-matches-gesture-name-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>event-matches-gesture-name-p</b></td><td valign="baseline" width="100%"><i>event gesture-name</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Returns <a href="extended-input.html#CONCEPT=true"><i>true</i></a> if the device event <i>event</i> ``matches'' the gesture
+named by <i>gesture-name</i> .
+<p>
+For pointer button events, the event matches the gesture name when the pointer
+button from the event matches the name of the pointer button one of the gesture
+specifications named by <i>gesture-name</i> , and the modifier key state from the
+event matches the names of the modifier keys in that same gesture specification.
+<p>
+For keyboard events, the event matches the gesture name when the key name from
+the event matches the key name of one of the gesture specifications named by
+<i>gesture-name</i> , and the modifier key state from the event matches the names
+of the modifier keys in that same gesture specification.
+<p>
+<a name="Function modifier-state-matches-gesture-name-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>modifier-state-matches-gesture-name-p</b></td><td valign="baseline" width="100%"><i>modifier-state gesture-name</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Returns <a href="extended-input.html#CONCEPT=true"><i>true</i></a> if the modifier key state from the device event <i>event</i> matches the names of the modifier keys in one of the gesture specifications
+named by <i>gesture-name</i> .
+<p>
+<hr><b>Issue:</b> SWM<br><i>Note that none of the functions above take a port argument.  This
+is because CLIM implicitly assumes that the canonical set of gesture names is
+the same on every port, and only the mappings differ from port to port.  Some
+ports may define additional gesture names, but they will simply not be mapped on
+other ports.  Is this a reasonable assumption?</i><hr>
+<a name="Function make-modifier-state"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>make-modifier-state</b></td><td valign="baseline" width="100%"><i><tt>&amp;rest</tt> modifiers</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Given a list of modifier state names, this creates an integer that serves as a
+modifier key state.  The legal modifier state names are <tt>:shift</tt> ,
+<tt>:control</tt> , <tt>:meta</tt> , <tt>:super</tt> , and <tt>:hyper</tt> .
+<p>
+
+<a name="22.3.1"><h3>22.3.1 Standard Gesture Names</h3></a>
+Every CLIM implementation must provide a standard set of gesture names that
+correspond to a common set of gestures.  These gesture names must have a
+meaningful mapping for every port type.
+<p>
+Here are the required, standard keyboard gesture names:
+<p>
+<ul> <li> <tt>:abort</tt> ---corresponds to gestures that cause the currently running
+application to be aborted back to top-level.  On Genera, this will match the
+<tt><huge>#\Abort</huge></tt> character.  On other systems, this may match the event
+corresponding to typing <tt>Control-C</tt>.
+<p>
+<li> <tt>:clear-input</tt> ---corresponds to gestures that cause the current input
+buffer to be cleared.  On Genera, this will match the <tt><huge>#\Clear-Input</huge></tt>
+character.  On other systems, this may match the event corresponding to typing
+<tt>Control-U</tt>.
+<p>
+<li> <tt>:complete</tt> ---corresponds to the gestures that tell the completion
+facility to complete the current input.  On most systems, this will typically
+match the <tt><huge>#\Tab</huge></tt> or <tt><huge>#\Escape</huge></tt> character.  On Genera, this will match
+the <tt><huge>#\Complete</huge></tt> character as well.
+<p>
+<li> <tt>:help</tt> ---corresponds to the gestures that tell <tt>accept</tt> and the
+completion facility to display a help message.  On most systems, this will
+typically match the event corresponding to typing <tt>Control-/</tt>.  On Genera,
+this will match the <tt><huge>#\Help</huge></tt> character as well.
+<p>
+<li> <tt>:possibilities</tt> ---corresponds to the gestures that tell the completion
+facility to display the current set of possible completions.  On most systems,
+this will typically match the event corresponding to typing <tt>Control-?</tt>.
+</ul> Here are the required, standard pointer gesture names:
+<p>
+<ul> <li> <tt>:select</tt> ---corresponds to the gesture that is used to ``select'' the
+object being pointed to with the pointer.  Typically, this will correspond to
+the left button on the pointer.
+<p>
+<li> <tt>:describe</tt> ---corresponds to the gesture that is used to ``describe''
+or display some sort of documentation on the object being pointed to with the
+pointer.  Typically, this will correspond to the middle button on the pointer.
+<p>
+<li> <tt>:menu</tt> ---corresponds to the gesture that is used to display a menu of
+all possible operation on the object being pointed to with the pointer.
+Typically, this will correspond to the right button on the pointer.
+<p>
+<li> <tt>:edit</tt> ---corresponds to the gesture that is used to ``edit'' the
+object being pointed to with the pointer.  Typically, this will correspond to
+the left button on the pointer with some modifier key held down (such as the
+<tt>:meta</tt> key).
+<p>
+<li> <tt>:delete</tt> ---corresponds to the gesture that is used to ``delete'' the
+object being pointed to with the pointer.  Typically, this will correspond to
+the middle button on the pointer with some modifier key held down (such as the
+<tt>:shift</tt> key).
+</ul> <a name="22.4"><h2>22.4 The Pointer Protocol</h2></a>
+<a name="Protocol&nbsp;Class pointer"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>pointer</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Protocol&nbsp;Class]</b></td></tr></table>The protocol class that corresponds to a pointing device.
+If you want to create a new class that behaves like a pointer, it should be a subclass of <b>pointer</b>. Subclasses of <b>pointer</b> must obey the pointer protocol.<i>Members of this class are mutable. </i><a name="Predicate pointerp"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>pointerp</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Predicate]</b></td></tr></table>Returns <a href="extended-input.html#CONCEPT=true"><i>true</i></a> if <i>object</i> is a <a href="regions.html#CONCEPT=pointer"><i>pointer</i></a> , otherwise returns
+<a href="extended-input.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Init&nbsp;arg :port"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:port</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table>The <tt>:port</tt> initarg is used to specify the port with which the pointer is
+associated.
+<p>
+<a name="Class standard-pointer"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>standard-pointer</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>The instantiable class that implements a pointer.
+<p>
+<a name="Generic function pointer-sheet"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>pointer-sheet</b></td><td valign="baseline" width="100%"><i>pointer</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function (setf pointer-sheet)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf pointer-sheet)</b></td><td valign="baseline" width="100%"><i>sheet pointer</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns (or sets) the sheet over which the <a href="regions.html#CONCEPT=pointer"><i>pointer</i></a> <i>pointer</i> is located.
+<p>
+<a name="Generic function pointer-button-state"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>pointer-button-state</b></td><td valign="baseline" width="100%"><i>pointer</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the current state of the buttons of the <a href="regions.html#CONCEPT=pointer"><i>pointer</i></a> <i>pointer</i> as
+an integer.  This will be a mask consisting of the <tt>logior</tt> of
+<tt>+pointer-left-button+</tt> , <tt>+pointer-middle-button+</tt> , and
+<tt>+pointer-right-button+</tt> .
+<p>
+<a name="Generic function pointer-position"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>pointer-position</b></td><td valign="baseline" width="100%"><i>pointer</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the <tt>x</tt> and <tt>y</tt> position of the <a href="regions.html#CONCEPT=pointer"><i>pointer</i></a> <i>pointer</i> as two
+values.
+<p>
+<a name="Generic function (setf* pointer-position)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf* pointer-position)</b></td><td valign="baseline" width="100%"><i>x y pointer</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Sets the <tt>x</tt> and <tt>y</tt> position of the <a href="regions.html#CONCEPT=pointer"><i>pointer</i></a> <i>pointer</i> to the
+specified position.
+<p>
+For CLIM implementations that do not support <tt>setf*</tt> , the ``setter'' function
+for this is <tt>pointer-set-position</tt> .
+<p>
+<a name="Generic function pointer-cursor"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>pointer-cursor</b></td><td valign="baseline" width="100%"><i>pointer</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function (setf pointer-cursor)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf pointer-cursor)</b></td><td valign="baseline" width="100%"><i>cursor pointer</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>A pointer object usually has a visible cursor associated with it.  These
+functions return (or set) the cursor associated with the <a href="regions.html#CONCEPT=pointer"><i>pointer</i></a> <i>pointer</i> .
+<p>
+<a name="Method port"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>port</b></td><td valign="baseline" width="100%"><i>(pointer <tt>standard-pointer</tt> )</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Method]</b></td></tr></table>Returns the port with which <i>pointer</i> is associated.
+<p>
+
+<a name="22.5"><h2>22.5 Pointer Tracking</h2></a>
+<a name="Macro tracking-pointer"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>tracking-pointer</b></td><td valign="baseline" width="100%"><i>(sheet <tt>&amp;key</tt> pointer multiple-window
+                                          transformp context-type highlight)
+                              <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>The <tt>tracking-pointer</tt> macro provides a general means for running code while
+following the position of a pointing device, and monitoring for other input
+events.  The programmer supplies code (the clauses in <i>body</i> ) to be run upon
+the occurrence of any of the following types of events:
+<p>
+<ul> <li> Motion of the pointer
+<p>
+<li> Motion of the pointer over a presentation
+<p>
+<li> Clicking or releasing a pointer button
+<p>
+<li> Clicking or releasing a pointer button while the pointer is over a presentation
+<p>
+<li> Keyboard event (typing a character)
+</ul> The <i>sheet</i> argument is not evaluated, and must be a symbol that is bound to
+an input sheet or stream.  If <i>sheet</i> is <tt>t</tt> , <tt>*standard-output*</tt> is
+used.  <i>body</i> may have zero or more declarations as its first forms.
+<p>
+The <i>pointer</i> argument specifies a pointer to track.  It defaults to
+the primary pointer for the sheet, <tt>(port-pointer (port <i>sheet</i> ))</tt> .
+<p>
+When the boolean <i>multiple-windows</i> is <a href="extended-input.html#CONCEPT=true"><i>true</i></a> , then the pointer will be
+tracked across multiple windows, otherwise is will be tracked only in the window
+corresponding to <i>sheet</i> .
+<p>
+When the boolean <i>transformp</i> is <a href="extended-input.html#CONCEPT=true"><i>true</i></a> , then the coordinates supplied
+to the <tt>:pointer-motion</tt> clause will be in the ``user'' coordinate system
+rather than in stream coordinates, that is, the medium's transformation will be
+applied to the coordinates.
+<p>
+<i>context-type</i> is used to specify the presentation type of presentations
+that will be ``visible'' to the tracking code for purposes of highlighting and
+for the <tt>:presentation</tt> , <tt>:presentation-button-press</tt> , and
+<tt>:presentation-button-release</tt> clauses.  Supplying <i>context-type</i> is only
+useful when <i>sheet</i> is an output recording stream.  <i>context-type</i> defaults to <tt>t</tt> , meaning that all presentations are visible.
+<p>
+When <i>highlight</i> is <a href="extended-input.html#CONCEPT=true"><i>true</i></a> , <tt>tracking-pointer</tt> will highlight
+applicable presentations as the pointer is positioned over them.  highlight
+defaults to <a href="extended-input.html#CONCEPT=true"><i>true</i></a> when any of the <tt>:presentation</tt> ,
+<tt>:presentation-button-press</tt> , or <tt>:presentation-button-release</tt> clauses is
+supplied, otherwise it defaults to <a href="extended-input.html#CONCEPT=false"><i>false</i></a> .  See
+Chapter <a href="output-recording.html#LABEL=output-recording"><b><i>Output Recording</i></b></i></a> for a complete discussion of presentations.
+<p>
+The body of <tt>tracking-pointer</tt> consists of a list of clauses.  Each clause is
+of the form
+<br>
+<i>(clause-keyword arglist . clause-body)</i> <br>
+and defines a local function to be run upon occurrence of each type of event.
+The possible values for <i>clause-keyword</i> and the associated <i>arglist</i> are:
+<p>
+<ul> <li> <tt>:pointer-motion</tt> <i>(<tt>&amp;key</tt> window x y)</i> <br>
+Defines a clause to run whenever the pointer moves.  In the clause, <i>window</i> is bound to the window in which the motion occurred, and <i>x</i> and <i>y</i> to
+the coordinates of the pointer. (See the keyword argument <tt>:transformp</tt> below
+for a description of the coordinate system in which <i>x</i> and <i>y</i> are
+expressed.)
+<p>
+<li> <tt>:presentation</tt> <i>(<tt>&amp;key</tt> presentation window x y)</i> <br>
+Defines a clause to run whenever the pointer moves over a presentation of the
+desired type.  (See the keyword argument <tt>:context-type</tt> above for a
+description of how to specify the desired type.)  In the clause,
+<i>presentation</i> is bound to the presentation, <i>window</i> to the window in
+which the motion occurred, and <i>x</i> and <i>y</i> to the coordinates of the
+pointer.  (See the keyword argument <tt>:transformp</tt> above for a description of
+the coordinate system in which <i>x</i> and <i>y</i> are expressed.)
+<p>
+When both <tt>:presentation</tt> and <tt>:pointer-motion</tt> clauses are provided, the
+two clauses are mutually exclusive.  The <tt>:presentation</tt> clause will run only
+if the pointer is over an applicable presentation, otherwise the
+<tt>:pointer-motion</tt> clause will run.
+<p>
+<li> <tt>:pointer-button-press</tt> <i>(<tt>&amp;key</tt> event x y)</i> <br>
+Defines a clause to run whenever a pointer button is pressed. In the clause,
+<i>event</i> is bound to the pointer button press event. (The window and the
+coordinates of the pointer are part of <i>event</i> .)
+<p>
+<i>x</i> and <i>y</i> are the transformed <tt>x</tt> and <tt>y</tt> positions of the pointer.
+These will be different from <tt>pointer-event-x</tt> and <tt>pointer-event-y</tt> if
+the user transformation is not the identity transformation.
+<p>
+<li> <tt>:presentation-button-press</tt> <i>(<tt>&amp;key</tt> presentation event x y)</i> <br>
+Defines a clause to run whenever the pointer button is pressed while the pointer
+is over a presentation of the desired type. (See the keyword argument
+<tt>:context-type</tt> below for a description of how to specify the desired type.)
+In the clause, <i>presentation</i> is bound to the presentation, and <i>event</i> to the pointer button press event.  (The window and the stream coordinates of
+the pointer are part of <i>event</i> .)  <i>x</i> and <i>y</i> are as for the
+<tt>:pointer-button-press</tt> clause.
+<p>
+When both <tt>:presentation-button-press</tt> and <tt>:pointer-button-press</tt> clauses
+are provided, the two clauses are mutually exclusive.  The
+<tt>:presentation-button-press</tt> clause will run only if the pointer is over an
+applicable presentation, otherwise the <tt>:pointer-button-press</tt> clause will
+run.
+<p>
+<li> <tt>:pointer-button-release</tt> <i>(<tt>&amp;key</tt> event x y)</i> <br>
+Defines a clause to run whenever a pointer button is released. In the clause,
+<i>event</i> is bound to the pointer button release event. (The window and the
+coordinates of the pointer are part of <i>event</i> .)
+<p>
+<i>x</i> and <i>y</i> are the transformed <tt>x</tt> and <tt>y</tt> positions of the pointer.
+These will be different from <tt>pointer-event-x</tt> and <tt>pointer-event-y</tt> if
+the user transformation is not the identity transformation.
+<p>
+<li> <tt>:presentation-button-release</tt> <i>(<tt>&amp;key</tt> presentation event x y)</i> <br>
+Defines a clause to run whenever a pointer button is released while the pointer
+is over a presentation of the desired type. (See the keyword argument
+<tt>:context-type</tt> below for a description of how to specify the desired type.)
+In the clause, <i>presentation</i> is bound to the presentation, and <i>event</i> to the pointer button release event.  (The window and the stream coordinates of
+the pointer are part of <i>event</i> .)  <i>x</i> and <i>y</i> are as for the
+<tt>:pointer-button-release</tt> clause.
+<p>
+When both <tt>:presentation-button-release</tt> and <tt>:pointer-button-release</tt> clauses are provided, the two clauses are mutually exclusive.  The
+<tt>:presentation-button-release</tt> clause will run only if the pointer is over an
+applicable presentation, otherwise the <tt>:pointer-button-release</tt> clause will
+run.
+<p>
+<li> <tt>:keyboard</tt> <i>(<tt>&amp;key</tt> gesture)</i> <br>
+Defines a clause to run whenever a character is typed on the keyboard.  In the
+clause, <i>gesture</i> is bound to the keyboard gesture corresponding to the
+character typed.
+</ul> <a name="Generic function drag-output-record"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>drag-output-record</b></td><td valign="baseline" width="100%"><i>stream output-record
+                                  <tt>&amp;key</tt> repaint erase feedback finish-on-release
+                                       multiple-window</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Enters an interaction mode in which the user moves the pointer and
+<i>output-record</i> ``follows'' the pointer by being dragged on the <a href="extended-input.html#CONCEPT=output
+recording stream"><i>output
+recording stream</i></a> <i>stream</i> .  By default, the dragging is accomplished by
+erasing the output record from its previous position and redrawing at the new
+position.  <i>output-record</i> remains in the output history of <i>stream</i> at
+its final position.
+<p>
+The returned values are the final <tt>x</tt> and <tt>y</tt> position of the pointer.
+<p>
+The boolean <i>repaint</i> allows the programmer to control the appearance of
+windows as the pointer is dragged.  If <i>repaint</i> is <a href="extended-input.html#CONCEPT=true"><i>true</i></a> (the
+default), displayed contents of windows are not disturbed as the output record
+is dragged over them (that is, those regions of the screen are repainted).  If
+it is <a href="extended-input.html#CONCEPT=false"><i>false</i></a> , then no repainting is done as the output record is dragged.
+<p>
+<i>erase</i> allows the programmer to identify a function that will be called to
+erase the output record as it is dragged.  It must be a function of two
+arguments, the output record to erase and the stream; it has dynamic extent.
+The default is <tt>erase-output-record</tt> .
+<p>
+<i>feedback</i> allows the programmer to identify a ``feedback'' function.
+<i>feedback</i> must be a is a function of seven arguments: the output record,
+the stream, the initial <tt>x</tt> and <tt>y</tt> position of the pointer, the current <tt>x</tt> and
+<tt>y</tt> position of the pointer, and a drawing argument (either <tt>:erase</tt> or
+<tt>:draw</tt> ).  It has dynamic extent.  The default is <tt>nil</tt> , meaning that the
+feedback behavior will be for the output record to track the pointer.  (The
+<i>feedback</i> argument is used when the programmer desires more complex
+feedback behavior, such as drawing a ``rubber band'' line as the user moves the
+mouse.)  Note that if <i>feedback</i> is supplied, <i>erase</i> is ignored.
+<p>
+If the boolean <i>finish-on-release</i> is <a href="extended-input.html#CONCEPT=false"><i>false</i></a> (the default),
+<tt>drag-output-record</tt> is exited when the user presses a pointer button.  When
+it is <a href="extended-input.html#CONCEPT=true"><i>true</i></a> , <tt>drag-output-record</tt> is exited when the user releases the
+pointer button currently being held down.
+<p>
+<i>multiple-window</i> is as for <tt>tracking-pointer</tt> .
+<p>
+
+<a name="Macro dragging-output"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>dragging-output</b></td><td valign="baseline" width="100%"><i>(<tt>&amp;optional</tt> stream 
+                              <tt>&amp;key</tt> repaint finish-on-release multiple-window)
+                             <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Evaluates <i>body</i> inside of <tt>with-output-to-output-record</tt> to produce an
+output record for the stream <i>stream</i> , and then invokes
+<tt>drag-output-record</tt> on the record in order to drag the output.  The output
+record is not inserted into <i>stream</i> 's output history.
+<p>
+The returned values are the final <tt>x</tt> and <tt>y</tt> position of the pointer.
+<p>
+The <i>stream</i> argument is not evaluated, and must be a symbol that is bound
+to an <a href="extended-input.html#CONCEPT=output recording stream"><i>output recording stream</i></a> stream.  If <i>stream</i> is <tt>t</tt> (the
+default), <tt>*standard-output*</tt> is used.  <i>body</i> may have zero or more
+declarations as its first forms.
+<p>
+<i>repaint</i> , <i>finish-on-release</i> , and <i>multiple-window</i> are as for
+<tt>drag-output-record</tt> .
+<p>
+<br><hr><br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="redisplay.html">Incremental Redisplay</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="presentation-types.html">Presentation Types</a></td>
+</tr></table>
+</body></html>

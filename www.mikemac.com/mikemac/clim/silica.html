@@ -1,0 +1,1323 @@
+<html><head><title>CLIM: 6 Overview of Window Facilities</title></head><body>
+<br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="transforms.html">Affine Transformations</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="drawing-options.html">Drawing Options</a></td>
+</tr></table><br><hr><br>
+<p>
+<br><a name="6"><h1>6 Overview of Window Facilities</h1></a>
+<a name="6.1"><h2>6.1 Introduction</h2></a>
+A central notion in organizing user interfaces is allocating screen regions to
+particular tasks and recursively subdividing these regions into subregions.  The
+windowing layer of CLIM defines an extensible framework for constructing, using,
+and managing such <a name="CONCEPT=hierarchies of interactive regions"><b><i>hierarchies of interactive regions</i></b></a> .  This framework
+allows uniform treatment of the following things:
+<p>
+<ul> <li> Window objects like those in X or NeWS.
+<p>
+<li> Lightweight gadgets typical of toolkit layers, such as Motif or OpenLook.
+<p>
+<li> Structured graphics like output records and an application's presentation
+objects.
+<p>
+<li> Objects that act as Lisp handles for windows or gadgets implemented in a
+different language (such as OpenLook gadgets implemented in C).
+</ul> From the perspective of most CLIM users, CLIM's windowing layer plays the role
+of a window system.  However, CLIM will usually use the services of a window
+system platform to provide efficient windowing, input, and output facilities.
+In this specification, such window system platforms will be referred to as host
+window systems or as display servers.
+<p>
+The fundamental window abstraction defined by CLIM is called a <a name="CONCEPT=sheet"><b><i>sheet</i></b></a> .
+A sheet can participate in a relationship called a <a name="CONCEPT=windowing relationship"><b><i>windowing relationship</i></b></a> .  This relationship is one in which one sheet called the
+<a name="CONCEPT=parent"><b><i>parent</i></b></a> provides space to a number of other sheets called
+<a name="CONCEPT=children"><b><i>children</i></b></a> .  Support for establishing and maintaining this kind of
+relationship is the essence of what window systems provide.  At any point in
+time, CLIM allows a sheet to be a child in one relationship called its
+<a name="CONCEPT=youth windowing relationship"><b><i>youth windowing relationship</i></b></a> and a parent in another relationship
+called its <a name="CONCEPT=adult windowing relationship"><b><i>adult windowing relationship</i></b></a> .
+<p>
+Programmers can manipulate unrooted hierarchies of sheets (those without a
+connection to any particular display server).  However, a sheet hierarchy must
+be attached to a display server to make it visible.  <a name="CONCEPT=Ports"><b><i>Ports</i></b></a> and
+<a name="CONCEPT=grafts"><b><i>grafts</i></b></a> provide the functionality for managing this capability.  A
+<a href="silica.html#CONCEPT=port"><i>port</i></a> is an abstract connection to a display service that is responsible
+for managing host display server resources and for processing input events
+received from the host display server.  A <a href="silica.html#CONCEPT=graft"><i>graft</i></a> is a special kind of
+sheet that represents a host window, typically a root window (that is, a
+screen-level window).  A sheet is attached to a display by making it a child of
+a graft, which represents an appropriate host window.  The sheet will then
+appear to be a child of that host window.  So, a sheet is put onto a particular
+screen by making it a child of an appropriate graft and enabling it.  Ports and
+grafts are described in detail in Chapter <a href="silica.html#LABEL=ports-and-grafts"><b><i>Ports, Grafts, and Mirrored Sheets</i></b></i></a> .
+<p>
+
+<a name="6.2"><h2>6.2 Properties of Sheets</h2></a>
+Sheets have the following properties:
+<p>
+<ul> [A coordinate system] Provides the ability to refer to locations in a
+sheet's abstract plane.
+<p>
+[A region] Defines an area within a sheet's coordinate system that
+indicates the area of interest within the plane, that is, a clipping region for
+output and input.  This typically corresponds to the visible region of the sheet
+on the display.
+<p>
+[A parent] A sheet that is the parent in a windowing relationship in which
+this sheet is a child.
+<p>
+[Children] An ordered set of sheets that are each a child in a windowing
+relationship in which this sheet is a parent.  The ordering of the set
+corresponds to the stacking order of the sheets.  Not all sheets have children.
+<p>
+[A transformation] Determines how points in this sheet's coordinate system
+are mapped into points in its parents.
+<p>
+[An enabled flag] Indicates whether the sheet is currently actively
+participating in the windowing relationship with its parent and siblings.
+<p>
+[An event handler] A procedure invoked when the display server wishes to
+inform CLIM of external events.
+<p>
+[Output state] A set of values used when CLIM causes graphical or textual
+output to appear on the display.  This state is often represented by a medium.
+</ul> <a name="6.3"><h2>6.3 Sheet Protocols</h2></a>
+A sheet is a participant in a number of protocols.  Every sheet must provide
+methods for the generic functions that make up these protocols.  These protocols
+are:
+<p>
+<ul> [The windowing protocol] Describes the relationships between the sheet and
+its parent and children (and, by extension, all of its ancestors and
+descendants).
+<p>
+[The input protocol] Provides the event handler for a sheet.  Events may
+be handled synchronously, asynchronously, or not at all.
+<p>
+[The output protocol] Provides graphical and textual output, and manages
+descriptive output state such as color, transformation, and clipping.
+<p>
+[The repaint protocol] Invoked by the event handler and by user programs
+to ensure that the output appearing on the display device appears as the program
+expects it to appear.
+<p>
+[The notification protocol] Invoked by the event handler and user programs
+to ensure that CLIM's representation of window system information is equivalent
+to the display server's.
+</ul> These protocols may be handled directly by a sheet, queued for later processing
+by some other agent, or passed on to a delegate sheet for further processing.
+<p>
+
+<br><a name="7"><h1>7 Properties of Sheets</h1></a>
+<a name="LABEL=sheet-properties"></a> <a name="7.1"><h2>7.1 Basic Sheet Classes</h2></a>
+Note that there are no standard sheet classes in CLIM, and no pre-packaged way
+to create sheets in general.  If a programmer needs to create an instance of
+some class of sheet, <tt>make-instance</tt> must be used.  For most purposes,
+calling <tt>make-pane</tt> is how application programmers will make sheets.
+<p>
+<a name="Protocol&nbsp;Class sheet"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>sheet</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Protocol&nbsp;Class]</b></td></tr></table>The protocol class that corresponds to a sheet.  This and the next chapter
+describe all of the sheet protocols.
+If you want to create a new class that behaves like a sheet, it should be a subclass of <b>sheet</b>. Subclasses of <b>sheet</b> must obey the sheet protocol.All of the subclasses of <tt>sheet</tt> are mutable.
+<p>
+<a name="Predicate sheetp"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>sheetp</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Predicate]</b></td></tr></table>Returns <a href="silica.html#CONCEPT=true"><i>true</i></a> if <i>object</i> is a <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> , otherwise returns
+<a href="silica.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Class basic-sheet"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>basic-sheet</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>The basic class on which all CLIM sheets are built, a subclass of <tt>sheet</tt> .
+<br><br><a name="7.2"><h2>7.2 Relationships Between Sheets</h2></a>
+Sheets are arranged in a tree-structured, acyclic, top-down hierarchy.  Thus, in
+general, a sheet has one parent (or no parent) and zero or more children.  A
+sheet may have zero or more siblings (that is, other sheets that share the same
+parent).  In order to describe the relationships between sheets, we need to
+define some terms.
+<p>
+<ul> [Adopted] A sheet is said to be <a name="CONCEPT=adopted"><b><i>adopted</i></b></a> if it has a parent.  A
+sheet becomes the parent of another sheet by adopting that sheet.
+<p>
+[Disowned] A sheet is said to be <a name="CONCEPT=disowned"><b><i>disowned</i></b></a> if it does not have a
+parent.  A sheet ceases to be a child of another sheet by being disowned.
+<p>
+[Grafted] A sheet is said to be <a name="CONCEPT=grafted"><b><i>grafted</i></b></a> when it is part of a
+sheet hierarchy whose highest ancestor is a graft.  In this case, the sheet may
+be visible on a particular window server.
+<p>
+[Degrafted] A sheet is said to be <a name="CONCEPT=degrafted"><b><i>degrafted</i></b></a> when it is part of a
+sheet hierarchy that cannot possibly be visible on a server, that is, the
+highest ancestor is not a graft.
+<p>
+[Enabled] A sheet is said to be <a name="CONCEPT=enabled"><b><i>enabled</i></b></a> when it is actively
+participating in the windowing relationship with its parent.  If a sheet is
+enabled and grafted, and all its ancestors are enabled (they are grafted by
+definition), then the sheet will be visible if it occupies a portion of the
+graft region that isn't clipped by its ancestors or ancestor's siblings.
+<p>
+[Disabled] The opposite of enabled is <a name="CONCEPT=disabled"><b><i>disabled</i></b></a> .
+</ul> <a name="7.2.1"><h3>7.2.1 Sheet Relationship Functions</h3></a>
+The generic functions in this section comprise the sheet protocol.  All sheet
+objects must implement or inherit methods for each of these generic functions.
+<p>
+<a name="Generic function sheet-parent"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>sheet-parent</b></td><td valign="baseline" width="100%"><i>sheet</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the parent of the <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> <i>sheet</i> , or <tt>nil</tt> if the sheet has
+no parent.
+<p>
+<a name="Generic function sheet-children"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>sheet-children</b></td><td valign="baseline" width="100%"><i>sheet</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns a list of sheets that are the children of the <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> <i>sheet</i> .
+Some sheet classes support only a single child; in this case, the result of
+<tt>sheet-children</tt> will be a list of one element.
+<i>This function returns objects that reveal CLIM's internal state; do not modify those objects. </i><a name="Generic function sheet-adopt-child"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>sheet-adopt-child</b></td><td valign="baseline" width="100%"><i>sheet child</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Adds the child sheet <i>child</i> to the set of children of the <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> <i>sheet</i> , and makes the <i>sheet</i> the child's parent.  If <i>child</i> already has a parent, the <tt>sheet-already-has-parent</tt> error will be signalled.
+<p>
+Some sheet classes support only a single child.  For such sheets, attempting to
+adopt more than a single child will cause the <tt>sheet-supports-only-one-child</tt> error to be signalled.
+<p>
+<a name="Generic function sheet-disown-child"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>sheet-disown-child</b></td><td valign="baseline" width="100%"><i>sheet child <tt>&amp;key</tt> (errorp <tt>t</tt> )</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Removes the child sheet <i>child</i> from the set of children of the <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> <i>sheet</i> , and makes the parent of the child be <tt>nil</tt> .  If <i>child</i> is
+not actually a child of <i>sheet</i> and <i>errorp</i> is <a href="silica.html#CONCEPT=true"><i>true</i></a> , then the
+<tt>sheet-is-not-child</tt> error will be signalled.
+<p>
+<a name="Generic function sheet-siblings"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>sheet-siblings</b></td><td valign="baseline" width="100%"><i>sheet</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns a list of all of the siblings of the <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> <i>sheet</i> .  The
+sibling are all of the children of <i>sheet</i> 's parent excluding <i>sheet</i> itself.
+<i>This function returns fresh objects that may be modified. </i><a name="Generic function sheet-enabled-children"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>sheet-enabled-children</b></td><td valign="baseline" width="100%"><i>sheet</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns a list of those children of the <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> <i>sheet</i> that are enabled.
+<i>This function returns fresh objects that may be modified. </i><a name="Generic function sheet-ancestor-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>sheet-ancestor-p</b></td><td valign="baseline" width="100%"><i>sheet putative-ancestor</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns <a href="silica.html#CONCEPT=true"><i>true</i></a> if the the <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> <i>putative-ancestor</i> is in fact
+an ancestor of the <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> <i>sheet</i> , otherwise returns <a href="silica.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Generic function raise-sheet"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>raise-sheet</b></td><td valign="baseline" width="100%"><i>sheet</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function bury-sheet"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>bury-sheet</b></td><td valign="baseline" width="100%"><i>sheet</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>These functions reorder the children of a sheet by raising the <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> <i>sheet</i> to the top or burying it at the bottom.  Raising a sheet puts it at
+the beginning of the ordering; burying it puts it at the end.  If sheets
+overlap, the one that appears ``on top'' on the display device is earlier in the
+ordering than the one underneath.
+<p>
+This may change which parts of which sheets are visible on the display device.
+<p>
+<a name="Generic function reorder-sheets"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>reorder-sheets</b></td><td valign="baseline" width="100%"><i>sheet new-ordering</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Reorders the children of the <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> <i>sheet</i> to have the new ordering
+specified by <i>new-ordering</i> .  <i>new-ordering</i> is an ordered list of the
+child sheets; elements at the front of <i>new-ordering</i> are ``on top'' of
+elements at the rear.
+<p>
+If <i>new-ordering</i> does not contain all of the children of <i>sheet</i> , the
+<tt>sheet-ordering-underspecified</tt> error will be signalled.  If
+<i>new-ordering</i> contains a sheet that is not a child of <i>sheet</i> , the
+<tt>sheet-is-not-child</tt> error will be signalled.
+<p>
+<a name="Generic function sheet-enabled-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>sheet-enabled-p</b></td><td valign="baseline" width="100%"><i>sheet</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns <a href="silica.html#CONCEPT=true"><i>true</i></a> if the the <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> <i>sheet</i> is enabled by its
+parent, otherwise returns <a href="silica.html#CONCEPT=false"><i>false</i></a> .  Note that all of a sheet's ancestors
+must be enabled before the sheet is viewable.
+<p>
+<a name="Generic function (setf sheet-enabled-p)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf sheet-enabled-p)</b></td><td valign="baseline" width="100%"><i>enabled-p sheet</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>When <i>enabled-p</i> is <a href="silica.html#CONCEPT=true"><i>true</i></a> , this enables the the <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> <i>sheet</i> .  When <i>enabled-p</i> is <a href="silica.html#CONCEPT=false"><i>false</i></a> , this disables the sheet.
+<p>
+Note that a sheet is not visible unless it and all of its ancestors are enabled.
+<p>
+
+<a name="Generic function sheet-viewable-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>sheet-viewable-p</b></td><td valign="baseline" width="100%"><i>sheet</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns <a href="silica.html#CONCEPT=true"><i>true</i></a> if the <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> <i>sheet</i> and all its ancestors are
+enabled, and if one of its ancestors is a graft.  See
+Chapter <a href="silica.html#LABEL=ports-and-grafts"><b><i>Ports, Grafts, and Mirrored Sheets</i></b></i></a> for further information.
+<p>
+<a name="Generic function sheet-occluding-sheets"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>sheet-occluding-sheets</b></td><td valign="baseline" width="100%"><i>sheet child</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns a list of the <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> <i>child</i> 's siblings that occlude part or
+all of the region of the <i>child</i> .  In general, these are the siblings that
+are enabled and appear earlier in the <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> <i>sheet</i> 's children.  If
+<i>sheet</i> does not permit overlapping among its children,
+<tt>sheet-occluding-sheets</tt> will return <tt>nil</tt> .
+<p>
+<i>This function returns fresh objects that may be modified. </i><a name="Generic function map-over-sheets"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>map-over-sheets</b></td><td valign="baseline" width="100%"><i>function sheet</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Applies the function <i>function</i> to the sheet <i>sheet</i> , and then applies
+<i>function</i> to all of the descendents (the children, the children's children,
+and so forth) of <i>sheet</i> .
+<p>
+Function is a function of one argument, the sheet; it has dynamic extent.
+<p>
+
+<a name="7.2.2"><h3>7.2.2 Sheet Genealogy Classes</h3></a>
+Different ``mixin'' classes are provided that implement the relationship
+protocol.  None of the four following classes is instantiable.
+<p>
+<a name="Class sheet-parent-mixin"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>sheet-parent-mixin</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>This class is mixed into sheet classes that have a parent.
+<p>
+<a name="Class sheet-leaf-mixin"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>sheet-leaf-mixin</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>This class is mixed into sheet classes that will never have children.
+<p>
+<a name="Class sheet-single-child-mixin"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>sheet-single-child-mixin</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>This class is mixed into sheet classes that have at most a single child.
+<p>
+<a name="Class sheet-multiple-child-mixin"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>sheet-multiple-child-mixin</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>This class is mixed into sheet classes that may have zero or more children.
+<p>
+
+<a name="7.3"><h2>7.3 Sheet Geometry</h2></a>
+Every sheet has a region and a coordinate system.  A sheet's region refers to
+its position and extent on the display device, and is represented by some sort
+of a region object, frequently a rectangle.  A sheet's coordinate system is
+represented by a coordinate transformation that converts coordinates in its
+coordinate system to coordinates in its parent's coordinate system.
+<p>
+<a name="7.3.1"><h3>7.3.1 Sheet Geometry Functions</h3></a>
+<a name="Generic function sheet-transformation"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>sheet-transformation</b></td><td valign="baseline" width="100%"><i>sheet</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function (setf sheet-transformation)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf sheet-transformation)</b></td><td valign="baseline" width="100%"><i>transformation sheet</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns a transformation that converts coordinates in the <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> <i>sheet</i> 's coordinate system into coordinates in its parent's coordinate
+system.  Using <tt>setf</tt> on this accessor will modify the sheet's coordinate
+system, including moving its region in its parent's coordinate system.
+<p>
+When the sheet's transformation is changed,
+<tt>note-sheet-transformation-changed</tt> is called on the to notify the sheet of
+the change.
+<p>
+<a name="Generic function sheet-region"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>sheet-region</b></td><td valign="baseline" width="100%"><i>sheet</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function (setf sheet-region)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf sheet-region)</b></td><td valign="baseline" width="100%"><i>region sheet</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns a region object that represents the set of points to which the
+<a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> <i>sheet</i> refers.  The region is in the sheet's coordinate
+system.  Using <tt>setf</tt> on this accessor modifies the sheet's region.
+<p>
+When the sheet's region is changed, <tt>note-sheet-region-region</tt> is called on
+<i>sheet</i> to notify the sheet of the change.
+<p>
+<hr><b>Issue:</b> RSL<br><i>To reshape and move a region, you generally have to manipulate
+both of the above.  Maybe there should be a single function that takes either
+or both of a new transformation or region?  Maybe region coordinates should be
+expressed in parents' coordinates, since that's easier to set only one?</i><hr>
+<hr><b>Issue:</b> RSL<br><i>I'm not convinced I like this business of requesting a change by
+modifying an accessor.  It might be better to have a <tt>request-</tt> function, so
+it would be clear that there might be some delay before the region or
+transformation was modified.  Currently, using <tt>setf</tt> on mirrored sheets
+requests that the server move or resize the sheet; the accessor will continue to
+return the old value until the notification comes in from the display server
+that says that the mirror has been moved.</i><hr>
+<a name="Generic function move-sheet"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>move-sheet</b></td><td valign="baseline" width="100%"><i>sheet x y</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Moves the <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> <i>sheet</i> to the new position <tt>(x,y)</tt>.  <i>x</i> and
+<i>y</i> are expressed in the coordinate system of <i>sheet</i> 's parent.
+<p>
+<tt>move-sheet</tt> simply modifies <i>sheet</i> 's transformation, and could be
+implemented as follows:
+<p>
+<pre>(defmethod move-sheet ((sheet basic-sheet) x y)
+  (let ((transform (sheet-transformation sheet)))
+    (multiple-value-bind (old-x old-y)
+        (transform-position transform 0 0)
+      (setf (sheet-transformation sheet)
+            (compose-translation-with-transformation
+              transform (- x old-x) (- y old-y))))))
+</pre> <a name="Generic function resize-sheet"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>resize-sheet</b></td><td valign="baseline" width="100%"><i>sheet width height</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Resizes the <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> <i>sheet</i> to have a new width <i>width</i> and a new
+height <i>height</i> .  <i>width</i> and <i>height</i> are real numbers.
+<p>
+<tt>resize-sheet</tt> simply modifies <i>sheet</i> 's region, and could be implemented
+as follows:
+<p>
+<pre>(defmethod resize-sheet ((sheet basic-sheet) width height)
+  (setf (sheet-region sheet)
+        (make-bounding-rectangle 0 0 width height)))
+</pre> <a name="Generic function move-and-resize-sheet"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>move-and-resize-sheet</b></td><td valign="baseline" width="100%"><i>sheet x y width height</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Moves the <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> <i>sheet</i> to the new position <tt>(x,y)</tt>, and changes its
+size to the new width <i>width</i> and the new height <i>height</i> .  <i>x</i> and
+<i>y</i> are expressed in the coordinate system of <i>sheet</i> 's parent.
+<i>width</i> and <i>height</i> are real numbers.
+<p>
+<tt>move-and-resize-sheet</tt> could be implemented as follows:
+<p>
+<pre>(defmethod move-and-resize-sheet ((sheet basic-sheet) x y width height)
+  (move-sheet sheet x y)
+  (resize-sheet sheet width height))
+</pre> <a name="Generic function map-sheet-position-to-parent"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>map-sheet-position-to-parent</b></td><td valign="baseline" width="100%"><i>sheet x y</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Applies the <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> <i>sheet</i> 's transformation to the point <tt>(x,y)</tt>,
+returning the coordinates of that point in <i>sheet</i> 's parent's coordinate
+system.
+<p>
+<a name="Generic function map-sheet-position-to-child"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>map-sheet-position-to-child</b></td><td valign="baseline" width="100%"><i>sheet x y</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Applies the inverse of the <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> <i>sheet</i> 's transformation to the
+point <tt>(x,y)</tt> (represented in <i>sheet</i> 's parent's coordinate system),
+returning the coordinates of that same point in <i>sheet</i> coordinate system.
+<p>
+<a name="Generic function map-sheet-rectangle*-to-parent"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>map-sheet-rectangle*-to-parent</b></td><td valign="baseline" width="100%"><i>sheet x1 y1 x2 y2</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Applies the <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> <i>sheet</i> 's transformation to the bounding rectangle
+specified by the corner points <tt>(x1,y1)</tt> and <tt>(x2,y2)</tt>, returning the bounding
+rectangle of the transformed region as four values, <i>min-x</i> , <i>min-y</i> ,
+<i>max-x</i> , and <i>max-y</i> .  The arguments <i>x1</i> , <i>y1</i> , <i>x2</i> , and
+<i>y1</i> are canonicalized in the same way as for <tt>make-bounding-rectangle</tt> .
+<p>
+<a name="Generic function map-sheet-rectangle*-to-child"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>map-sheet-rectangle*-to-child</b></td><td valign="baseline" width="100%"><i>sheet x1 y1 x2 y2</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Applies the inverse of the <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> <i>sheet</i> 's transformation to the
+bounding rectangle delimited by the corner points <tt>(x1,y1)</tt> and <tt>(x2,y2)</tt>
+(represented in <i>sheet</i> 's parent's coordinate system), returning the
+bounding rectangle of the transformed region as four values, <i>min-x</i> ,
+<i>min-y</i> , <i>max-x</i> , and <i>max-y</i> .  The arguments <i>x1</i> , <i>y1</i> ,
+<i>x2</i> , and <i>y1</i> are canonicalized in the same way as for
+<tt>make-bounding-rectangle</tt> .
+<p>
+<hr><b>Issue:</b> SWM<br><i>I now think that <tt>map-</tt> in these names is misleading; maybe
+<tt>convert-</tt> is better?</i><hr>
+<a name="Generic function map-over-sheets-containing-position"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>map-over-sheets-containing-position</b></td><td valign="baseline" width="100%"><i>function sheet x y</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Applies the function <i>function</i> to all of the children of the sheet
+<i>sheet</i> that contain the position <tt>(x,y)</tt>.  <i>x</i> and <i>y</i> are
+expressed in <i>sheet</i> 's coordinate system.
+<p>
+Function is a function of one argument, the sheet; it has dynamic extent.
+<p>
+<a name="Generic function map-over-sheets-overlapping-region"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>map-over-sheets-overlapping-region</b></td><td valign="baseline" width="100%"><i>function sheet region</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Applies the function <i>function</i> to all of the children of the sheet
+<i>sheet</i> that overlap the region <i>region</i> .  <i>region</i> is expressed in
+<i>sheet</i> 's coordinate system.
+<p>
+Function is a function of one argument, the sheet; it has dynamic extent.
+<p>
+
+<a name="Generic function child-containing-position"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>child-containing-position</b></td><td valign="baseline" width="100%"><i>sheet x y</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the topmost enabled direct child of the <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> <i>sheet</i> whose
+region contains the position <tt>(x,y)</tt>.  The position is expressed in
+<i>sheet</i> 's coordinate system.
+<p>
+<a name="Generic function children-overlapping-region"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>children-overlapping-region</b></td><td valign="baseline" width="100%"><i>sheet region</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function children-overlapping-rectangle*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>children-overlapping-rectangle*</b></td><td valign="baseline" width="100%"><i>sheet x1 y1 x2 y2</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the list of enabled direct children of the <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> <i>sheet</i> whose region overlaps the <a href="regions.html#CONCEPT=region"><i>region</i></a> <i>region</i> .
+<tt>children-overlapping-rectangle*</tt> is a special case of
+<tt>children-overlapping-region</tt> in which the region is a bounding rectangle
+whose corner points are <tt>(x1,y1)</tt> and <tt>(x2,y2)</tt>.  The region is expressed in
+<i>sheet</i> 's coordinate system.
+<i>This function returns fresh objects that may be modified. </i><a name="Generic function sheet-delta-transformation"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>sheet-delta-transformation</b></td><td valign="baseline" width="100%"><i>sheet ancestor</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns a transformation that is the composition of all of the sheet
+transformations between the <a href="silica.html#CONCEPT=sheets"><i>sheets</i></a> <i>sheet</i> and <i>ancestor</i> .  If
+<i>ancestor</i> is <tt>nil</tt> , <tt>sheet-delta-transformation</tt> will return the
+transformation to the root of the sheet hierarchy.  If <i>ancestor</i> is not an
+ancestor of sheet, the <tt>sheet-is-not-ancestor</tt> error will be signalled.
+<p>
+The computation of the delta transformation is likely to be cached.
+<p>
+<a name="Generic function sheet-allocated-region"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>sheet-allocated-region</b></td><td valign="baseline" width="100%"><i>sheet child</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the visible region of the <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> <i>child</i> in the <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> <i>sheet</i> 's coordinate system.  If <i>child</i> is occluded by any of its
+siblings, those siblings' regions are subtracted (using <tt>region-difference</tt> )
+from <i>child</i> 's actual region.
+<p>
+
+<a name="7.3.2"><h3>7.3.2 Sheet Geometry Classes</h3></a>
+Each of the following implements the sheet geometry protocol in a different
+manner, according to the sheet's requirements.  None of the four following
+classes is instantiable.
+<p>
+<a name="Class sheet-identity-transformation-mixin"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>sheet-identity-transformation-mixin</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>This class is mixed into sheet classes whose coordinate system is identical to
+that of its parent.
+<p>
+<a name="Class sheet-translation-mixin"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>sheet-translation-mixin</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>This class is mixed into sheet classes whose coordinate system is related to
+that of its parent by a simple translation.
+<p>
+<a name="Class sheet-y-inverting-transformation-mixin"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>sheet-y-inverting-transformation-mixin</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>This class is mixed into sheet classes whose coordinate system is related to
+that of its parent by inverting the <tt>y</tt> coordinate system, and optionally
+translating by some amount in <tt>x</tt> and <tt>y</tt>.
+<p>
+<a name="Class sheet-transformation-mixin"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>sheet-transformation-mixin</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>This class is mixed into sheet classes whose coordinate system is related to
+that of its parent by an arbitrary affine transformation.  CLIM implementations
+are allowed to restrict these transformations to just rectilinear ones.
+<p>
+
+<br><a name="8"><h1>8 Sheet Protocols</h1></a>
+<a name="LABEL=sheet-protocols"></a> <a name="8.1"><h2>8.1 Input Protocol</h2></a>
+CLIM's windowing substrate provides an input architecture and standard
+functionality for notifying clients of input that is distributed to their
+sheets.  Input includes such events as the pointer entering and exiting sheets,
+pointer motion (whose granularity is defined by performance limitations), and
+pointer button and keyboard events.  At this level, input is represented as
+<a href="silica.html#CONCEPT=event"><i>event</i></a> objects.
+<p>
+Sheets either participate fully in the input protocol or are mute for input.  If
+any functions in the input protocol are called on a sheet that is mute for
+input, the <tt>sheet-is-mute-for-input</tt> error will be signalled.
+<p>
+In addition to handling input event, a sheet is also responsible for providing
+other input services, such as controlling the pointer's appearance, and polling
+for current pointer and keyboard state.
+<p>
+Input is processed on a per-port basis by the function <tt>process-next-event</tt> .
+In multiprocessing environments, a process that calls <tt>process-next-event</tt> in a
+loop is created for each port.  In single-process Lisps, <tt>process-next-event</tt> is called whenever the user would go blocked for input.
+<p>
+<tt>process-next-event</tt> has three main tasks when it receives an event.  First,
+it must determine to which <a name="CONCEPT=client"><b><i>client</i></b></a> the event is addressed; this process
+is called <a name="CONCEPT=distributing"><b><i>distributing</i></b></a> .  Typically, the client is a sheet, but there
+are other special-purpose clients to which events can also be dispatched.  Next,
+<tt>process-next-event</tt> formats the event into a standard format, and finally it
+<a name="CONCEPT=dispatches"><b><i>dispatches</i></b></a> the event to the client.  A client may then either handle
+the event synchronously, or it may queue it for later handling by another
+process.
+<p>
+Input events can be broadly categorized into <a name="CONCEPT=pointer events"><b><i>pointer events</i></b></a> and
+<a name="CONCEPT=keyboard events"><b><i>keyboard events</i></b></a> .  By default, pointer events are dispatched to the
+lowest sheet in the hierarchy whose region contains the location of the pointer.
+Keyboard events are dispatched to the port's keyboard input focus; the accessor
+<tt>port-keyboard-input-focus</tt> contains the event client that receives the
+port's keyboard events.
+<p>
+
+<a name="8.1.1"><h3>8.1.1 Input Protocol Functions</h3></a>
+In the functions below, the <i>client</i> argument is typically a sheet, but it
+may be another object that supports event distribution, dispatching, and
+handling.
+<p>
+<a name="Generic function sheet-event-queue"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>sheet-event-queue</b></td><td valign="baseline" width="100%"><i>sheet</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Any sheet that can process events will have an event queue from which the events
+are gotten.  <tt>sheet-event-queue</tt> returns the object that acts as the event
+queue.  The exact representation of an event queue is explicitly unspecified.
+<p>
+<a name="Generic function process-next-event"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>process-next-event</b></td><td valign="baseline" width="100%"><i>port <tt>&amp;key</tt> wait-function timeout</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>This function provides a standard interface for one pass through a port's event
+processing loop.  <i>wait-function</i> is either <tt>nil</tt> or a function of no
+arguments that acts as a predicate; it has dynamic extent.  The predicate should
+wait until one of three conditions occurs:
+<p>
+<ul> <li> If an event if received and processed, the predicate should return
+<a href="silica.html#CONCEPT=true"><i>true</i></a> .
+<p>
+<li> If a timeout occurs, the predicate should return <a href="silica.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<li> If the wait function returns <a href="silica.html#CONCEPT=true"><i>true</i></a> , the predicate should return the
+two values <a href="silica.html#CONCEPT=false"><i>false</i></a> and <tt>:timeout</tt> .
+</ul> A port implementation must provide a method for this function that reads the
+next window server-specific device event, blocking if necessary, and then
+invokes the event distributor.
+<p>
+<a name="Generic function port-keyboard-input-focus"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>port-keyboard-input-focus</b></td><td valign="baseline" width="100%"><i>port</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function (setf port-keyboard-input-focus)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf port-keyboard-input-focus)</b></td><td valign="baseline" width="100%"><i>focus port</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the client to which keyboard events are to be dispatched.
+<p>
+<hr><b>Issue:</b> RSL<br><i>Should this accessor be called <tt>keyboard-input-focus</tt> ?  It may
+be that we want to be able to call it on a frame in order to implement some sort
+of per-frame input focus.</i><hr>
+<a name="Generic function distribute-event"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>distribute-event</b></td><td valign="baseline" width="100%"><i>port event</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>The <i>event</i> is distributed to the <i>port</i> 's proper client.  In general,
+this will be the keyboard input focus for keyboard events, and the lowest sheet
+under the pointer for pointer events.
+<p>
+<hr><b>Issue:</b> RSL<br><i>Do we just want to call this function <tt>dispatch-event</tt> and have
+it called on the port first?</i><hr>
+<a name="Generic function dispatch-event"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>dispatch-event</b></td><td valign="baseline" width="100%"><i>client event</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>This function is called by <tt>process-next-event</tt> to inform a client about an
+event of interest.  It is invoked synchronously by whatever process called
+<tt>process-next-event</tt> , so many methods for this function will simply queue the
+event for later handling.  Certain classes of clients and events may cause this
+function immediately to call either <tt>queue-event</tt> or <tt>handle-event</tt> , or to
+ignore the event entirely.
+<p>
+<a name="Generic function queue-event"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>queue-event</b></td><td valign="baseline" width="100%"><i>client event</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Places the event <i>event</i> into the queue of events for the client <i>client</i> .
+<p>
+<a name="Generic function handle-event"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>handle-event</b></td><td valign="baseline" width="100%"><i>client event</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Implements the client's policy with respect to the event.  For example, if the
+programmer wishes to highlight a sheet in response to an event that informs it
+that the pointer has entered its territory, there would be a method to carry out
+the policy that specializes the appropriate sheet and event classes.
+<p>
+In addition to <tt>queue-event</tt> , the queued input protocol handles the following
+generic functions.  The <i>client</i> argument to these functions is typically a
+sheet.
+<p>
+<a name="Generic function event-read"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>event-read</b></td><td valign="baseline" width="100%"><i>client</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Takes the next event out of the queue of events for this client.
+<p>
+<a name="Generic function event-read-no-hang"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>event-read-no-hang</b></td><td valign="baseline" width="100%"><i>client</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Takes the next event out of the queue of events for this client.  It returns
+<tt>nil</tt> if there are no events in the queue.
+<p>
+<a name="Generic function event-peek"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>event-peek</b></td><td valign="baseline" width="100%"><i>client <tt>&amp;optional</tt> event-type</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the next event in the queue without removing it from the queue.  If
+<i>event-type</i> is supplied, events that are not of that type are first
+removed and discarded.
+<p>
+<a name="Generic function event-unread"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>event-unread</b></td><td valign="baseline" width="100%"><i>client event</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Places the <i>event</i> at the head of the <i>client</i> 's event queue, so as to
+be the next event read.
+<p>
+<a name="Generic function event-listen"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>event-listen</b></td><td valign="baseline" width="100%"><i>client</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns <a href="silica.html#CONCEPT=true"><i>true</i></a> if there are any events queued for <i>client</i> , otherwise
+returns <a href="silica.html#CONCEPT=false"><i>false</i></a> .
+<p>
+
+<a name="8.1.2"><h3>8.1.2 Input Protocol Classes</h3></a>
+Most classes of sheets will have one of the following input protocol classes
+mixed in.  Of course, a sheet can always have a specialized method for a
+specific class of event that will override the default.  For example, a sheet
+may need to have only pointer click events dispatched to itself, and may
+delegate all other events to some other input client.  Such a sheet should have
+<tt>delegate-sheet-input-mixin</tt> as a superclass, and have a more specific method
+for <tt>dispatch-event</tt> on its class and <tt>pointer-button-click-event</tt> .
+<p>
+None of the five following classes is instantiable.
+<p>
+<a name="Class standard-sheet-input-mixin"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>standard-sheet-input-mixin</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>This class of sheet provides a method for <tt>dispatch-event</tt> that calls
+<tt>queue-event</tt> on each device event.  Note that configuration events invoke
+<tt>handle-event</tt> immediately.
+<p>
+The <tt>standard-sheet-input-mixin</tt> class will also provide a
+<tt>sheet-event-queue</tt> method, describe above.
+<p>
+<a name="Class immediate-sheet-input-mixin"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>immediate-sheet-input-mixin</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>This class of sheet provides a method for <tt>dispatch-event</tt> that calls
+<tt>handle-event</tt> immediately for all events.
+<p>
+The <tt>immediate-sheet-input-mixin</tt> class will also provide a
+<tt>sheet-event-queue</tt> method, describe above.
+<p>
+<a name="Class sheet-mute-input-mixin"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>sheet-mute-input-mixin</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>This is mixed in to any sheet class the does not handle any input events.
+<p>
+<a name="Class delegate-sheet-input-mixin"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>delegate-sheet-input-mixin</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>This class of sheet provides a method for <tt>dispatch-event</tt> that calls
+<tt>dispatch-event</tt> on a designated substitute recipient and the event.  The
+initarg <tt>:delegate</tt> or the accessor delegate-sheet-delegate may be used to
+set the recipient of dispatched events.
+<p>
+<a name="Generic function delegate-sheet-delegate"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>delegate-sheet-delegate</b></td><td valign="baseline" width="100%"><i>sheet</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function (setf delegate-sheet-delegate)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf delegate-sheet-delegate)</b></td><td valign="baseline" width="100%"><i>delegate sheet</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>This may be set to another recipient of events dispatched to a sheet of class
+<tt>delegate-sheet-input-mixin</tt> .  <i>delegate</i> is the object to which events
+will be dispatched, and is usually another sheet.  If the delegate is <tt>nil</tt> ,
+events are discarded.
+<p>
+
+<p>
+
+<a name="8.2"><h2>8.2 Standard Device Events</h2></a>
+An <a name="CONCEPT=event"><b><i>event</i></b></a> is a CLIM object that represents some sort of user gesture
+(such as moving the pointer or pressing a key on the keyboard) or that
+corresponds to some sort of notification from the display server.  Event objects
+store such things as the sheet associated with the event, the <tt>x</tt> and <tt>y</tt>
+bposition of the pointer within that sheet, the key name or character
+corresponding to a key on the keyboard, and so forth.
+<p>
+Figure <a href="silica.html#LABEL=event-hier"><b><i>8.1</i></b></i></a> shows all the event classes.
+<p>
+<hr><pre><tt>event</tt> <br>
+    <tt>device-event</tt> <br>
+        <tt>keyboard-event</tt> <br>
+            <tt>key-press-event</tt> <br>
+            <tt>key-release-event</tt> <br>
+        <tt>pointer-event</tt> <br>
+            <tt>pointer-button-event</tt> <br>
+                <tt>pointer-button-press-event</tt> <br>
+                <tt>pointer-button-release-event</tt> <br>
+                <tt>pointer-button-hold-event</tt> <br>
+            <tt>pointer-motion-event</tt> <br>
+                <tt>pointer-boundary-event</tt> <br>
+                    <tt>pointer-enter-event</tt> <br>
+                    <tt>pointer-exit-event</tt> <br>
+    <tt>window-event</tt> <br>
+        <tt>window-configuration-event</tt> <br>
+        <tt>window-repaint-event</tt> <br>
+    <tt>window-manager-event</tt> <br>
+        <tt>window-manager-delete--event</tt> <br>
+    <tt>timer-event</tt> <br>
+</pre> <center><b>Figure 8.1: </b><a name="LABEL=event-hier"></a> CLIM event classes.  All classes that appear
+at a given indentation are subclasses of the class that appears above and at a
+lesser indentation.</center>
+<br><br> <hr><a name="Protocol&nbsp;Class event"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>event</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Protocol&nbsp;Class]</b></td></tr></table>The protocol class that corresponds to any sort of ``event''.
+If you want to create a new class that behaves like an event, it should be a subclass of <b>event</b>. Subclasses of <b>event</b> must obey the event protocol.All of the event classes are immutable.  CLIM implementations may choose to keep
+a resource of the device event classes, but this must be invisible at the API
+level.  That is, any event visible at the level of the API must act as though it
+is immutable.
+<p>
+<a name="Predicate eventp"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>eventp</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Predicate]</b></td></tr></table>Returns <a href="silica.html#CONCEPT=true"><i>true</i></a> if <i>object</i> is an <a href="silica.html#CONCEPT=event"><i>event</i></a> , otherwise returns
+<a href="silica.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Init&nbsp;arg :timestamp"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:timestamp</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table>All subclasses of <tt>event</tt> must take a <tt>:timestamp</tt> initarg, which is used
+to specify the timestamp for the event.
+<p>
+<a name="Generic function event-timestamp"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>event-timestamp</b></td><td valign="baseline" width="100%"><i>event</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns an integer that is a monotonically increasing timestamp for the the
+<a href="silica.html#CONCEPT=event"><i>event</i></a> <i>event</i> .  The timestamp must have at least as many bits of
+precision as a fixnum.
+<p>
+<a name="Generic function event-type"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>event-type</b></td><td valign="baseline" width="100%"><i>event</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>For the <a href="silica.html#CONCEPT=event"><i>event</i></a> <i>event</i> , returns a keyword with the same name as the
+class name, except stripped of the ``-event'' ending.  For example, the keyword
+<tt>:key-press</tt> is returned by <tt>event-type</tt> for an event whose class is
+<tt>key-press-event</tt> .
+<p>
+All event classes must implement methods for <tt>event-type</tt> and
+<tt>event-timestamp</tt> .
+<p>
+
+<a name="Class device-event"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>device-event</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table><a name="Init&nbsp;arg :sheet"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:sheet</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table><a name="Init&nbsp;arg :modifier-state"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:modifier-state</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table>The instantiable class that corresponds to any sort of device event.  This is a
+subclass of <tt>event</tt> .
+<p>
+All subclasses of <tt>device-event</tt> must take the <tt>:sheet</tt> and
+<tt>:modifier-state</tt> initargs, which are used to specify the sheet and modifier
+state components for the event.
+<p>
+<a name="Generic function event-sheet"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>event-sheet</b></td><td valign="baseline" width="100%"><i>device-event</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the sheet associated with the event <i>device-event</i> .
+<p>
+<a name="Generic function event-modifier-state"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>event-modifier-state</b></td><td valign="baseline" width="100%"><i>device-event</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns an integer value that encodes the state of all the modifier keys on the
+keyboard.  This will be a mask consisting of the <tt>logior</tt> of
+<tt>+shift-key+</tt> , <tt>+control-key+</tt> , <tt>+meta-key+</tt> , <tt>+super-key+</tt> , and
+<tt>+hyper-key+</tt> .
+<p>
+All device event classes must implement methods for <tt>event-sheet</tt> and
+<tt>event-modifier-state</tt> .
+<p>
+
+<a name="Class keyboard-event"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>keyboard-event</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table><a name="Init&nbsp;arg :key-name"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:key-name</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table>The instantiable class that corresponds to any sort of keyboard event.  This is
+a subclass of <tt>device-event</tt> .
+<p>
+All subclasses of <tt>keyboard-event</tt> must take the <tt>:key-name</tt> initarg,
+which is used to specify the key name component for the event.
+<p>
+<a name="Generic function keyboard-event-key-name"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>keyboard-event-key-name</b></td><td valign="baseline" width="100%"><i>keyboard-event</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the name of the key that was pressed or released in a keyboard event.
+This will be a symbol whose value is port-specific.  Key names corresponding to
+the set of ``standard'' characters (such as the alphanumerics) will be a symbol
+in the keyword package.
+<p>
+<a name="Generic function keyboard-event-character"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>keyboard-event-character</b></td><td valign="baseline" width="100%"><i>keyboard-event</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the character associated with the event <i>keyboard-event</i> , if there
+is any.
+<p>
+All keyboard event classes must implement methods for
+<tt>keyboard-event-key-name</tt> and <tt>keyboard-event-character</tt> .
+<p>
+<a name="Class key-press-event"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>key-press-event</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table><a name="Class key-release-event"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>key-release-event</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>The instantiable classes that correspond to a key press or release event.  This
+is a subclass of <tt>keyboard-event</tt> .
+<p>
+
+<a name="Class pointer-event"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>pointer-event</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table><a name="Init&nbsp;arg :pointer"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:pointer</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table><a name="Init&nbsp;arg :button"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:button</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table><a name="Init&nbsp;arg :x"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:x</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table><a name="Init&nbsp;arg :y"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:y</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table>The instantiable class that corresponds to any sort of pointer event.  This is a
+subclass of <tt>device-event</tt> .
+<p>
+All subclasses of <tt>pointer-event</tt> must take the <tt>:pointer</tt> , <tt>:button</tt> ,
+<tt>:x</tt> , and <tt>:y</tt> initargs, which are used to specify the pointer object,
+pointer button, and native <tt>x</tt> and <tt>y</tt> position of the pointer at the time of
+the event.  The sheet's <tt>x</tt> and <tt>y</tt> positions are derived from the supplied
+native <tt>x</tt> and <tt>y</tt> positions and the sheet itself.
+<p>
+<a name="Generic function pointer-event-x"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>pointer-event-x</b></td><td valign="baseline" width="100%"><i>pointer-event</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function pointer-event-y"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>pointer-event-y</b></td><td valign="baseline" width="100%"><i>pointer-event</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the <tt>x</tt> and <tt>y</tt> position of the pointer at the time the event occurred,
+in the coordinate system of the sheet that received the event.  All pointer
+events must implement a method for these generic functions.
+<p>
+<a name="Generic function pointer-event-native-x"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>pointer-event-native-x</b></td><td valign="baseline" width="100%"><i>pointer-event</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function pointer-event-native-y"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>pointer-event-native-y</b></td><td valign="baseline" width="100%"><i>pointer-event</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the <tt>x</tt> and <tt>y</tt> position of the pointer at the time the event occurred,
+in the pointer's native coordinate system.  All pointer events must implement a
+method for these generic functions.
+<p>
+<a name="Generic function pointer-event-pointer"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>pointer-event-pointer</b></td><td valign="baseline" width="100%"><i>pointer-event</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the pointer object to which this event refers.
+<p>
+All pointer event classes must implement methods for <tt>pointer-event-x</tt> ,
+<tt>pointer-event-y</tt> , <tt>pointer-event-native-x</tt> , <tt>pointer-event-native-y</tt> ,
+and <tt>pointer-event-pointer</tt> .
+<p>
+<a name="Class pointer-button-event"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>pointer-button-event</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>The instantiable class that corresponds to any sort of pointer button event.
+This is a subclass of <tt>pointer-event</tt> .
+<p>
+<a name="Generic function pointer-event-button"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>pointer-event-button</b></td><td valign="baseline" width="100%"><i>pointer-button-event</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the an integer corresponding to the pointer button that was pressed or
+released, which will be one of <tt>+pointer-left-button+</tt> ,
+<tt>+pointer-middle-button+</tt> , or <tt>+pointer-right-button+</tt> .
+<p>
+<a name="Class pointer-button-press-event"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>pointer-button-press-event</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table><a name="Class pointer-button-release-event"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>pointer-button-release-event</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table><a name="Class pointer-button-hold-event"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>pointer-button-hold-event</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>The instantiable classes that correspond to a pointer button press, button
+release, and click-and-hold events.  These are subclasses of
+<tt>pointer-button-event</tt> .
+<p>
+<a name="Class pointer-click-event"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>pointer-click-event</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table><a name="Class pointer-double-click-event"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>pointer-double-click-event</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table><a name="Class pointer-click-and-hold-event"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>pointer-click-and-hold-event</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>The instantiable classes that correspond to a pointer button press, followed
+immediately by (respectively) a button release, another button press, or pointer
+motion.  These are subclasses of <tt>pointer-button-event</tt> .  Ports are not
+required to generate these events.
+<p>
+<a name="Class pointer-motion-event"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>pointer-motion-event</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>The instantiable class that corresponds to any sort of pointer motion event.
+This is a subclass of <tt>pointer-event</tt> .
+<p>
+<a name="Class pointer-boundary-event"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>pointer-boundary-event</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>The instantiable class that corresponds to a pointer motion event that crosses
+some sort of sheet boundary.  This is a subclass of <tt>pointer-motion-event</tt> .
+<p>
+<a name="Generic function pointer-boundary-event-kind"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>pointer-boundary-event-kind</b></td><td valign="baseline" width="100%"><i>pointer-boundary-event</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the ``kind'' of boundary event, which will be one of <tt>:ancestor</tt> ,
+<tt>:virtual</tt> , <tt>:inferior</tt> , <tt>:nonlinear</tt> , <tt>:nonlinear-virtual</tt> , or
+<tt>nil</tt> .  These event kinds correspond to the detail members for X11 enter and
+exit events.
+<p>
+<a name="Class pointer-enter-event"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>pointer-enter-event</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table><a name="Class pointer-exit-event"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>pointer-exit-event</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>The instantiable classes that correspond to a pointer enter or exit event.
+These are subclasses of <tt>pointer-boundary-event</tt> .
+<p>
+
+<a name="Class window-event"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>window-event</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table><a name="Init&nbsp;arg :region"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:region</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table>The instantiable class that corresponds to any sort of windowing event.  This is
+a subclass of <tt>event</tt> .
+<p>
+All subclasses of <tt>window-event</tt> must take a <tt>:region</tt> initarg, which is
+used to specify the damage region associated with the event.
+<p>
+<a name="Generic function window-event-region"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>window-event-region</b></td><td valign="baseline" width="100%"><i>window-event</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the region of the sheet that is affected by a window event.
+<p>
+<a name="Generic function window-event-native-region"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>window-event-native-region</b></td><td valign="baseline" width="100%"><i>window-event</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the region of the sheet in native coordinates.
+<p>
+<a name="Generic function window-event-mirrored-sheet"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>window-event-mirrored-sheet</b></td><td valign="baseline" width="100%"><i>window-event</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the mirrored sheet that is attached to the mirror on which the event
+occurred.
+<p>
+All window event classes must implement methods for <tt>window-event-region</tt> ,
+<tt>window-event-native-region</tt> , and <tt>window-event-mirrored-sheet</tt> .
+<p>
+<a name="Class window-configuration-event"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>window-configuration-event</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>The instantiable class that corresponds to a window changing its size or
+position.  This is a subclass of <tt>window-event</tt> .
+<p>
+<a name="Class window-repaint-event"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>window-repaint-event</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>The instantiable class that corresponds to a request to repaint the window.
+This is a subclass of <tt>window-event</tt> .
+<p>
+
+<a name="Class window-manager-event"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>window-manager-event</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table><a name="Init&nbsp;arg :sheet"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:sheet</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table>The instantiable class that corresponds to any sort of window manager event.
+This is a subclass of <tt>event</tt> .
+<p>
+All subclasses of <tt>window-manager-event</tt> must take a <tt>:sheet</tt> initarg,
+which is used to specify the sheet on which the window manager acted.
+<p>
+<a name="Class window-manager-delete-event"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>window-manager-delete-event</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>The instantiable class that corresponds to window manager event that causes a
+host window to be deleted.  This is a subclass of <tt>window-manager-event</tt> .
+<p>
+
+<a name="Class timer-event"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>timer-event</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>The instantiable class that corresponds to a timeout event.  This is a subclass
+of <tt>event</tt> .
+<p>
+
+<a name="Constant +pointer-left-button+"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>+pointer-left-button+</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Constant]</b></td></tr></table><a name="Constant +pointer-middle-button+"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>+pointer-middle-button+</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Constant]</b></td></tr></table><a name="Constant +pointer-right-button+"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>+pointer-right-button+</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Constant]</b></td></tr></table>Constants that correspond to the left, middle, and right button on a pointing
+device.  <tt>pointer-event-button</tt> will returns one of these three values.
+<p>
+These constants are powers of 2 so that they can be combined with <tt>logior</tt> and tested with <tt>logtest</tt> .
+<p>
+<a name="Constant +shift-key+"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>+shift-key+</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Constant]</b></td></tr></table><a name="Constant +control-key+"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>+control-key+</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Constant]</b></td></tr></table><a name="Constant +meta-key+"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>+meta-key+</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Constant]</b></td></tr></table><a name="Constant +super-key+"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>+super-key+</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Constant]</b></td></tr></table><a name="Constant +hyper-key+"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>+hyper-key+</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Constant]</b></td></tr></table>Constants that correspond to the shift, control, meta, super, and hyper modifier
+keys being held down on the keyboard.  These constants are powers of 2 that are
+disjoint from the pointer button constants, so that they can be combined with
+<tt>logior</tt> and tested with <tt>logtest</tt> .
+<p>
+<tt>event-modifier-state</tt> will return some combination of these values.
+<p>
+Implementations must support at least shift, control, and meta modifiers.
+Control and meta might correspond to the control and option or command shift
+keys on a Macintosh keyboard, for example.
+<p>
+
+<a name="8.3"><h2>8.3 Output Protocol</h2></a>
+The output protocol is concerned with the appearance of displayed output on the
+window associated with a sheet.  The sheet output protocol is responsible for
+providing a means of doing output to a sheet, and for delivering repaint
+requests to the sheet's client.
+<p>
+Sheets either participate fully in the output protocol or are mute for output.
+If any functions in the output protocol are called on a sheet that is mute for
+output, the <tt>sheet-is-mute-for-output</tt> error will be signalled.
+<p>
+
+<a name="8.3.1"><h3>8.3.1 Output Properties</h3></a>
+Each sheet retains some output state that logically describes how output is to
+be rendered on its window.  Such information as the foreground and background
+ink, line thickness, and transformation to be used during drawing are provided
+by this state.  This state may be stored in a <a name="CONCEPT=medium"><b><i>medium</i></b></a> associated with
+the sheet itself, be derived from a parent, or may have some global default,
+depending on the sheet itself.
+<p>
+If a sheet is mute for output, it is an error to set any of these values.
+<p>
+<a name="Protocol&nbsp;Class medium"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>medium</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Protocol&nbsp;Class]</b></td></tr></table>The protocol class that corresponds to the output state for some kind of sheet.
+There is no single advertised standard medium class.
+If you want to create a new class that behaves like a medium, it should be a subclass of <b>medium</b>. Subclasses of <b>medium</b> must obey the medium protocol.<a name="Predicate mediump"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>mediump</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Predicate]</b></td></tr></table>Returns <a href="silica.html#CONCEPT=true"><i>true</i></a> if <i>object</i> is a <a href="silica.html#CONCEPT=medium"><i>medium</i></a> , otherwise returns
+<a href="silica.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Class basic-medium"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>basic-medium</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>The basic class on which all CLIM mediums are built, a subclass of <tt>medium</tt> .
+<br><br>The following generic functions comprise the basic medium protocol.  All mediums
+must implement methods for these generic functions.  Often, a sheet class that
+supports the output protocol will implement a ``trampoline'' method that passes
+the operation on to <tt>sheet-medium</tt> of the sheet.
+<p>
+<a name="Generic function medium-foreground"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>medium-foreground</b></td><td valign="baseline" width="100%"><i>medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function (setf medium-foreground)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf medium-foreground)</b></td><td valign="baseline" width="100%"><i>design medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns (and, with <tt>setf</tt> , sets) the current foreground ink for the
+<a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> . This is described in detail in
+Chapter <a href="drawing-options.html#LABEL=drawing-options"><b><i>Drawing Options</i></b></i></a> .
+<p>
+<a name="Generic function medium-background"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>medium-background</b></td><td valign="baseline" width="100%"><i>medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function (setf medium-background)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf medium-background)</b></td><td valign="baseline" width="100%"><i>design medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns (and, with <tt>setf</tt> , sets) the current background ink for the
+<a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> .  This is described in detail in
+Chapter <a href="drawing-options.html#LABEL=drawing-options"><b><i>Drawing Options</i></b></i></a> .
+<p>
+
+<a name="Generic function medium-ink"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>medium-ink</b></td><td valign="baseline" width="100%"><i>medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function (setf medium-ink)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf medium-ink)</b></td><td valign="baseline" width="100%"><i>design medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns (and, with <tt>setf</tt> , sets) the current drawing ink for the
+<a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> .  This is described in detail in
+Chapter <a href="drawing-options.html#LABEL=drawing-options"><b><i>Drawing Options</i></b></i></a> .
+<p>
+
+<a name="Generic function medium-transformation"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>medium-transformation</b></td><td valign="baseline" width="100%"><i>medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function (setf medium-transformation)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf medium-transformation)</b></td><td valign="baseline" width="100%"><i>transformation medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns (and, with <tt>setf</tt> , sets) the ``user'' transformation that converts
+the coordinates presented to the drawing functions by the programmer to the
+<a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> 's coordinate system. By default, it is the identity
+transformation.  This is described in detail in Chapter <a href="drawing-options.html#LABEL=drawing-options"><b><i>Drawing Options</i></b></i></a> .
+<p>
+
+<a name="Generic function medium-clipping-region"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>medium-clipping-region</b></td><td valign="baseline" width="100%"><i>medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function (setf medium-clipping-region)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf medium-clipping-region)</b></td><td valign="baseline" width="100%"><i>region medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns (and, with <tt>setf</tt> , sets) the clipping region that encloses all output
+performed on the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> .  It is returned and set in user
+coordinates.  That is, to convert the user clipping region to medium
+coordinates, it must be transformed by the value of <tt>medium-transformation</tt> .
+For example, the values returned by
+<p>
+<pre>(let (cr1 cr2)
+  ;; Ensure that the sheet's clipping region and transformation will be reset:
+  (with-drawing-options (sheet :transformation +identity-transformation+
+                               :clipping-region +everywhere+)
+    (setf (medium-clipping-region sheet) (make-rectangle* 0 0 10 10))
+    (setf (medium-transformation sheet) (clim:make-scaling-transformation 2 2))
+    (setf cr1 (medium-clipping-region sheet))
+    (setf (medium-clipping-region sheet) (make-rectangle* 0 0 10 10))
+    (setf (medium-transformation sheet) +identity-transformation+)
+    (setf cr2 (medium-clipping-region sheet))
+    (values cr1 cr2)))
+</pre> are two rectangles.  The first one has edges of (0,0,5,5), while the second one
+has edges of (0,0,20,20).
+<p>
+By default, the user clipping region is the value of <tt>+everywhere+</tt> .
+<p>
+<hr><b>Issue:</b> SWM<br><i>What exactly are ``user coordinates''?  We need to define all of
+the coordinate systems in one place: device, window, stream, etc.</i><hr>
+<a name="Generic function medium-line-style"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>medium-line-style</b></td><td valign="baseline" width="100%"><i>medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function (setf medium-line-style)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf medium-line-style)</b></td><td valign="baseline" width="100%"><i>line-style medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns (and, with <tt>setf</tt> , sets) the current line style for the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> .  This is described in detail in Chapter <a href="drawing-options.html#LABEL=drawing-options"><b><i>Drawing Options</i></b></i></a> and
+Section <a href="drawing-options.html#LABEL=line-styles"><b><i>Line Styles</i></b></i></a> .
+<p>
+
+<a name="Generic function medium-text-style"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>medium-text-style</b></td><td valign="baseline" width="100%"><i>medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function (setf medium-text-style)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf medium-text-style)</b></td><td valign="baseline" width="100%"><i>text-style medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns (and, with <tt>setf</tt> , sets) the current text style for the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> of any textual output that may be displayed on the window.  This is
+described in detail in Chapter <a href="drawing-options.html#LABEL=drawing-options"><b><i>Drawing Options</i></b></i></a> .
+<p>
+
+<a name="Generic function medium-default-text-style"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>medium-default-text-style</b></td><td valign="baseline" width="100%"><i>medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function (setf medium-default-text-style)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf medium-default-text-style)</b></td><td valign="baseline" width="100%"><i>text-style medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns (and, with <tt>setf</tt> , sets) the default text style for output on the
+<a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> .  This is described in detail in
+Chapter <a href="drawing-options.html#LABEL=drawing-options"><b><i>Drawing Options</i></b></i></a> .
+<p>
+
+<a name="Generic function medium-merged-text-style"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>medium-merged-text-style</b></td><td valign="baseline" width="100%"><i>medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the actual text style used in rendering text on the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> .  It returns the result of
+<p>
+<pre>(merge-text-styles (medium-text-style medium)
+                   (medium-default-text-style medium))
+</pre> Thus, those components of the current text style that are not <tt>nil</tt> will
+replace the defaults from medium's default text style.  Unlike the preceding
+text style function, <tt>medium-merged-text-style</tt> is read-only.
+<p>
+
+<a name="8.3.2"><h3>8.3.2 Output Protocol Functions</h3></a>
+The output protocol functions on mediums (and sheets that support the
+standard output protocol) include those functions described in
+Section <a href="graphics.html#LABEL=graphics-protocols"><b><i>Graphics Protocols</i></b></i></a> .
+<p>
+<hr><b>Issue:</b> SWM<br><i>We need to do a little better than this.</i><hr>
+<a name="8.3.3"><h3>8.3.3 Output Protocol Classes</h3></a>
+The following classes implement the standard output protocols.  None of the five
+following classes is instantiable.
+<p>
+<a name="Class standard-sheet-output-mixin"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>standard-sheet-output-mixin</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>This class is mixed in to any sheet that provides the standard output protocol,
+such as repainting and graphics.
+<p>
+<a name="Class sheet-mute-output-mixin"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>sheet-mute-output-mixin</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>This class is mixed in to any sheet that provides none of the output protocol.
+<p>
+<a name="Class sheet-with-medium-mixin"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>sheet-with-medium-mixin</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>This class is used for any sheet that has either a permanent or a temporary
+medium.
+<p>
+<a name="Class permanent-medium-sheet-output-mixin"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>permanent-medium-sheet-output-mixin</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>This class is mixed in to any sheet that always has a medium associated with it.
+It is a subclass of <tt>sheet-with-medium-mixin</tt> .
+<p>
+<a name="Class temporary-medium-sheet-output-mixin"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>temporary-medium-sheet-output-mixin</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>This class is mixed in to any sheet that may have a medium associated with it,
+but does not necessarily have a medium at any given instant.  It is a subclass
+of <tt>sheet-with-medium-mixin</tt> .
+<p>
+
+<a name="8.3.4"><h3>8.3.4 Associating a Medium with a Sheet</h3></a>
+Before a sheet may be used for output, it must be associated with a medium.
+Some sheets are permanently associated with media for output efficiency; for
+example, CLIM window stream sheets have a medium that is permanently allocated
+to the window.
+<p>
+However, many kinds of sheets only perform output infrequently, and therefore do
+not need to be associated with a medium except when output is actually required.
+Sheets without a permanently associated medium can be much more lightweight than
+they otherwise would be.  For example, in a program that creates a sheet for the
+purpose of displaying a border for another sheet, the border sheet receives
+output only when the window's shape is changed.
+<p>
+To associate a sheet with a medium, the macro <tt>with-sheet-medium</tt> is used.
+Only sheets that are subclasses of <tt>sheet-with-medium-mixin</tt> may have a
+medium associated with them.
+<p>
+
+<a name="Macro with-sheet-medium"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>with-sheet-medium</b></td><td valign="baseline" width="100%"><i>(medium sheet) <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Within the body, the variable <i>medium</i> is bound to the sheet's medium.  If
+the sheet does not have a medium permanently allocated, one will be allocated
+and associated with the sheet for the duration of the body (by calling
+<tt>engraft-medium</tt> ), and then degrafted from the sheet and deallocated when the
+body has been exited.  The values of the last form of the body are returned as
+the values of <tt>with-sheet-medium</tt> .
+<p>
+This macro will signal a runtime error if sheet is not a subclass of
+<tt>sheet-with-medium-mixin</tt> .
+<p>
+The <i>medium</i> argument is not evaluated, and must be a symbol that is bound
+to a medium.  <i>body</i> may have zero or more declarations as its first forms.
+<p>
+<a name="Macro with-sheet-medium-bound"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>with-sheet-medium-bound</b></td><td valign="baseline" width="100%"><i>(sheet medium) <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table><tt>with-sheet-medium-bound</tt> is used to associate the specific medium
+<i>medium</i> with the sheet <i>sheet</i> for the duration of the body <i>body</i> .
+Typically, a single medium will be allocated an passed to several different
+sheets that can use the same medium.
+<p>
+If the sheet already has a medium allocated to it, the new medium will not be
+grafted to the sheet, and <tt>with-sheet-medium-bound</tt> will simple evaluate the
+body.  If the value of <i>medium</i> is <tt>nil</tt> , <tt>with-sheet-medium-bound</tt> is
+exactly equivalent to <tt>with-sheet-medium</tt> .  The values of the last form of
+the body are returned as the values of <tt>with-sheet-medium-bound</tt> .
+<p>
+This macro will signal a runtime error if sheet is not a subclass of
+<tt>sheet-with-medium-mixin</tt> .
+<p>
+<i>body</i> may have zero or more declarations as its first forms.
+<p>
+<a name="Generic function sheet-medium"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>sheet-medium</b></td><td valign="baseline" width="100%"><i>sheet</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the medium associated with the <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> <i>sheet</i> .  If <i>sheet</i> does not have a medium allocated to it, <tt>sheet-medium</tt> returns <tt>nil</tt> .
+<p>
+This function will signal an error if sheet is not a subclass of
+<tt>sheet-with-medium-mixin</tt> .
+<p>
+<a name="Generic function medium-sheet"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>medium-sheet</b></td><td valign="baseline" width="100%"><i>medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the sheet associated with the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> .  If
+<i>medium</i> is not grafted to a sheet, <tt>medium-sheet</tt> returns <tt>nil</tt> .
+<p>
+<a name="Generic function medium-drawable"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>medium-drawable</b></td><td valign="baseline" width="100%"><i>medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns an implementation-dependent object that corresponds to the actual host
+window that will be drawn on when the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> is drawn on.
+If <i>medium</i> is not grafted to a sheet or the medium's sheet is not currently
+mirrored on a display server, <tt>medium-drawable</tt> returns <tt>nil</tt> .
+<p>
+Programmers can use this function to get a host window system object that can be
+manipulated using the functions of the host window system.  This might be done
+in order to explicitly trade of performance against portability.
+<p>
+<a name="Method port"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>port</b></td><td valign="baseline" width="100%"><i>(medium <tt>basic-medium</tt> )</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Method]</b></td></tr></table>If <i>medium</i> is both grafted to a sheet and the sheet is currently mirrored
+on a display server, this returns the port with which <i>medium</i> is
+associated.  Otherwise it returns <tt>nil</tt> .
+<p>
+<a name="8.3.4.1"><h4>8.3.4.1 Grafting and Degrafting of Mediums</h4></a>
+The following generic functions are the protocol-level functions responsible for
+the allocating, deallocating, grafting, and degrafting of mediums.  They are not
+intended for general use by programmers.
+<p>
+<a name="Generic function allocate-medium"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>allocate-medium</b></td><td valign="baseline" width="100%"><i>port sheet</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Allocates a medium from the <a href="silica.html#CONCEPT=port"><i>port</i></a> <i>port</i> 's medium resource, or calls
+<tt>make-medium</tt> on the port to create a new medium if the resource is empty or
+the port does not maintain a resource of mediums.  The resulting medium will
+have its default characteristics determined by <i>sheet</i> .
+<p>
+<a name="Generic function deallocate-medium"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>deallocate-medium</b></td><td valign="baseline" width="100%"><i>port medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> to <i>port</i> 's medium resource.
+<p>
+<a name="Generic function make-medium"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>make-medium</b></td><td valign="baseline" width="100%"><i>port sheet</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Creates a new medium for the <a href="silica.html#CONCEPT=port"><i>port</i></a> <i>port</i> .  The new medium will have
+its default characteristics determined by <i>sheet</i> .
+<p>
+<a name="Generic function engraft-medium"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>engraft-medium</b></td><td valign="baseline" width="100%"><i>medium port sheet</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Grafts the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> to the <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> <i>sheet</i> on the
+<a href="silica.html#CONCEPT=port"><i>port</i></a> <i>port</i> .  
+<p>
+The default method on <tt>basic-medium</tt> will set <tt>medium-sheet</tt> on
+<i>medium</i> to point to the sheet, and will set up the medium state (foreground
+ink, background ink, and so forth) from the defaults gotten from sheet.  Each
+implementation may specialize this generic function in order to set up such
+things as per-medium ink caches, and so forth.
+<p>
+<a name="Generic function degraft-medium"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>degraft-medium</b></td><td valign="baseline" width="100%"><i>medium port sheet</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Degrafts the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> from the <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> <i>sheet</i> on the
+<a href="silica.html#CONCEPT=port"><i>port</i></a> <i>port</i> .
+<p>
+The default method on <tt>basic-medium</tt> will set <tt>medium-sheet</tt> back to
+<tt>nil</tt> .  Each implementation may specialize this generic function in order to
+clear any caches it has set up, and so forth.
+<p>
+
+<a name="8.4"><h2>8.4 Repaint Protocol</h2></a>
+The repaint protocol is the mechanism whereby a program keeps the display
+up-to-date, reflecting the results of both synchronous and asynchronous events.
+The repaint mechanism may be invoked by user programs each time through their
+top-level command loop.  It may also be invoked directly or indirectly as a
+result of events received from the display server host.  For example, if a
+window is on display with another window overlapping it, and the second window
+is buried, a ``damage notification'' event may be sent by the server; CLIM would
+cause a repaint to be executed for the newly-exposed region.
+<p>
+
+<a name="8.4.1"><h3>8.4.1 Repaint Protocol Functions</h3></a>
+<a name="Generic function queue-repaint"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>queue-repaint</b></td><td valign="baseline" width="100%"><i>sheet repaint-event</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Requests that the repaint event <i>repaint-event</i> be placed in the input queue
+of the <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> <i>sheet</i> .  A program that reads events out of the queue
+will be expected to call <tt>handle-event</tt> for the sheet using the repaint
+region gotten from <i>repaint-event</i> .
+<p>
+<a name="Generic function handle-repaint"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>handle-repaint</b></td><td valign="baseline" width="100%"><i>sheet region</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Implements repainting for a given sheet class.  <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> is the sheet to
+repaint and <i>region</i> is the region to repaint.
+<p>
+<a name="Generic function repaint-sheet"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>repaint-sheet</b></td><td valign="baseline" width="100%"><i>sheet region</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Recursively causes repainting of the <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> <i>sheet</i> and any of its
+descendants that overlap the <a href="regions.html#CONCEPT=region"><i>region</i></a> <i>region</i> .
+<p>
+All CLIM implementations must support repainting for regions that are rectangles
+or region sets composed entirely of rectangles.
+<p>
+
+<a name="8.4.2"><h3>8.4.2 Repaint Protocol Classes</h3></a>
+The following classes implement the standard repaint protocols.  None of the
+three following classes is instantiable.
+<p>
+<a name="Class standard-repainting-mixin"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>standard-repainting-mixin</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>Defines a <tt>dispatch-repaint</tt> method that calls <tt>queue-repaint</tt> .
+<p>
+<a name="Class immediate-repainting-mixin"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>immediate-repainting-mixin</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>Defines a <tt>dispatch-repaint</tt> method that calls <tt>handle-repaint</tt> .
+<p>
+<a name="Class sheet-mute-repainting-mixin"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>sheet-mute-repainting-mixin</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>Defines a <tt>dispatch-repaint</tt> method that calls <tt>queue-repaint</tt> , and a
+method on <tt>repaint-sheet</tt> that does nothing.  This means that its children
+will be recursively repainted when the repaint event is handled.
+<p>
+
+<a name="8.5"><h2>8.5 Sheet Notification Protocol</h2></a>
+The notification protocol allows sheet clients to be notified when a sheet
+hierarchy is changed.  Sheet clients can observe modification events by
+providing <tt>:after</tt> methods for functions defined by this protocol.
+<p>
+<a name="8.5.1"><h3>8.5.1 Relationship to Window System Change Notifications</h3></a>
+<hr><b>Issue:</b> RSL<br><i>More to be written.</i><hr>
+<a name="Generic function note-sheet-grafted"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>note-sheet-grafted</b></td><td valign="baseline" width="100%"><i>sheet</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function note-sheet-degrafted"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>note-sheet-degrafted</b></td><td valign="baseline" width="100%"><i>sheet</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function note-sheet-adopted"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>note-sheet-adopted</b></td><td valign="baseline" width="100%"><i>sheet</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function note-sheet-disowned"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>note-sheet-disowned</b></td><td valign="baseline" width="100%"><i>sheet</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function note-sheet-enabled"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>note-sheet-enabled</b></td><td valign="baseline" width="100%"><i>sheet</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function note-sheet-disabled"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>note-sheet-disabled</b></td><td valign="baseline" width="100%"><i>sheet</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>These notification functions are invoked when the state change has been made to
+the <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> <i>sheet</i> .
+<p>
+
+<a name="8.5.2"><h3>8.5.2 Sheet Geometry Notifications</h3></a>
+<hr><b>Issue:</b> RSL<br><i>More to be written.</i><hr>
+<a name="Generic function note-sheet-region-changed"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>note-sheet-region-changed</b></td><td valign="baseline" width="100%"><i>sheet</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function note-sheet-transformation-changed"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>note-sheet-transformation-changed</b></td><td valign="baseline" width="100%"><i>sheet</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>These notification functions are invoked when the region or transformation of
+the <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> <i>sheet</i> has been changed.  When the regions and
+transformations of a sheet are changed directly, the client is required to call
+<tt>note-sheet-region-changed</tt> or <tt>note-sheet-transformation-changed</tt> .
+<p>
+
+<br><a name="9"><h1>9 Ports, Grafts, and Mirrored Sheets</h1></a>
+<a name="LABEL=ports-and-grafts"></a> <a name="9.1"><h2>9.1 Introduction</h2></a>
+A sheet hierarchy must be attached to a display server so as to permit input and
+output.  This is managed by the use of <a name="CONCEPT=ports"><b><i>ports</i></b></a> and <a name="CONCEPT=grafts"><b><i>grafts</i></b></a> .
+<p>
+<a name="9.2"><h2>9.2 Ports</h2></a>
+A <a name="CONCEPT=port"><b><i>port</i></b></a> is a logical connection to a display server.  It is responsible
+for managing display output and server resources, and for handling incoming
+input events.  Typically, the programmer will create a single port that will
+manage all of the windows on the display.
+<p>
+A port is described with a <a name="CONCEPT=server path"><b><i>server path</i></b></a> .  A server path is a list whose
+first element is a keyword that selects the kind of port.  The remainder of the
+server path is a list of alternating keywords and values whose interpretation is
+port type-specific.
+<p>
+<a name="Protocol&nbsp;Class port"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>port</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Protocol&nbsp;Class]</b></td></tr></table>The protocol class that corresponds to a port.
+If you want to create a new class that behaves like a port, it should be a subclass of <b>port</b>. Subclasses of <b>port</b> must obey the port protocol.All of the subclasses of <tt>port</tt> are mutable.
+<p>
+<a name="Predicate portp"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>portp</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Predicate]</b></td></tr></table>Returns <a href="silica.html#CONCEPT=true"><i>true</i></a> if <i>object</i> is a <a href="silica.html#CONCEPT=port"><i>port</i></a> , otherwise returns
+<a href="silica.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Class basic-port"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>basic-port</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>The basic class on which all CLIM ports are built, a subclass of <tt>port</tt> .
+<br><br><a name="Function find-port"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>find-port</b></td><td valign="baseline" width="100%"><i><tt>&amp;rest</tt> initargs <tt>&amp;key</tt> (server-path <tt>*default-server-path*</tt> ) <tt>&amp;allow-other-keys</tt> </i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Finds a port that provides a connection to the window server addressed by
+<i>server-path</i> .  If no such connection exists, a new connection will be
+constructed and returned.  The initargs in <i>initargs</i> will be passed to the
+function that constructed the new port.
+<p>
+<a name="Variable *default-server-path*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>*default-server-path*</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Variable]</b></td></tr></table>This special variable is used by <tt>find-port</tt> and its callers to default the
+choice of a display service to locate.  Binding this variable in a dynamic
+context will affect the defaulting of this argument to these functions.  This
+variable will be defaulted according to the environment.  In the Unix
+environment, for example, CLIM will attempt to set this variable based on the
+value of the <tt>DISPLAY</tt> environment variable.
+<p>
+The value of <tt>*default-server-path*</tt> is a cons of a port type followed by a
+list of initargs.
+<p>
+The following are the recommendations for port types and their initargs.  This
+list is not intended to be comprehensive, nor is it required that a CLIM
+implementation support any of these port types.
+<p>
+
+<p>
+<b>:clx</b> <i><tt>&amp;key</tt> host display-id screen-id</i><br>
+Given this server path, <tt>find-port</tt> finds a port for the X server on the
+given <i>host</i> , using the <i>display-id</i> and <i>screen-id</i> .
+<p>
+On a Unix host, if these values are not supplied, the defaults come from the
+<tt>DISPLAY</tt> environment variable.  Each CLIM implementation must describe how
+it uses such environment variables.
+<p>
+<b>:motif</b> <i><tt>&amp;key</tt> host display-id screen-id</i><br>
+Given this server path, <tt>find-port</tt> finds a port for a Motif X server on the
+given <i>host</i> , using the <i>display-id</i> and <i>screen-id</i> .
+<p>
+On a Unix host, if these values are not supplied, the defaults come from the
+<tt>DISPLAY</tt> environment variable.
+<p>
+<b>:openlook</b> <i><tt>&amp;key</tt> host display-id screen-id</i><br>
+Given this server path, <tt>find-port</tt> finds a port for an OpenLook X server on
+the given <i>host</i> , using the <i>display-id</i> and <i>screen-id</i> .
+<p>
+On a Unix host, if these values are not supplied, the defaults come from the
+<tt>DISPLAY</tt> environment variable.
+<p>
+<b>:genera</b> <i><tt>&amp;key</tt> screen</i><br>
+Given this server path, <tt>find-port</tt> finds a port for local Genera platform on
+the screen object <i>screen</i> .  <i>screen</i> defaults to <i>tv:main-screen</i> ,
+but could also be an object return from <tt>color:find-color-screen</tt> .
+<p>
+
+<a name="Generic function port"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>port</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the port associated with <i>object</i> .  <tt>port</tt> is defined for all
+sheet classes (including grafts and streams that support the CLIM graphics
+protocol), mediums, and application frames.  For degrafted sheets or other
+objects that aren't currently associated with particular ports, <tt>port</tt> will return <tt>nil</tt> .
+<p>
+<a name="Macro with-port-locked"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>with-port-locked</b></td><td valign="baseline" width="100%"><i>(port) <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Executes <i>body</i> after grabbing a lock associated with the <a href="silica.html#CONCEPT=port"><i>port</i></a> <i>port</i> , which may be a port or any object on which the function <tt>port</tt> works.  If <i>object</i> currently has no port, <i>body</i> will be executed
+without locking.
+<p>
+<i>body</i> may have zero or more declarations as its first forms.
+<p>
+
+<a name="Function map-over-ports"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>map-over-ports</b></td><td valign="baseline" width="100%"><i>function</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Invokes <i>function</i> on each existing port.  Function is a function of one
+argument, the port; it has dynamic extent.
+<p>
+<a name="Generic function port-server-path"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>port-server-path</b></td><td valign="baseline" width="100%"><i>port</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the server path associated with the <a href="silica.html#CONCEPT=port"><i>port</i></a> <i>port</i> .
+<p>
+<a name="Generic function port-name"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>port-name</b></td><td valign="baseline" width="100%"><i>port</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns an implementation-dependent string that is the name of the port.  For
+example, a <tt>:clx</tt> port might have a name of <tt>"summer:0.0"</tt> .
+<p>
+<a name="Generic function port-type"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>port-type</b></td><td valign="baseline" width="100%"><i>port</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the type of the port, that is, the first element of the server path
+spec.
+<p>
+
+<a name="Generic function port-properties"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>port-properties</b></td><td valign="baseline" width="100%"><i>port indicator</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function (setf port-properties)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf port-properties)</b></td><td valign="baseline" width="100%"><i>property port indicator</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>These functions provide a port-based property list.  They are primarily intended
+to support users of CLIM that may need to associate certain information with
+ports.  For example, the implementor of a special graphics package may need to
+maintain resource tables for each port on which it is used.
+<p>
+<a name="Generic function restart-port"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>restart-port</b></td><td valign="baseline" width="100%"><i>port</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>In a multi-process Lisp, <tt>restart-port</tt> restarts the global input processing
+loop associated with the <a href="silica.html#CONCEPT=port"><i>port</i></a> <i>port</i> .  All pending input events are
+discarded.  Server resources may or may not be released and reallocated during
+or after this action.
+<p>
+<a name="Generic function destroy-port"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>destroy-port</b></td><td valign="baseline" width="100%"><i>port</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Destroys the connection with the window server represented by the <a href="silica.html#CONCEPT=port"><i>port</i></a> <i>port</i> .  All sheet hierarchies that are associated with <i>port</i> are
+forcibly degrafted by disowning the children of grafts on <i>port</i> using
+<i>sheet-disown-child</i> .  All server resources utilized by such hierarchies or
+by any graphics objects on <i>port</i> are released as part of the connection
+shutdown.
+<p>
+
+<a name="9.3"><h2>9.3 Grafts</h2></a>
+A <a name="CONCEPT=graft"><b><i>graft</i></b></a> is a special sheet that is directly connected to a display
+server.  Typically, a graft is the CLIM sheet that represents the root window of
+the display.  There may be several grafts that are all attached to the same root
+window; these grafts may have differing coordinate systems.
+<p>
+To display a sheet on a display, it must have a graft for an ancestor.  In
+addition, the sheet and all of its ancestors must be enabled, including the
+graft.  In general, a sheet becomes grafted when it (or one of its ancestors) is
+adopted by a graft.
+<p>
+<a name="Generic function sheet-grafted-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>sheet-grafted-p</b></td><td valign="baseline" width="100%"><i>sheet</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns <a href="silica.html#CONCEPT=true"><i>true</i></a> if any of the sheet's ancestors is a graft, otherwise
+returns <a href="silica.html#CONCEPT=false"><i>false</i></a> .
+<p>
+
+<a name="Function find-graft"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>find-graft</b></td><td valign="baseline" width="100%"><i><tt>&amp;key</tt> (server-path <tt>*default-server-path*</tt> )
+                          (port <tt>(find-port :server-path server-path)</tt> )
+                          (orientation <tt>:default</tt> ) (units <tt>:device</tt> )</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Finds a graft that represents the display device on the port <i>port</i> that
+also matches the other supplied parameters.  If no such graft exists, a new
+graft is constructed and returned.
+<p>
+If <i>server-path</i> is supplied, <tt>find-graft</tt> finds a graft whose port
+provides a connection to the window server addressed by <i>server-path</i> .
+<p>
+It is an error to provide both <i>port</i> and <i>server-path</i> in a call to
+<tt>find-graft</tt> .
+<p>
+<i>orientation</i> specifies the orientation of the graft's coordinate
+system.  Supported values are <tt>:default</tt> and <tt>:graphics</tt> , which have the
+meanings describe below:
+<p>
+<ul> <li> <tt>:default</tt> ---a coordinate system with its origin is in the upper left
+hand corner of the display device with <tt>y</tt> increasing from top to bottom and <tt>x</tt>
+increasing from left to right.
+<p>
+<li> <tt>:graphics</tt> ---a coordinate system with its origin in the lower left
+hand corner of the display device with <tt>y</tt> increasing from bottom to top and <tt>x</tt>
+increasing from left to right.
+</ul> <i>units</i> specifies the units of the coordinate system and defaults to
+<tt>:device</tt> , which means the device units of the host window system (such as
+pixels).  Other supported values include <tt>:inches</tt> , <tt>:millimeters</tt> , and
+<tt>:screen-sized</tt> , which means that one unit in each direction is the width and
+height of the display device.
+<p>
+<hr><b>Issue:</b> RSL<br><i>I don't know how much of this is obsolete.</i><hr>
+<a name="Generic function graft"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>graft</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the graft currently associated with <i>object</i> .  <tt>graft</tt> is
+defined for all sheet classes (including streams that support the CLIM
+graphics protocol), mediums, and application frames.  For degrafted sheets or
+other objects that aren't currently associated with a particular graft,
+<tt>graft</tt> will return <tt>nil</tt> .
+<p>
+<a name="Function map-over-grafts"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>map-over-grafts</b></td><td valign="baseline" width="100%"><i>function port</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Invokes <i>function</i> on each existing graft associated with the <a href="silica.html#CONCEPT=port"><i>port</i></a> <i>port</i> .  <i>function</i> is a function of one argument, the graft; it has
+dynamic extent.
+<p>
+<a name="Macro with-graft-locked"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>with-graft-locked</b></td><td valign="baseline" width="100%"><i>(graft) <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Executes <i>body</i> after grabbing a lock associated with the <a href="silica.html#CONCEPT=graft"><i>graft</i></a> <i>graft</i> , which may be a graft or any object on which the function
+<tt>graft</tt> works.  If <i>object</i> currently has no graft, <i>body</i> will
+be executed without locking.
+<p>
+<i>body</i> may have zero or more declarations as its first forms.
+<p>
+
+<a name="Generic function graft-orientation"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>graft-orientation</b></td><td valign="baseline" width="100%"><i>graft</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the orientation of the <a href="silica.html#CONCEPT=graft"><i>graft</i></a> <i>graft</i> 's coordinate system.
+The returned value will be either <tt>:default</tt> or <tt>:graphics</tt> .  The meanings
+of these values are the same as described for the orientation argument to
+<tt>find-graft</tt> .
+<p>
+<a name="Generic function graft-units"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>graft-units</b></td><td valign="baseline" width="100%"><i>graft</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the units of the <a href="silica.html#CONCEPT=graft"><i>graft</i></a> <i>graft</i> 's coordinate system.  The
+returned value will be one of <tt>:device</tt> , <tt>:inches</tt> , <tt>:millimeters</tt> , or
+<tt>:screen-sized</tt> .  The meanings of these values are the same as described for
+the units argument to <tt>find-graft</tt> .
+<p>
+<a name="Generic function graft-width"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>graft-width</b></td><td valign="baseline" width="100%"><i>graft <tt>&amp;key</tt> (units <tt>:device</tt> )</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function graft-height"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>graft-height</b></td><td valign="baseline" width="100%"><i>graft <tt>&amp;key</tt> (units <tt>:device</tt> )</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the width and height of the <a href="silica.html#CONCEPT=graft"><i>graft</i></a> <i>graft</i> (and by extension
+the associated host window) in the units indicated.  <i>Units</i> may be any of
+<tt>:device</tt> , <tt>:inches</tt> , <tt>:millimeters</tt> , or <tt>:screen-sized</tt> .  The
+meanings of these values are the same as described for the units argument to
+<tt>find-graft</tt> .  Note if a <i>unit</i> of <tt>:screen-sized</tt> is specified, both
+of these functions will return a value of <tt>1</tt> .
+<p>
+<a name="Function graft-pixels-per-millimeter"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>graft-pixels-per-millimeter</b></td><td valign="baseline" width="100%"><i>graft</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table><a name="Function graft-pixels-per-inch"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>graft-pixels-per-inch</b></td><td valign="baseline" width="100%"><i>graft</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Returns the number of pixels per millimeter or inch of the <a href="silica.html#CONCEPT=graft"><i>graft</i></a> <i>graft</i> .  These functions are provided as a convenience to programmers and
+can be easily written in terms of <tt>graft-width</tt> or <tt>graft-height</tt> .
+<p>
+<hr><b>Issue:</b> Rao<br><i>Do we want to support non-square pixels?  If so, these functions
+aren't sufficient.</i><hr>
+<a name="9.4"><h2>9.4 Mirrors and Mirrored Sheets</h2></a>
+A <a name="CONCEPT=mirrored sheet"><b><i>mirrored sheet</i></b></a> is a special class of sheet that is attached directly
+to a window on a display server.  Grafts, for example, are always mirrored
+sheets.  However, any sheet anywhere in a sheet hierarchy may be a mirrored
+sheet.  A mirrored sheet will usually contain a reference to a window system
+object, called a mirror.  For example, a mirrored sheet attached to an X11
+server might have an X window system object stored in one of its slots.
+Allowing mirrored sheets at any point in the hierarchy enables the adaptive
+toolkit facilities.
+<p>
+Since not all sheets in the hierarchy have mirrors, there is no direct
+correspondence between the sheet hierarchy and the mirror hierarchy.  However,
+on those display servers that support hierarchical windows, the hierarchies must
+be parallel.  If a mirrored sheet is an ancestor of another mirrored sheet,
+their corresponding mirrors must have a similar ancestor/descendant
+relationship.
+<p>
+CLIM interacts with mirrors when it must display output or process events.
+On output, the mirrored sheet closest in ancestry to the sheet on which we wish
+to draw provides the mirror on which to draw.  The mirror's drawing clipping
+region is set up to be the intersection of the user's clipping region and the
+sheet's region (both transformed to the appropriate coordinate system) for the
+duration of the output.  On input, events are delivered from mirrors to the
+sheet hierarchy.  The CLIM port must determine which sheet shall receive events
+based on information such as the location of the pointer.
+<p>
+In both of these cases, we must have a coordinate transformation that converts
+coordinates in the mirror (so-called ``native'' coordinates) into coordinates
+in the sheet and vice-versa.
+<p>
+<a name="Class mirrored-sheet-mixin"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>mirrored-sheet-mixin</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>This class is mixed in to sheet classes that can be directly mirrored.
+<p>
+
+<a name="9.4.1"><h3>9.4.1 Mirror Functions</h3></a>
+<hr><b>Issue:</b> SWM<br><i>What kind of an object is a mirror?  Is it the Lisp object that is
+the handle to the actual toolkit window or gadget?</i><hr>
+<a name="Generic function sheet-direct-mirror"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>sheet-direct-mirror</b></td><td valign="baseline" width="100%"><i>sheet</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the mirror of the <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> <i>sheet</i> .  If the sheet is not a
+subclass of <tt>mirrored-sheet-mixin</tt> , this will return <tt>nil</tt> .  If the sheet
+is a subclass of <tt>mirrored-sheet-mixin</tt> and does not currently have a mirror,
+<tt>sheet-mirror</tt> will return <tt>nil</tt> .
+<p>
+<a name="Generic function sheet-mirrored-ancestor"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>sheet-mirrored-ancestor</b></td><td valign="baseline" width="100%"><i>sheet</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the nearest mirrored ancestor of the <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> <i>sheet</i> .
+<p>
+<a name="Generic function sheet-mirror"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>sheet-mirror</b></td><td valign="baseline" width="100%"><i>sheet</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the mirror of the <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> <i>sheet</i> .  If the sheet is not itself
+mirrored, <tt>sheet-mirror</tt> returns the direct mirror of its nearest mirrored
+ancestor.  <tt>sheet-mirror</tt> could be implemented as:
+<p>
+<pre>(defun sheet-mirror (sheet)
+  (sheet-direct-mirror (sheet-mirrored-ancestor sheet)))
+</pre> <a name="Generic function realize-mirror"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>realize-mirror</b></td><td valign="baseline" width="100%"><i>port mirrored-sheet</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Creates a mirror for the <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> <i>mirrored-sheet</i> on the <a href="silica.html#CONCEPT=port"><i>port</i></a> <i>port</i> , if it does not already have one.  The returned value is the sheet's
+mirror; the type of this object is implementation dependent.
+<p>
+<a name="Generic function destroy-mirror"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>destroy-mirror</b></td><td valign="baseline" width="100%"><i>port mirrored-sheet</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Destroys the mirror for the <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> <i>mirrored-sheet</i> on the <a href="silica.html#CONCEPT=port"><i>port</i></a> <i>port</i> .
+<p>
+<a name="Generic function raise-mirror"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>raise-mirror</b></td><td valign="baseline" width="100%"><i>port sheet</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Raises the <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> <i>sheet</i> 's mirror to the top of all of the host
+windows on the <a href="silica.html#CONCEPT=port"><i>port</i></a> <i>port</i> .  <i>sheet</i> need not be a directly
+mirrored sheet.
+<p>
+<a name="Generic function bury-mirror"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>bury-mirror</b></td><td valign="baseline" width="100%"><i>port sheet</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Buries the <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> <i>sheet</i> 's mirror at the bottom of all of the host
+windows on the <a href="silica.html#CONCEPT=port"><i>port</i></a> <i>port</i> .  <i>sheet</i> need not be a directly
+mirrored sheet.
+<p>
+<a name="Method port"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>port</b></td><td valign="baseline" width="100%"><i>(sheet <tt>basic-sheet</tt> )</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Method]</b></td></tr></table>If <i>sheet</i> is currently mirrored on a display server, this returns the port
+with which <i>sheet</i> is associated.  Otherwise it returns <tt>nil</tt> .
+<p>
+
+<a name="9.4.2"><h3>9.4.2 Internal Interfaces for Native Coordinates</h3></a>
+<hr><b>Issue:</b> SWM<br><i>Do these functions work on any sheet, or only on sheets that have
+a mirror, or only on sheets that have a direct mirror?  Also, define what a
+``native coordinate'' are.  Also, do <tt>sheet-device-transformation</tt> and
+<tt>sheet-device-region</tt> really account for the user's transformation and
+clipping region?</i><hr>
+<a name="Generic function sheet-native-transformation"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>sheet-native-transformation</b></td><td valign="baseline" width="100%"><i>sheet</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the transformation for the <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> <i>sheet</i> that converts sheet
+coordinates into native coordinates.  The object returned by this function is
+volatile, so programmers must not depend on the components of the object
+remaining constant.
+<p>
+<a name="Generic function sheet-native-region"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>sheet-native-region</b></td><td valign="baseline" width="100%"><i>sheet</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the region for the <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> <i>sheet</i> in native coordinates.  The
+object returned by this function is volatile, so programmers must not depend on
+the components of the object remaining constant.
+<p>
+<a name="Generic function sheet-device-transformation"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>sheet-device-transformation</b></td><td valign="baseline" width="100%"><i>sheet</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the transformation used by the graphics output routines when drawing on
+the mirror.  This is the composition of the sheet's native transformation and
+the user transformation.  The object returned by this function is volatile, so
+programmers must not depend on the components of the object remaining constant.
+<p>
+<a name="Generic function sheet-device-region"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>sheet-device-region</b></td><td valign="baseline" width="100%"><i>sheet</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the actual clipping region to be used when drawing on the mirror.  This
+is the intersection of the user's clipping region (transformed by the device
+transformation) with the sheet's native region.  The object returned by this
+function is volatile, so programmers must not depend on the components of the
+object remaining constant.
+<p>
+<a name="Generic function invalidate-cached-transformations"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>invalidate-cached-transformations</b></td><td valign="baseline" width="100%"><i>sheet</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><tt>sheet-native-transformation</tt> and <tt>sheet-device-transformation</tt> typically
+cache the transformations for performance reasons.
+<tt>invalidate-cached-transformations</tt> clears the cached native and device
+values for the <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> <i>sheet</i> 's transformation and clipping region.
+It is invoked when a sheet's native transformation changes, which happens when a
+sheet's transformation is changed or when <tt>invalidate-cached-transformations</tt> is called on any of its ancestors.
+<p>
+<a name="Generic function invalidate-cached-regions"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>invalidate-cached-regions</b></td><td valign="baseline" width="100%"><i>sheet</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><tt>sheet-native-region</tt> and <tt>sheet-device-region</tt> typically cache the
+regions for performance reasons.  <tt>invalidate-cached-regions</tt> clears the
+cached native and device values for the <a href="silica.html#CONCEPT=sheet"><i>sheet</i></a> <i>sheet</i> 's native
+clipping region.  It is invoked when a sheet's native clipping region changes,
+which happens when the clipping region changes or when
+<tt>invalidate-cached-regions</tt> is called on any of its ancestors.
+<p>
+
+<br><hr><br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="transforms.html">Affine Transformations</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="drawing-options.html">Drawing Options</a></td>
+</tr></table>
+</body></html>

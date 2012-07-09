@@ -1,0 +1,263 @@
+<html><head><title>CLIM: 25 Menu Facilities</title></head><body>
+<br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="input-editing.html">Input Editing and Completion Facilities</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="dialogs.html">Dialog Facilities</a></td>
+</tr></table><br><hr><br>
+<p>
+<br><a name="25"><h1>25 Menu Facilities</h1></a>
+<a name="LABEL=menus"></a> <hr><b>Issue:</b> SWM<br><i>There is a general issue about how these menus fit in with the
+menus that might be provided by the underlying toolkit.  For example, under what
+circumstances is CLIM allowed to directly use the menu facilities provided by
+the host?  Should <tt>:leave-menu-visible~t</tt> interact with the ``pushpin''
+facility provided by OpenLook?</i><hr>
+<a name="Generic function menu-choose"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>menu-choose</b></td><td valign="baseline" width="100%"><i>items <tt>&amp;key</tt> associated-window printer presentation-type
+                                      default-item text-style label
+                                      cache unique-id id-test cache-value cache-test
+                                      max-width max-height n-rows n-columns
+                                      x-spacing y-spacing row-wise
+                                      cell-align-x cell-align-y
+                                      scroll-bars pointer-documentation</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Displays a menu whose choices are given by the elements of the sequence
+<i>items</i> .  It returns three values:  the value of the chosen item, the item
+itself, and the pointer button event corresponding to the gesture that the user
+used to select it.  If the user aborts out of the menu, a single value is
+returned, <tt>nil</tt> .
+<p>
+<tt>menu-choose</tt> will call <tt>frame-manager-menu-choose</tt> on the frame manager
+being used by <i>associated-window</i> (or the frame manager of the current
+application frame).  All of the arguments to <tt>menu-choose</tt> will be passed on
+to <tt>frame-manager-menu-choose</tt> .
+<p>
+<a name="Generic function frame-manager-menu-choose"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>frame-manager-menu-choose</b></td><td valign="baseline" width="100%"><i>frame-manager items
+                                         <tt>&amp;key</tt> associated-window printer presentation-type
+                                              default-item text-style label
+                                              cache unique-id id-test cache-value cache-test
+                                              max-width max-height n-rows n-columns
+                                              x-spacing y-spacing row-wise
+                                              cell-align-x cell-align-y
+                                              scroll-bars pointer-documentation</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Displays a menu whose choices are given by the elements of the sequence
+<i>items</i> .  It returns three values:  the value of the chosen item, the item
+itself, and the pointer button event corresponding to the gesture that the user
+used to select it.  If the user aborts out of the menu, a single value is
+returned, <tt>nil</tt> .
+<p>
+<b>Implementation note:</b> the default method on <tt>standard-frame-manager</tt> will generally be implemented in terms of CLIM's own window stream and
+formatting facilities, such as using <tt>menu-choose-from-drawer</tt> on a stream
+allocated by <tt>with-menu</tt> .  However, some frame managers may be able to use a
+native menu facility to handle most (if not all) menus.  If the native menu
+facility cannot handle some cases, it can simply use <tt>call-next-method</tt> to
+invoke the default method.
+<p>
+<i>items</i> is a sequence of menu items.  Each menu item has a visual
+representation derived from a display object, an internal representation that is
+a value object, and a set of menu item options.  The form of a menu item is one
+of the following:
+<p>
+<ul> <li> An atom. The item is both the display object and the value object.
+<p>
+<li> A cons. The <tt>car</tt> is the display object and the <tt>cdr</tt> is the value
+object.  The value object must be an atom. If you need to return a list as the
+value, use the :value option in the list menu item format described below.
+<p>
+<li> A list. The <tt>car</tt> is the display object and the cdr is a list of
+alternating option keywords and values.  The value object is specified with the
+keyword <tt>:value</tt> and defaults to the display object if <tt>:value</tt> is not
+present.
+</ul> The menu item options are: 
+<p>
+<ul> <li> <tt>:value</tt> ---specifies the value object.
+<p>
+<li> <tt>:style</tt> ---specifies the text style used to <tt>princ</tt> the display
+object when neither <i>presentation-type</i> nor <i>printer</i> is supplied.
+<p>
+<li> <tt>:items</tt> ---specifies a sequence of menu items for a sub-menu to be used
+if this item is selected.
+ 
+<li> <tt>:documentation</tt> ---associates some documentation with the menu item.
+When <i>:pointer-documentation</i> is not <tt>nil</tt> , this will be used as pointer
+documentation for the item.
+<p>
+<li> <tt>:active</tt> ---when <a href="menus.html#CONCEPT=true"><i>true</i></a> (the default), this item is active.  When
+<a href="menus.html#CONCEPT=false"><i>false</i></a> , the item is inactive, and cannot be selected.  CLIM will generally
+provide some visual indication that an item is inactive, such as by ``graying
+over'' the item.
+<p>
+<li> <tt>:type</tt> ---specifies the type of the item.  <tt>:item</tt> (the default)
+indicates that the item is a normal menu item.  <tt>:label</tt> indicates that the
+item is simply an inactive label; labels will not be ``grayed over''.
+<tt>:divider</tt> indicates that the item serves as a divider between groups of
+other items; divider items will usually be drawn as a horizontal line.
+</ul> The visual representation of an item depends on the <i>printer</i> and
+<i>presentation-type</i> keyword arguments.  If <i>presentation-type</i> is
+supplied, the visual representation is produced by <tt>present</tt> of the menu item
+with that presentation type.  Otherwise, if <i>printer</i> is supplied, the visual
+representation is produced by the <i>printer</i> function, which receives two
+arguments, the <i>item</i> and a <i>stream</i> to do output on.  The <i>printer</i> function should output some text or graphics at the stream's cursor position, but
+need not call <tt>present</tt> .  If neither <i>presentation-type</i> nor <i>printer</i> is supplied, the visual representation is produced by <tt>princ</tt> of the display
+object.  Note that if <i>presentation-type</i> or <i>printer</i> is supplied, the
+visual representation is produced from the entire menu item, not just from the
+display object.  CLIM implementations are free to use the menus provided by the
+underlying window system when possible; this is likely to be the case when the
+printer and presentation-type are the default, and no other options are supplied.
+<p>
+<i>associated-window</i> is the CLIM window with which the menu is associated.
+This defaults to the top-level window of the current application frame.
+<p>
+<i>default-item</i> is the menu item where the mouse will appear.
+<p>
+<i>text-style</i> is a text style that defines how the menu items are
+presented.
+<p>
+<i>label</i> is a string to which the menu title will be set.
+<p>
+<i>printer</i> is a function of two arguments used to print the menu items in the
+menu.  The two arguments are the menu item and the stream to output it on.  It
+has dynamic extent.
+<p>
+<i>presentation-type</i> specifies the presentation type of the menu items. 
+<p>
+<i>cache</i> is a boolean that indicates whether CLIM should cache this menu for
+later use.  (Caching menus might speed up later uses of the same menu.)  If
+<i>cache</i> is <a href="menus.html#CONCEPT=true"><i>true</i></a> , then <i>unique-id</i> and <i>id-test</i> serve to
+uniquely identify this menu.  When cache is <a href="menus.html#CONCEPT=true"><i>true</i></a> , <i>unique-id</i> defaults to <i>items</i> , but programmers will generally wish to specify a more
+efficient tag.  <i>id-test</i> is a function of two arguments used to compare
+unique-ids, which defaults to <tt>equal</tt> .  <i>cache-value</i> is the value that
+is used to indicate that a cached menu is still valid.  It defaults to
+<i>items</i> , but programmers may wish to supply a more efficient cache value
+than that.  <i>cache-test</i> is a function of two arguments that is used to
+compare cache values, which defaults to <tt>equal</tt> .  Both <i>cache-value</i> and
+<i>unique-id</i> have dynamic extent.
+<p>
+<i>max-width</i> and <i>max-height</i> specify the maximum width and height of the
+menu, in device units.  They can be overridden by <i>n-rows</i> and
+<i>n-columns</i> .
+<p>
+<i>n-rows</i> and <i>n-columns</i> specify the number of rows and columns in the
+menu.
+<p>
+<i>x-spacing</i> specifies the amount of space to be inserted between columns of
+the table; the default is the width of a space character.  It is specified the
+same way as the <tt>:x-spacing</tt> option to <tt>formatting-table</tt> .
+<p>
+<i>y-spacing</i> specifies the amount of blank space inserted between rows of the
+table; the default is the vertical spacing for the stream.  The possible values
+for this option are the same as for the <i>:y-spacing</i> option to
+<tt>formatting-table</tt> .
+<p>
+<i>cell-align-x</i> specifies the horizontal placement of the contents of the
+cell.  Can be one of <tt>:left</tt> , <tt>:right</tt> , or <tt>:center</tt> .  The default is
+<tt>:left</tt> .   The semantics are the same as for the <tt>:align-x</tt> option to
+<tt>formatting-cell</tt> .
+<p>
+<i>cell-align-y</i> specifies the vertical placement of the contents of the cell.
+Can be one of <tt>:top</tt> , <tt>:bottom</tt> , or <tt>:center</tt> .  The default is
+<tt>:top</tt> .  The semantics are the same as for the <tt>:align-y</tt> option to
+<tt>formatting-cell</tt> .
+<p>
+<i>row-wise</i> is as for <tt>formatting-item-list</tt> .  It defaults to <tt>t</tt> .
+<p>
+<i>scroll-bars</i> specifies whether the menu should have scroll bars.  It acts
+the same way as the <tt>:scroll-bars</tt> option to <tt>make-clim-stream-pane</tt> .  It
+defaults to <tt>:vertical</tt> .
+<p>
+<i>pointer-documentation</i> is either <tt>nil</tt> (the default), meaning that no
+pointer documentation should be computed, or a stream on which pointer
+documentation should be displayed.
+<p>
+
+<a name="Generic function menu-choose-from-drawer"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>menu-choose-from-drawer</b></td><td valign="baseline" width="100%"><i>menu presentation-type drawer
+                                       <tt>&amp;key</tt> x-position y-position
+                                            cache unique-id id-test cache-value cache-test
+                                            default-presentation pointer-documentation</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>This is a a lower-level routine for displaying menus.  It allows the programmer
+much more flexibility in the menu layout.  Unlike <tt>menu-choose</tt> , which
+automatically creates and lays out the menu, <tt>menu-choose-from-drawer</tt> takes
+a programmer-provided window and drawing function.  The drawing function is
+responsible for drawing the contents of the menu; generally it will be a lexical
+closure that closes over the menu items.
+<p>
+<tt>menu-choose-from-drawer</tt> draws the menu items into that window using the
+drawing function.  The drawing function gets called with two arguments,
+<i>stream</i> and <i>presentation-type</i> .  It can use <i>presentation-type</i> for its own purposes, such as using it as the presentation type argument in a
+call to <tt>present</tt> .
+<p>
+<tt>menu-choose-from-drawer</tt> returns two values: the object the user clicked on,
+and the pointer button event.  If the user aborts out of the menu, a single
+value is returned, <tt>nil</tt> .
+<p>
+<i>menu</i> is a CLIM window to use for the menu.  This argument may be
+specialized to provide a different look-and-feel for different host window
+systems.
+<p>
+<i>presentation-type</i> is a presentation type specifier for each of the mouse-sensitive
+items in the menu.  This is the input context that will be established once the
+menu is displayed.  For programmers who don't need to define their own types, a
+useful presentation type is <tt>menu-item</tt> .
+<p>
+<i>drawer</i> is a function that takes two arguments, <i>stream</i> and
+<i>presentation-type</i> , draws the contents of the menu.  It has dynamic extent.
+<p>
+<i>x-position</i> and <i>y-position</i> are the requested <tt>x</tt> and <tt>y</tt> positions of
+the menu.  They may be <tt>nil</tt> , meaning that the position is unspecified.
+<p>
+If <i>leave-menu-visible</i> is <a href="menus.html#CONCEPT=true"><i>true</i></a> , the window will not be deexposed
+once the selection has been made. The default is <a href="menus.html#CONCEPT=false"><i>false</i></a> , meaning that the
+window will be deexposed once the selection has been made.
+<p>
+<i>default-presentation</i> is used to identify the presentation that the mouse
+is pointing to when the menu comes up.
+<p>
+<i>cache</i> , <i>unique-id</i> , <i>id-test</i> , <i>cache-value</i> , and
+<i>cache-test</i> are as for <tt>menu-choose</tt> .
+<p>
+<a name="Function draw-standard-menu"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>draw-standard-menu</b></td><td valign="baseline" width="100%"><i>stream presentation-type items default-item
+                             <tt>&amp;key</tt> item-printer
+                                  max-width max-height n-rows n-columns
+                                  x-spacing y-spacing row-wise
+                                  cell-align-x cell-align-y</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table><tt>draw-standard-menu</tt> is the function used by CLIM to draw the contents of a
+menu, unless the current frame manager determines that host window toolkit
+should be used to draw the menu instead.  <i>stream</i> is the stream onto which
+to draw the menu, <i>presentation-type</i> is the presentation type to use for
+the menu items (usually <tt>menu-item</tt> ), and <i>item-printer</i> is a function
+used to draw each item.  <i>item-printer</i> defaults to <tt>print-menu-item</tt> .
+<p>
+<i>items</i> , <i>default-item</i> , <i>max-width</i> , <i>max-height</i> ,
+<i>n-rows</i> , <i>n-columns</i> , <i>x-spacing</i> , <i>y-spacing</i> , <i>row-wise</i> ,
+<i>cell-align-x</i> , and <i>cell-align-y</i> are as for <tt>menu-choose</tt> <a name="Function print-menu-item"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>print-menu-item</b></td><td valign="baseline" width="100%"><i>menu-item <tt>&amp;optional</tt> (stream <tt>*standard-output*</tt> )</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Given a menu item <i>menu-item</i> , displays it on the stream <i>stream</i> . This
+is the function that <tt>menu-choose</tt> uses to display menu items if no printer
+is supplied.
+<p>
+
+<a name="Function menu-item-value"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>menu-item-value</b></td><td valign="baseline" width="100%"><i>menu-item</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Returns the value of the menu item <i>menu-item</i> , where the format of a menu
+item is described under <tt>menu-choose</tt> .  If <i>menu-item</i> is not a menu item,
+the result is unspecified.
+<p>
+<a name="Function menu-item-display"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>menu-item-display</b></td><td valign="baseline" width="100%"><i>menu-item</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Returns the display object of the menu item <i>menu-item</i> , where the format of
+a menu item is described under <tt>menu-choose</tt> .  If <i>menu-item</i> is not a
+menu item, the result is unspecified.
+<p>
+<a name="Function menu-item-options"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>menu-item-options</b></td><td valign="baseline" width="100%"><i>menu-item</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Returns the options of the menu item <i>menu-item</i> , where the format of a menu
+item is described under <tt>menu-choose</tt> .  If <i>menu-item</i> is not a menu
+item, the result is unspecified.
+<p>
+
+<a name="Macro with-menu"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>with-menu</b></td><td valign="baseline" width="100%"><i>(menu <tt>&amp;optional</tt> associated-window <tt>&amp;key</tt> (deexpose t))
+                       <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Binds <i>menu</i> to a ``temporary'' window, exposes the window on the same
+screen as the <i>associated-window</i> and runs the body.  After the body has
+been run, the window is deexposed only if the boolean <i>deexpose</i> is
+<a href="menus.html#CONCEPT=true"><i>true</i></a> (the default).
+<p>
+The values returned by <tt>with-menu</tt> are the values returned by <i>body</i> .
+<i>body</i> may have zero or more declarations as its first forms.
+<p>
+<i>menu</i> must be a variable name.  <i>associated-window</i> is as for
+<tt>menu-choose</tt> .
+<p>
+None of the arguments is evaluated.
+<br><hr><br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="input-editing.html">Input Editing and Completion Facilities</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="dialogs.html">Dialog Facilities</a></td>
+</tr></table>
+</body></html>

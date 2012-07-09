@@ -1,0 +1,236 @@
+<html><head><title>CLIM: 11 Text Styles</title></head><body>
+<br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="drawing-options.html">Drawing Options</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="graphics.html">Graphics</a></td>
+</tr></table><br><hr><br>
+<p>
+<br><a name="11"><h1>11 Text Styles</h1></a>
+<a name="LABEL=text-styles"></a> When specifying a particular ``appearance'' for rendered characters, there is a
+tension between portability and access to specific font for a display device.
+CLIM provides a portable mechanism for describing the desired <a name="CONCEPT=text style"><b><i>text style</i></b></a> in abstract terms.  Each CLIM ``port'' defines a mapping between these
+abstract style specifications and particular device-specific fonts.  In this
+way, an application programmer can specify the desired text style in abstract
+terms secure in the knowledge that an appropriate device font will be selected
+at run time by CLIM.  However, some programmers may require direct access to
+particular device fonts.  The text style mechanism supports specifying device
+fonts by name, allowing the programmer to sacrifice portability for control.
+<p>
+
+<a name="11.1"><h2>11.1 Text Styles</h2></a>
+Text style objects have components for family, face, and size.  Not all of these
+attributes need be supplied for a given text style object.  Text styles can be
+merged in much the same way as pathnames are merged; unspecified components in
+the style object (that is, components that have <tt>nil</tt> in them) may be filled
+in by the components of a ``default'' style object.  A text style object is
+called <a name="CONCEPT=fully specified"><b><i>fully specified</i></b></a> if none of its components is <tt>nil</tt> , and the
+size component is not a relative size (that is, is neither <tt>:smaller</tt> nor
+<tt>:larger</tt> ).
+<p>
+<a name="Protocol&nbsp;Class text-style"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>text-style</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Protocol&nbsp;Class]</b></td></tr></table>The protocol class for text styles.
+If you want to create a new class that behaves like a text style, it should be a subclass of <b>text-style</b>. Subclasses of <b>text-style</b> must obey the text style protocol.<a name="Predicate text-style-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>text-style-p</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Predicate]</b></td></tr></table>Returns <a href="text-styles.html#CONCEPT=true"><i>true</i></a> if <i>object</i> is a <a href="text-styles.html#CONCEPT=text style"><i>text style</i></a> , otherwise returns
+<a href="text-styles.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Class standard-text-style"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>standard-text-style</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>An instantiable class that implements text styles.  It is a subclass of
+<tt>text-style</tt> .  This is the class that <tt>make-text-style</tt> instantiates.
+<i>Members of this class are immutable. </i>The interface to text styles is as follows:
+<p>
+<a name="Function make-text-style"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>make-text-style</b></td><td valign="baseline" width="100%"><i>family face size</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Returns an object of class <tt>standard-text-style</tt> with a family of
+<i>family</i> , a face of <i>face</i> , and a size of <i>size</i> .
+<p>
+<i>family</i> is one of <tt>:fix</tt> , <tt>:serif</tt> , <tt>:sans-serif</tt> , or <tt>nil</tt> .
+<p>
+<i>face</i> is one of <tt>:roman</tt> , <tt>:bold</tt> , <tt>:italic</tt> , <tt>(:bold :italic)</tt> ,
+or <tt>nil</tt> .
+<p>
+<i>size</i> is a real number representing the size in printer's points, one of
+the logical sizes (<tt>:normal</tt> , <tt>:tiny</tt> , <tt>:very-small</tt> , <tt>:small</tt> ,
+<tt>:large</tt> , <tt>:very-large</tt> , <tt>:huge</tt> ), a relative size (<tt>:smaller</tt> or
+<tt>:larger</tt> ), or <tt>nil</tt> .
+<p>
+Implementations are permitted to extend legal values for <i>family</i> ,
+<i>face</i> , and <i>size</i> .
+<p>
+<hr><b>Issue:</b> York, SWM<br><i>Need to describe what family, face, size mean in terms of
+visual appearance.  This should also be reconciled with the ISO description of
+the attributes of a ``text style'', including such things as underlining,
+subscripts, superscripts, etc.</i><hr>
+<a name="Constant *default-text-style*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>*default-text-style*</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Constant]</b></td></tr></table>The default text style used on a CLIM medium if no text style it explicitly
+specified for the medium when it it created.  This must be a fully merged text
+style.
+<p>
+<a name="Constant *undefined-text-style*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>*undefined-text-style*</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Constant]</b></td></tr></table>The text style that is used as a fallback if no mapping exists for some other
+text style when some text is about to be rendered on a display device (via
+<tt>write-string</tt> and <tt>draw-string*</tt> , for example).  This text style be fully
+merged, and it must have a mapping for all display devices.
+<p>
+
+<a name="11.1.1"><h3>11.1.1 Text Style Protocol and Text Style Suboptions</h3></a>
+The following generic functions comprise the text style protocol.  All
+subclasses of <tt>text-style</tt> must implement methods for each of these generic
+functions.
+<p>
+Each of the suboptions described below has a corresponding reader accessor that
+can be used to extract a particular component from a text style.
+<p>
+<a name="Generic function text-style-components"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>text-style-components</b></td><td valign="baseline" width="100%"><i>text-style</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the components of the <a href="text-styles.html#CONCEPT=text style"><i>text style</i></a> <i>text-style</i> as three
+values, the family, face, and size.
+<p>
+<a name="Option :text-family"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:text-family</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Option]</b></td></tr></table><a name="Generic function text-style-family"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>text-style-family</b></td><td valign="baseline" width="100%"><i>text-style</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Specifies the family of the <a href="text-styles.html#CONCEPT=text style"><i>text style</i></a> <i>text-style</i> .
+<p>
+<a name="Option :text-face"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:text-face</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Option]</b></td></tr></table><a name="Generic function text-style-face"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>text-style-face</b></td><td valign="baseline" width="100%"><i>text-style</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Specifies the face of the <a href="text-styles.html#CONCEPT=text style"><i>text style</i></a> <i>text-style</i> .
+<p>
+<a name="Option :text-size"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:text-size</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Option]</b></td></tr></table><a name="Generic function text-style-size"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>text-style-size</b></td><td valign="baseline" width="100%"><i>text-style</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Specifies the size of the <a href="text-styles.html#CONCEPT=text style"><i>text style</i></a> <i>text-style</i> .
+<p>
+
+<a name="Function parse-text-style"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>parse-text-style</b></td><td valign="baseline" width="100%"><i>style-spec</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Returns a text style object.  <i>style-spec</i> may be a <tt>text-style</tt> object
+or a device font, in which case it is returned as is, or it may be a list of the
+family, face, and size (that is, a ``style spec''), in which case it is
+``parsed'' and a <tt>text-style</tt> object is returned.  This function is for
+efficiency, since a number of common functions that take a style object as an
+argument can also take a style spec, in particular <tt>draw-text</tt> .
+<p>
+
+<a name="Generic function merge-text-styles"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>merge-text-styles</b></td><td valign="baseline" width="100%"><i>style1 style2</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Merges the <a href="text-styles.html#CONCEPT=text styles"><i>text styles</i></a> <i>style1</i> with <i>style2</i> , that is, returns a
+new text style that is the same as <i>style1</i> , except that unspecified
+components in <i>style1</i> are filled in from <i>style2</i> .  For convenience,
+the two arguments may be also be style specs.
+<p>
+When merging the sizes of two text styles, if the size from <i>style1</i> is a
+relative size, the resulting size is either the next smaller or next larger size
+than is specified by <i>style2</i> .  The ordering of sizes, from smallest to
+largest, is <tt>:tiny</tt> , <tt>:very-small</tt> , <tt>:small</tt> , <tt>:normal</tt> ,
+<tt>:large</tt> , <tt>:very-large</tt> , and <tt>:huge</tt> .
+<p>
+<hr><b>Issue:</b> SWM<br><i>Need to describe face-merging properly.  For example, merging a
+bold face with an italic one can result in a bold-italic face.</i><hr>
+<a name="Generic function text-style-ascent"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>text-style-ascent</b></td><td valign="baseline" width="100%"><i>text-style medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function text-style-descent"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>text-style-descent</b></td><td valign="baseline" width="100%"><i>text-style medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function text-style-height"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>text-style-height</b></td><td valign="baseline" width="100%"><i>text-style medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function text-style-width"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>text-style-width</b></td><td valign="baseline" width="100%"><i>text-style medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the ascent, descent, height, and width (respectively) of the font
+corresponding to the <a href="text-styles.html#CONCEPT=text style"><i>text style</i></a> <i>text-style</i> as it would be rendered
+on the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> .  <i>text-style</i> must be a fully specified
+text style.
+<p>
+The ascent of a font is the distance between the top of the tallest character in
+that font and the font's baseline.  The descent of a font is the distance
+between the baseline and the bottom of the lowest descending character (usually
+``g'', ``p'', ``q'', or ``y'').  The height of a font is the sum of the ascent
+and the descent of the font.  The width of a font is the width of some
+representative character in the font.
+<p>
+The methods for these generic functions will typically specialize both the
+<i>text-style</i> and <i>medium</i> arguments.  Implementations should also
+provide ``trampoline'' for these generic functions on output sheets; the
+trampolines will simply call the method for the medium.
+<p>
+
+<a name="Generic function text-style-fixed-width-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>text-style-fixed-width-p</b></td><td valign="baseline" width="100%"><i>text-style medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns <a href="text-styles.html#CONCEPT=true"><i>true</i></a> if the <a href="text-styles.html#CONCEPT=text styles"><i>text styles</i></a> <i>text-style</i> will map to a
+fixed-width font on the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> , otherwise returns
+<a href="text-styles.html#CONCEPT=false"><i>false</i></a> .  <i>text-style</i> must be a fully specified text style.
+<p>
+The methods for this generic function will typically specialize both the
+<i>text-style</i> and <i>medium</i> arguments.  Implementations should also
+provide a ``trampoline'' for this generic function for output sheets; the
+trampoline will simply call the method for the medium.
+<p>
+
+<hr><b>Issue:</b> SWM<br><i>Discuss baselines?  Kerning?</i><hr>
+<a name="Generic function text-size"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>text-size</b></td><td valign="baseline" width="100%"><i>medium string <tt>&amp;key</tt> text-style (start <tt>0</tt> ) end</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Computes the ``cursor motion'' in device units that would take place if
+<i>string</i> (which may be either a string or a character) were output to the
+<a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> starting at the position <tt>(0,0)</tt>.  Five values are
+returned:  the total width of the string in device units, the total height of
+the string in device units, the final <tt>x</tt> cursor position (which is the same as
+the width if there are no <tt><huge>#\Newline</huge></tt> characters in the string), the final
+<tt>y</tt> cursor position (which is 0 if the string has no <tt><huge>#\Newline</huge></tt> characters
+in it, and is incremented by the line height of <i>medium</i> for each
+<tt><huge>#\Newline</huge></tt> character in the string), and the string's baseline.
+<p>
+<i>text-style</i> specifies what text style is to be used when doing the output,
+and defaults to <tt>medium-merged-text-style</tt> of the medium.  <i>text-style</i> must be a fully specified text style.  <i>start</i> and <i>end</i> may be used to
+specify a substring of <i>string</i> .
+<p>
+If a programmer needs to account for kerning or the ascent or descent of the
+text style, he should measure the size of the bounding rectangle of the text
+rendered on <i>medium</i> .
+<p>
+All mediums and output sheets must implement a method for this generic function.
+<p>
+
+<a name="11.2"><h2>11.2 Text Style Binding Forms</h2></a>
+<a name="Macro with-text-style"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>with-text-style</b></td><td valign="baseline" width="100%"><i>(medium text-style) <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Binds the current text style of the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> designated by <i>medium</i> to
+correspond to the new text style.  <i>text-style</i> may either a text style
+object or a style spec (that is, a list of the a family, a face code, and a
+size).  <i>body</i> is executed with the new text style in effect.
+<p>
+The <i>medium</i> argument is not evaluated, and must be a symbol that is bound
+to a sheet or medium.  If <i>medium</i> is <tt>t</tt> , <tt>*standard-output*</tt> is
+used.  <i>body</i> may have zero or more declarations as its first forms.
+<p>
+<tt>with-text-style</tt> must be implemented by expanding into a call to
+<tt>invoke-with-text-style</tt> , supplying a function that executes <i>body</i> as
+the <i>continuation</i> argument to <tt>invoke-with-text-style</tt> .
+<p>
+<a name="Generic function invoke-with-text-style"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>invoke-with-text-style</b></td><td valign="baseline" width="100%"><i>medium continuation text-style</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Binds the current text style of the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> to correspond to
+the new text style, and calls the function <i>continuation</i> with the new text
+style in effect.  <i>text-style</i> may either a text style object or a style
+spec (that is, a list of the a family, a face code, and a size).  <i>continuation</i> is a function of one argument, the medium; it has dynamic extent.
+<p>
+<i>medium</i> can be a medium, a sheet that supports the sheet output protocol,
+or a stream that outputs to such a sheet.  All classes that obey the medium
+protocol must implement a method for <tt>invoke-with-text-style</tt> .
+<p>
+
+<a name="Macro with-text-family"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>with-text-family</b></td><td valign="baseline" width="100%"><i>(medium family) <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table><a name="Macro with-text-face"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>with-text-face</b></td><td valign="baseline" width="100%"><i>(medium face) <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table><a name="Macro with-text-size"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>with-text-size</b></td><td valign="baseline" width="100%"><i>(medium size) <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Binds the current text style of the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> designated by <i>medium</i> to
+correspond to a new text style consisting of the current text style with the new
+family, face, or size (respectively) merged in.  <i>face</i> , <i>family</i> , and
+<i>size</i> are as for <tt>make-text-style</tt> .  <i>body</i> is executed with the new
+text style in effect.
+<p>
+The <i>medium</i> argument is not evaluated, and must be a symbol that is bound
+to a sheet or medium.  If <i>medium</i> is <tt>t</tt> , <tt>*standard-output*</tt> is
+used.  <i>body</i> may have zero or more declarations as its first forms.
+<p>
+These macros are ``convenience'' forms of <tt>with-text-style</tt> that must expand
+into calls to <tt>invoke-with-text-style</tt> .
+<p>
+
+<a name="11.3"><h2>11.3 Controlling Text Style Mappings</h2></a>
+Text styles are mapped to fonts using the <tt>text-style-mapping</tt> function,
+which takes a port, a character set, and a text style and returns a font
+object.  All ports must implement methods for the following generic functions,
+for all classes of text style.
+<p>
+The objects used to represent a font mapping are unspecified and are likely to
+vary from port to port.  For instance, a mapping might be some sort of font
+object on one type of port, or might simply be the name of a font on another.
+<p>
+<hr><b>Issue:</b> SWM<br><i>We still need to describe what a device font is.  Ditto, character
+sets.</i><hr>
+Part of initializing a port is to define the mappings between text styles and
+font names for the port's host window system.
+<p>
+<a name="Generic function text-style-mapping"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>text-style-mapping</b></td><td valign="baseline" width="100%"><i>port text-style <tt>&amp;optional</tt> character-set</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the font mapping that will be used when rendering characters in the
+character set <i>character-set</i> in the <a href="text-styles.html#CONCEPT=text style"><i>text style</i></a> <i>text-style</i> on
+any medium on the <a href="silica.html#CONCEPT=port"><i>port</i></a> <i>port</i> .  If there is no mapping associated
+with <i>character-set</i> and <i>text-style</i> on <i>port</i> , then some other
+object will be returned that corresponds to the ``unmapped'' text style.
+<p>
+<i>character-set</i> defaults to the standard character set.
+<p>
+<a name="Generic function (setf text-style-mapping)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf text-style-mapping)</b></td><td valign="baseline" width="100%"><i>mapping port text-style <tt>&amp;optional</tt> character-set</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Sets the text style mapping for <i>port</i> , <i>character-set</i> , and
+<i>text-style</i> to <i>mapping</i> .  <i>port</i> , <i>character-set</i> , and
+<i>text-style</i> are as for <tt>text-style-mapping</tt> .  <i>mapping</i> is either a
+font name or a list of the form <tt>(:style <i>family</i> <i>face</i> <i>size</i> )</tt> ; in the latter case, the given style is translated at runtime into
+the font represented by the specified style.
+<p>
+<i>character-set</i> defaults to the standard character set.
+<p>
+<a name="Function make-device-font-text-style"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>make-device-font-text-style</b></td><td valign="baseline" width="100%"><i>display-device device-font-name</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Returns a text style object that will be mapped directly to the specified device
+font when text is output to a to the display device with this style.  Device
+font styles do not merge with any other kind of style.
+<br><hr><br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="drawing-options.html">Drawing Options</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="graphics.html">Graphics</a></td>
+</tr></table>
+</body></html>

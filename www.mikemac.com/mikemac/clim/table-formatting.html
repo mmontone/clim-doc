@@ -1,0 +1,497 @@
+<html><head><title>CLIM: 17 Table Formatting</title></head><body>
+<br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="output-recording.html">Output Recording</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="graph-formatting.html">Graph Formatting</a></td>
+</tr></table><br><hr><br>
+<p>
+<br><a name="17"><h1>17 Table Formatting</h1></a>
+<a name="LABEL=table-formatting"></a> CLIM provides a mechanism for tabular formatting of arbitrary output.
+<p>
+To employ these facilities the programmer annotates some output-generating code
+with advisory macros that describe the high-level formatting constraints, for
+example, what parts of code produce a row of the table, what parts of that
+produce the cells in the row.
+<p>
+For example, the following produces a table consisting of three columns
+containing a number, its square, and its cube.  The output can be seen in
+Figure <a href="table-formatting.html#LABEL=table-example"><b><i>17.1</i></b></i></a> .
+<p>
+<pre>(defun table-test (count stream)
+  (fresh-line stream)
+  (formatting-table (stream :x-spacing '(3 :character))
+    (dotimes (i count)
+      (formatting-row (stream)
+        (formatting-cell (stream :align-x :right)
+          (prin1 i stream))
+        (formatting-cell (stream :align-x :right)
+          (prin1 (* i i) stream))
+        (formatting-cell (stream :align-x :right)
+          (prin1 (* i i i) stream))))))
+</pre> <center><img src="table-example.jpg"></center>
+<center><b>Figure 17.1: </b><a name="LABEL=table-example"></a> Example of tabular output.</center>
+The general contract of these facilities is described in the next section.
+<p>
+
+<a name="17.1"><h2>17.1 Overview of Table Formatting Facilities</h2></a>
+In general, table formatting involves a sharing of responsibilities between
+user-written code and CLIM code.  Code that employs only the lower level output
+facilities has full control over ``where every piece of ink goes'' in the
+output.  In contrast, code that employs CLIM's table formatting facilities
+passes control to CLIM at a higher level.  The programmer benefits by being able
+to specify the appearance of output in more compact abstract terms, and by not
+having to write the code that constrains the output to appear in proper tabular
+form.
+<p>
+Tabular output consists of a rectangular array of pieces of output corresponding
+to the bounding rectangles of the output.  Each piece of output forms the
+contents of a <a name="CONCEPT=table cell"><b><i>table cell</i></b></a> .  There is no restriction on the contents of
+a table cell; cells may contain text, graphics, even other tables.  For purposes
+of this discussion, we draw a strong distinction between specifying what goes in
+a cell, and specifying how the cells are arranged to form a table.
+<p>
+Specifying the contents of a cell is the responsibility of the programmer.  A
+programmer using the table formatting facilities can predict the appearance of
+any individual cell by simply looking at the code for that cell.  A cell's
+appearance does not depend upon where in the table it lies, for instance.  The
+only thing about a cell's appearance that cannot be predicted from that cell
+alone is the amount of space the table formatting has to introduce in order to
+perform the desired alignment.
+<p>
+Specifying the relative arrangements of cells to form a table is the
+responsibility of CLIM based on the advice of the programmer.  The programmer
+advises CLIM about extra space to put between rows or columns, for instance, but
+does not directly control the absolute positioning of a cell's contents.
+<p>
+For purposes of understanding table formatting, the following model may
+be used. 
+<ul> <li> The code for a cell draws to a stream that has a ``private''  (local to
+that cell) drawing plane.
+<p>
+<li> After output for a cell has finished, the bounding rectangle of all output
+on the ``private'' drawing plane is found.  The region within that bounding
+rectangle forms the contents of a cell.
+<p>
+<li> Additional rectangular regions, containing only background ink, are
+attached to the edges of the cell contents.  These regions ensure that the
+cells satisfy the tabular constraints that within a row all cells have the same
+height, and within a column all cells have the same width.  CLIM may also
+introduce additional background for other purposes as described below.
+<p>
+<li> The cells are assembled into rows and columns.
+</ul> Some tables are ``multiple column'' tables, in which two or more rows of the
+table are placed side by side (usually with intervening spacing) rather than
+all rows being aligned vertically.  Multiple column tables are generally used
+to produce a table that is more esthetically pleasing, or to make more
+efficient use of space on the output device.  When a table is a multiple
+column table, one additional step takes place in the formatting of the table:
+the rows of the table are rearranged into multiple columns in which some rows
+are placed side by side.
+<p>
+The advice that the programmer gives to CLIM on how to assemble the table
+consists of the following:
+<ul> <li> How to place the contents of the cell within the cell (such as centered
+vertically, flush-left, and so forth)  The possibilities for this advice are
+described below.
+<p>
+<li> Optionally, how much additional space to insert between columns and
+between rows of the table.
+<p>
+<li> Optionally, whether to make all columns the same size.
+</ul> The advice describing how to place the contents of the cell within the cell
+consists of two pieces---how to constrain the cell contents in the horizontal
+direction, and how to constrain them in the vertical direction.
+<p>
+<a name="17.2"><h2>17.2 Table Formatting Functions</h2></a>
+<a name="Macro formatting-table"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>formatting-table</b></td><td valign="baseline" width="100%"><i>(<tt>&amp;optional</tt> stream
+                               <tt>&amp;key</tt> x-spacing y-spacing
+                                    multiple-columns multiple-columns-x-spacing
+                                    equalize-column-widths 
+                                    (move-cursor <tt>t</tt> ) record-type <tt>&amp;allow-other-keys</tt> )
+                              <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Binds the local environment in such a way the output of <i>body</i> will be done
+in a tabular format.  This must be used in conjunction with <tt>formatting-row</tt> or <tt>formatting-column</tt> , and <tt>formatting-cell</tt> .  The table is placed so
+that its upper left corner is at the current text cursor position of
+<i>stream</i> .  If the boolean <i>move-cursor</i> is <a href="table-formatting.html#CONCEPT=true"><i>true</i></a> (the default),
+then the text cursor will be moved so that it immediately follows the last cell
+of the table.
+<p>
+The returned value is the output record corresponding to the table.
+<p>
+<i>stream</i> is an output recording stream to which output will be done.  The
+<i>stream</i> argument is not evaluated, and must be a symbol that is bound to a
+stream.  If <i>stream</i> is <tt>t</tt> (the default), <tt>*standard-output*</tt> is
+used.  <i>body</i> may have zero or more declarations as its first forms.
+<p>
+<i>x-spacing</i> specifies the number of units of spacing to be inserted between
+columns of the table; the default is the width of a space character in the
+current text style.  <i>y-spacing</i> specifies the number of units of spacing to
+be inserted between rows in the table; the default is the default vertical
+spacing of the stream.  Possible values for these two options option are:
+<p>
+<ul> <li> An integer---a size in the current units to be used for spacing.
+<p>
+<li> A string or character---the spacing is the width or height of the string
+or character in the current text style. 
+<p>
+<li> A function---the spacing is the amount of horizontal or vertical space the
+function would consume when called on the stream. 
+<p>
+<li> A list---the list is of the form <tt>(<i>number</i> <i>unit</i> )</tt> , where
+<i>unit</i> is one of <tt>:point</tt> , <tt>:pixel</tt> , <tt>:mm</tt> , <tt>:character</tt> , or
+<tt>:line</tt> .  When <i>unit</i> is <tt>:character</tt> , the width of an ``M'' in the
+current text style is used as the width of one character.
+</ul> <i>multiple-columns</i> is either <tt>nil</tt> , <tt>t</tt> , or an integer.  If it is
+<tt>t</tt> or an integer, the table rows will be broken up into a multiple columns.
+If it is <tt>t</tt> , CLIM will determine the optimal number of columns.  If it is an
+integer, it will be interpreted as the desired number of columns.
+<i>multiple-columns-x-spacing</i> has the same format as <i>x-spacing</i> .  It
+controls the spacing between the multiple columns.  It defaults to the value of
+the <i>x-spacing</i> option.
+<p>
+When the boolean <i>equalize-column-widths</i> is <a href="table-formatting.html#CONCEPT=true"><i>true</i></a> , CLIM will make all
+of the columns have the same width (the width of the widest cell in any column
+in the entire table).
+<p>
+<i>record-type</i> specifies the class of output record to create.  The default
+is <tt>standard-table-output-record</tt> .  This argument should only be supplied by
+a programmer if there is a new class of output record that supports the table
+formatting protocol.
+<p>
+
+<a name="Macro formatting-row"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>formatting-row</b></td><td valign="baseline" width="100%"><i>(<tt>&amp;optional</tt> stream <tt>&amp;key</tt> record-type <tt>&amp;allow-other-keys</tt> )
+                            <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Binds the local environment in such a way the output of <i>body</i> will be
+grouped into a table row.  All of the output performed by <i>body</i> becomes the
+contents of one row.  This must be used inside of <tt>formatting-table</tt> , and in
+conjunction with <tt>formatting-cell</tt> .
+<p>
+<i>stream</i> is an output recording stream to which output will be done.  The
+<i>stream</i> argument is not evaluated, and must be a symbol that is bound to a
+stream.  If <i>stream</i> is <tt>t</tt> (the default), <tt>*standard-output*</tt> is
+used.  <i>body</i> may have zero or more declarations as its first forms.
+<p>
+Once a table has had a row added to it via <tt>formatting-row</tt> , no columns may
+be added to it.
+<p>
+<i>record-type</i> specifies the class of output record to create.  The default
+is <tt>standard-row-output-record</tt> .  This argument should only be supplied by a
+programmer if there is a new class of output record that supports the row
+formatting protocol.
+<p>
+
+<a name="Macro formatting-column"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>formatting-column</b></td><td valign="baseline" width="100%"><i>(<tt>&amp;optional</tt> stream <tt>&amp;key</tt> record-type <tt>&amp;allow-other-keys</tt> )
+                               <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Binds the local environment in such a way the output of <i>body</i> will be
+grouped into a table column.  All of the output performed by <i>body</i> becomes
+the contents of one column.  This must be used inside of <tt>formatting-table</tt> ,
+and in conjunction with <tt>formatting-cell</tt> .
+<p>
+<i>stream</i> is an output recording stream to which output will be done.  The
+<i>stream</i> argument is not evaluated, and must be a symbol that is bound to a
+stream.  If <i>stream</i> is <tt>t</tt> (the default), <tt>*standard-output*</tt> is
+used.  <i>body</i> may have zero or more declarations as its first forms.
+<p>
+Once a table has had a column added to it via <tt>formatting-column</tt> , no rows
+may be added to it.
+<p>
+<i>record-type</i> specifies the class of output record to create.  The default
+is <tt>standard-column-output-record</tt> .  This argument should only be supplied
+by a programmer if there is a new class of output record that supports the
+column formatting protocol.
+<p>
+
+<a name="Macro formatting-cell"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>formatting-cell</b></td><td valign="baseline" width="100%"><i>(<tt>&amp;optional</tt> stream
+                              <tt>&amp;key</tt> (align-x <tt>':left</tt> ) (align-y <tt>':baseline</tt> ) 
+                                   min-width min-height record-type <tt>&amp;allow-other-keys</tt> )
+                             <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Controls the output of a single cell inside a table row or column, or of a
+single item inside <tt>formatting-item-list</tt> .  All of the output performed by
+<i>body</i> becomes the contents of the cell.
+<p>
+<i>stream</i> is an output recording stream to which output will be done.  The
+<i>stream</i> argument is not evaluated, and must be a symbol that is bound to a
+stream.  If <i>stream</i> is <tt>t</tt> (the default), <tt>*standard-output*</tt> is
+used.  <i>body</i> may have zero or more declarations as its first forms.
+<p>
+<i>align-x</i> specifies how the output in a cell will be aligned relative to
+other cells in the same table column.  The default, <tt>:left</tt> , causes the cells
+to be flush-left in the column.  The other possible values are <tt>:right</tt> (meaning flush-right in the column) and <tt>:center</tt> (meaning centered in the
+column).  Each cell within a column may have a different alignment; thus it is
+possible, for example, to have centered legends over flush-right numeric data.
+<p>
+<i>align-y</i> specifies how the output in a cell will be aligned vertically.
+The default, <tt>:baseline</tt> , causes textual cells to be aligned along their
+baselines and graphical cells to be aligned at the bottom.  The other possible
+values are <tt>:bottom</tt> (align at the bottom of the output), <tt>:top</tt> (align at
+the top of the output), and <tt>:center</tt> (center the output in the cell).
+<p>
+<i>min-width</i> and <i>min-height</i> are used to specify minimum width or height
+of the cell.  The default, <tt>nil</tt> , causes the cell to be only as wide or high
+as is necessary to contain the cell's contents.  Otherwise, <i>min-width</i> and
+<i>min-height</i> are specified in the same way as the <tt>:x-spacing</tt> and
+<tt>:y-spacing</tt> arguments to <tt>formatting-table</tt> .
+<p>
+<i>record-type</i> specifies the class of output record to create.  The default
+is <tt>standard-cell-output-record</tt> .  This argument should only be supplied by
+a programmer if there is a new class of output record that supports the cell
+formatting protocol.
+<p>
+
+<a name="Macro formatting-item-list"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>formatting-item-list</b></td><td valign="baseline" width="100%"><i>(<tt>&amp;optional</tt> stream
+                                   <tt>&amp;key</tt> x-spacing y-spacing
+                                        n-columns n-rows 
+                                        stream-width stream-height max-width max-height
+                                        initial-spacing (row-wise <tt>t</tt> )
+                                        (move-cursor <tt>t</tt> ) record-type <tt>&amp;allow-other-keys</tt> ) 
+                                  <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Binds the local environment in such a way that the output of <i>body</i> will be
+done in an item list (that is, menu) format.  This must be used in conjunction
+with <tt>formatting-cell</tt> , which delimits each item.  The item list is placed so
+that its upper left corner is at the current text cursor position of
+<i>stream</i> .  If the boolean <i>move-cursor</i> is <a href="table-formatting.html#CONCEPT=true"><i>true</i></a> (the default),
+then the text cursor will be moved so that it immediately follows the last cell
+of the item list.
+<p>
+``Item list output'' is more strictly defined as: each row of the item list
+consists of a single cell.  Rows are placed with the first row on top, and each
+succeeding row has its top aligned with the bottom of the previous row (plus the
+specified <i>y-spacing</i> ).  Multiple rows and columns are constructed after
+laying the item list out in a single column.  Item list output takes place in a
+normalized +<tt>y</tt>-downward coordinate system.
+<p>
+If <i>row-wise</i> is <a href="table-formatting.html#CONCEPT=true"><i>true</i></a> (the default) and the item list requires
+multiple columns, each successive element in the item list is layed out from
+left to right.  If <i>row-wise</i> is <a href="table-formatting.html#CONCEPT=false"><i>false</i></a> and the item list requires
+multiple columns, each successive element in the item list is layed out below
+its predecessor, like in a telephone book.
+<p>
+The returned value is the output record corresponding to the table.
+<p>
+<i>stream</i> is an output recording stream to which output will be done.  The
+<i>stream</i> argument is not evaluated, and must be a symbol that is bound to a
+stream.  If <i>stream</i> is <tt>t</tt> (the default), <tt>*standard-output*</tt> is
+used.  <i>body</i> may have zero or more declarations as its first forms.
+<p>
+<i>x-spacing</i> specifies the number of units of spacing to be inserted between
+columns of the item list; the default is the width of a <tt><huge>#\Space</huge></tt> character
+in the current text style.  <i>y-spacing</i> specifies the number of units of
+spacing to be inserted between rows in the item list; the default is default
+vertical spacing of the stream.  The format of these arguments is as for
+<tt>formatting-table</tt> .
+<p>
+When the boolean <i>equalize-column-widths</i> is <a href="table-formatting.html#CONCEPT=true"><i>true</i></a> , CLIM will make all
+of the columns have the same width (the width of the widest cell in any column
+in the entire item list).
+<p>
+<i>n-columns</i> and <i>n-rows</i> specify the number of columns or rows in the
+item list.  The default for both is <tt>nil</tt> , which causes CLIM to pick an
+aesthetically pleasing layout, possibly constrained by the other options.  If
+both <i>n-columns</i> and <i>n-rows</i> are supplied and the item list contains
+more elements than will fit according to the specification, CLIM will format the
+item list as if <i>n-rows</i> were supplied as <tt>nil</tt> .
+<p>
+<i>max-width</i> and <i>max-height</i> constrain the layout of the item list.
+CLIM will not make the item list any wider than <i>max-width</i> , unless it is
+overridden by <i>n-rows</i> .  It will not make the item list any taller than
+<i>max-height</i> , unless it is overridden by <i>n-columns</i> .
+<p>
+<tt>formatting-item-list</tt> normally spaces items across the entire width of the
+stream.  When <i>initial-spacing</i> is <a href="table-formatting.html#CONCEPT=true"><i>true</i></a> , it inserts some whitespace
+(about half as much space as is between each item) before the first item on each
+line.  When it is <a href="table-formatting.html#CONCEPT=false"><i>false</i></a> (the default), the initial whitespace is not
+inserted.
+<p>
+<i>record-type</i> specifies the class of output record to create.  The default
+is <tt>standard-item-list-output-record</tt> .  This argument should only be
+supplied by a programmer if there is a new class of output record that supports
+the item list formatting protocol.
+<p>
+
+<a name="Function format-items"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>format-items</b></td><td valign="baseline" width="100%"><i>items <tt>&amp;key</tt> stream printer presentation-type
+                                  x-spacing y-spacing
+                                  n-columns n-rows
+                                  max-width max-height
+                                  cell-align-x cell-align-y
+                                  initial-spacing (row-wise <tt>t</tt> )
+                                  (move-cursor <tt>t</tt> ) record-type</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>This is a function interface to the item list formatter.  The elements of the
+sequence <i>items</i> are formatted as separate cells within the item list.
+<p>
+<i>stream</i> is an output recording stream to which output will be done.  It
+defaults to <tt>*standard-output*</tt> .
+<p>
+<i>printer</i> must be a function that takes two arguments, an item and a stream,
+and outputs the item on the stream.  <i>printer</i> has dynamic extent.  The
+default for <i>printer</i> is <tt>prin1</tt> .
+<p>
+<i>presentation-type</i> is a presentation-type.  When <i>printer</i> is not
+supplied, the items will be printed as if <i>printer</i> were
+<pre>#'(lambda (item stream)
+    (present item presentation-type :stream stream))
+</pre> When <i>printer</i> is supplied, each item will be enclosed in a presentation
+whose type is <i>presentation-type</i> .
+<p>
+<i>x-spacing</i> , <i>y-spacing</i> , <i>n-columns</i> , <i>n-rows</i> ,
+<i>max-width</i> , <i>max-height</i> , <i>initial-spacing</i> , <i>row-wise</i> , and
+<i>move-cursor</i> are as for <tt>formatting-item-list</tt> .
+<p>
+<i>cell-align-x</i> and <i>cell-align-y</i> are used to supply <tt>:align-x</tt> and
+<tt>:align-y</tt> to an implicitly used <tt>formatting-cell</tt> .
+<p>
+<i>record-type</i> is as for <tt>formatting-item-list</tt> .
+<p>
+
+<a name="17.3"><h2>17.3 The Table and Item List Formatting Protocols</h2></a>
+Both table and item list formatting is implemented on top of the basic output
+recording protocol, using <tt>with-new-output-record</tt> to specify the appropriate
+type of output record.  For example, <tt>formatting-table</tt> first collects all
+the output that belongs in the table into a collection of row, column, and cell
+output records, all of which are children of a single table output record.
+During this phase, <tt>stream-drawing-p</tt> is bound to <tt>nil</tt> and
+<tt>stream-recording-p</tt> is bound to <tt>t</tt> .  When all the output has been
+generated, the table layout constraint solver (<tt>adjust-table-cells</tt> or
+<tt>adjust-item-list-cells</tt> ) is called to compute the table layout, taking into
+account such factors as the widest cell in a given column.  If the table is to
+be split into multiple columns, <tt>adjust-multiple-columns</tt> is now called.
+Finally, the table output record is positioned on the stream at the current text
+cursor position and then displayed by calling <tt>replay</tt> on the table (or item
+list) output record.
+<p>
+
+<a name="17.3.1"><h3>17.3.1 Table Formatting Protocol</h3></a>
+Any output record class that implements the following generic functions is said
+to support the table formatting protocol.
+<p>
+In the following subsections, the term ``non-table output records'' will be used
+to mean any output record that is not a table, row, column, cell, or item list
+output record.  When CLIM ``skips over intervening non-table output records'',
+this means that it will bypass all the output records between two such table
+output records (such as a table and a row, or a row and a cell) that are not
+records of those classes (most notably, presentation output records).  CLIM
+implementations are encouraged to detect invalid nesting of table output
+records, such as a row within a row, a cell within a cell, or a row within a
+cell.  Note that this does not prohibit the nesting of calls to
+<tt>formatting-table</tt> , it simply requires that programmers include the inner
+table within one of the cells of the outer table.
+<p>
+
+<a name="Protocol&nbsp;Class table-output-record"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>table-output-record</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Protocol&nbsp;Class]</b></td></tr></table>The protocol class that represents tabular output records; a subclass of
+<tt>output-record</tt> .
+If you want to create a new class that behaves like a table output record, it should be a subclass of <b>table-output-record</b>. Subclasses of <b>table-output-record</b> must obey the table output record protocol.<a name="Predicate table-output-record-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>table-output-record-p</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Predicate]</b></td></tr></table>Returns <a href="table-formatting.html#CONCEPT=true"><i>true</i></a> if <i>object</i> is a <a href="table-formatting.html#CONCEPT=table output record"><i>table output record</i></a> , otherwise
+returns <a href="table-formatting.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Init&nbsp;arg :x-spacing"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:x-spacing</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table><a name="Init&nbsp;arg :y-spacing"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:y-spacing</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table><a name="Init&nbsp;arg :multiple-columns-x-spacing"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:multiple-columns-x-spacing</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table><a name="Init&nbsp;arg :equalize-column-widths"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:equalize-column-widths</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table>All subclasses of <tt>table-output-record</tt> must handle these initargs, which are
+used to specify, respectively, the <tt>x</tt> and <tt>y</tt> spacing, the multiple column <tt>x</tt>
+spacing, and equal-width columns attributes of the table.
+<p>
+<a name="Class standard-table-output-record"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>standard-table-output-record</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>The instantiable class of output record that represents tabular output.  Its
+children will be a sequence of either rows or columns, with presentation output
+records possibly intervening.  This is a subclass of <tt>table-output-record</tt> .
+<p>
+<a name="Generic function map-over-table-elements"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>map-over-table-elements</b></td><td valign="baseline" width="100%"><i>function table-record type</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Applies <i>function</i> to all the rows or columns of <i>table-record</i> that
+are of type <i>type</i> .  <i>type</i> is either <tt>:row</tt> , <tt>:column</tt> , or
+<tt>:row-or-column</tt> .  <i>function</i> is a function of one argument, an output
+record; it has dynamic extent.  <tt>map-over-table-elements</tt> is responsible
+for ensuring that rows, columns, and cells are properly nested.  It must skip
+over intervening non-table output record structure, such as presentations.
+<p>
+<a name="Generic function adjust-table-cells"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>adjust-table-cells</b></td><td valign="baseline" width="100%"><i>table-record stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>This function is called after the tabular output has been collected, but before
+it has been replayed.  The method on <tt>standard-table-output-record</tt> implements the usual table layout constraint solver (described above) by moving
+the rows or columns of the table output record <i>table-record</i> and the cells
+within the rows or columns.    <i>stream</i> is the stream on which the table is
+displayed.
+<p>
+<a name="Generic function adjust-multiple-columns"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>adjust-multiple-columns</b></td><td valign="baseline" width="100%"><i>table-record stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>This is called after <tt>adjust-table-cells</tt> to account for the case where the
+programmer wants the table to have multiple columns.  <i>table-record</i> and
+<i>stream</i> are as for <tt>adjust-table-cells</tt> .
+<p>
+
+<a name="17.3.2"><h3>17.3.2 Row and Column Formatting Protocol</h3></a>
+Any output record class that implements the following generic functions is said
+to support the row (or column) formatting protocol.
+<p>
+<a name="Protocol&nbsp;Class row-output-record"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>row-output-record</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Protocol&nbsp;Class]</b></td></tr></table>The protocol class that represents one row in a table; a subclass of
+<tt>output-record</tt> .
+If you want to create a new class that behaves like a row output record, it should be a subclass of <b>row-output-record</b>. Subclasses of <b>row-output-record</b> must obey the row output record protocol.<a name="Predicate row-output-record-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>row-output-record-p</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Predicate]</b></td></tr></table>Returns <a href="table-formatting.html#CONCEPT=true"><i>true</i></a> if <i>object</i> is a <a href="table-formatting.html#CONCEPT=row output record"><i>row output record</i></a> , otherwise
+returns <a href="table-formatting.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Class standard-row-output-record"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>standard-row-output-record</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>The instantiable class of output record that represents a row of output within a
+table.  Its children will be a sequence of cells, and its parent (skipping
+intervening non-tabular records such as presentations) will be a table output
+record.  This is a subclass of <tt>row-output-record</tt> .
+<p>
+<a name="Generic function map-over-row-cells"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>map-over-row-cells</b></td><td valign="baseline" width="100%"><i>function row-record</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Applies <i>function</i> to all the cells in the row <i>row-record</i> , skipping
+intervening non-table output record structure.  <i>function</i> is a function of
+one argument, an output record corresponding to a table cell within the row; it
+has dynamic extent.
+<p>
+
+<a name="Protocol&nbsp;Class column-output-record"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>column-output-record</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Protocol&nbsp;Class]</b></td></tr></table>The protocol class that represents one column in a table; a subclass of
+<tt>output-record</tt> .
+If you want to create a new class that behaves like a column output record, it should be a subclass of <b>column-output-record</b>. Subclasses of <b>column-output-record</b> must obey the column output record protocol.<a name="Predicate column-output-record-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>column-output-record-p</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Predicate]</b></td></tr></table>Returns <a href="table-formatting.html#CONCEPT=true"><i>true</i></a> if <i>object</i> is a <a href="table-formatting.html#CONCEPT=column output record"><i>column output record</i></a> , otherwise
+returns <a href="table-formatting.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Class standard-column-output-record"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>standard-column-output-record</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>The instantiable class of output record that represent a column of output within
+a table.  Its children will be a sequence of cells, and its parent (skipping
+intervening non-tabular records such as presentations) will be a table output
+record; presentation output records may intervene.  This is a subclass of
+<tt>column-output-record</tt> .
+<p>
+<a name="Generic function map-over-row-cells"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>map-over-row-cells</b></td><td valign="baseline" width="100%"><i>function column-record</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Applies <i>function</i> to all the cells in the column <i>column-record</i> ,
+skipping intervening non-table output record structure.  <i>function</i> is a
+function of one argument, an output record corresponding to a table cell within
+the column; it has dynamic extent.
+<p>
+
+<a name="17.3.3"><h3>17.3.3 Cell Formatting Protocol</h3></a>
+Any output record class that implements the following generic functions is said
+to support the cell formatting protocol.
+<p>
+<a name="Protocol&nbsp;Class cell-output-record"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>cell-output-record</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Protocol&nbsp;Class]</b></td></tr></table>The protocol class that represents one cell in a table or an item list; a
+subclass of <tt>output-record</tt> .
+If you want to create a new class that behaves like a cell output record, it should be a subclass of <b>cell-output-record</b>. Subclasses of <b>cell-output-record</b> must obey the cell output record protocol.<a name="Predicate cell-output-record-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>cell-output-record-p</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Predicate]</b></td></tr></table>Returns <a href="table-formatting.html#CONCEPT=true"><i>true</i></a> if <i>object</i> is a <a href="table-formatting.html#CONCEPT=cell output record"><i>cell output record</i></a> , otherwise
+returns <a href="table-formatting.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Init&nbsp;arg :align-x"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:align-x</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table><a name="Init&nbsp;arg :align-y"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:align-y</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table><a name="Init&nbsp;arg :min-width"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:min-width</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table><a name="Init&nbsp;arg :min-height"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:min-height</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table>All subclasses of <tt>cell-output-record</tt> must handle these initargs, which are
+used to specify, respectively, the <tt>x</tt> and <tt>y</tt> alignment, and the minimum width
+and height attributes of the cell.
+<p>
+<a name="Class standard-cell-output-record"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>standard-cell-output-record</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>The instantiable class of output record that represent a single piece of output
+within a table row or column, or an item list.  Its children will either be
+presentations, or output records that represent displayed output.  This is a
+subclass of <tt>cell-output-record</tt> .
+<p>
+<a name="Generic function cell-align-x"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>cell-align-x</b></td><td valign="baseline" width="100%"><i>cell</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function cell-align-y"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>cell-align-y</b></td><td valign="baseline" width="100%"><i>cell</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function cell-min-width"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>cell-min-width</b></td><td valign="baseline" width="100%"><i>cell</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function cell-min-height"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>cell-min-height</b></td><td valign="baseline" width="100%"><i>cell</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>These functions return, respectively, the <tt>x</tt> and <tt>y</tt> alignment and minimum
+width and height of the <a href="table-formatting.html#CONCEPT=cell output record"><i>cell output record</i></a> <i>cell</i> .
+<p>
+
+<a name="17.3.4"><h3>17.3.4 Item List Formatting Protocol</h3></a>
+<a name="Protocol&nbsp;Class item-list-output-record"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>item-list-output-record</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Protocol&nbsp;Class]</b></td></tr></table>The protocol class that represents an item list; a subclass of
+<tt>output-record</tt> .
+If you want to create a new class that behaves like an item list output record, it should be a subclass of <b>item-list-output-record</b>. Subclasses of <b>item-list-output-record</b> must obey the item list output record protocol.<a name="Predicate item-list-output-record-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>item-list-output-record-p</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Predicate]</b></td></tr></table>Returns <a href="table-formatting.html#CONCEPT=true"><i>true</i></a> if <i>object</i> is an <a href="table-formatting.html#CONCEPT=item list output record"><i>item list output record</i></a> ,
+otherwise returns <a href="table-formatting.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Init&nbsp;arg :x-spacing"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:x-spacing</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table><a name="Init&nbsp;arg :y-spacing"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:y-spacing</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table><a name="Init&nbsp;arg :initial-spacing"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:initial-spacing</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table><a name="Init&nbsp;arg :row-wise"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:row-wise</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table><a name="Init&nbsp;arg :n-rows"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:n-rows</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table><a name="Init&nbsp;arg :n-columns"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:n-columns</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table><a name="Init&nbsp;arg :max-width"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:max-width</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table><a name="Init&nbsp;arg :max-height"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:max-height</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table>All subclasses of <tt>item-list-output-record</tt> must handle these initargs, which
+are used to specify, respectively, the <tt>x</tt> and <tt>y</tt> spacing, the initial spacing,
+row-wise, the desired number of rows and columns, and maximum width and height
+attributes of the item list.
+<p>
+<a name="Class standard-item-list-output-record"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>standard-item-list-output-record</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>The instantiable output record that represents item list output.  Its children
+will be a sequence of cells, with presentations possibly intervening.  This is a
+subclass of <tt>item-list-output-record</tt> .
+<p>
+<a name="Generic function map-over-item-list-cells"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>map-over-item-list-cells</b></td><td valign="baseline" width="100%"><i>function item-list-record</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Applies <i>function</i> to all of the cells in <i>item-list-record</i> .
+<tt>map-over-item-list-cells</tt> must skip over intervening non-table output record
+structure, such as presentations.  <i>function</i> is a function of one argument,
+an output record corresponding to a cell in the item list; it has dynamic
+extent.
+<p>
+<a name="Generic function adjust-item-list-cells"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>adjust-item-list-cells</b></td><td valign="baseline" width="100%"><i>item-list-record stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>This function is called after the item list output has been collected, but
+before the record has been replayed.  The method on
+<tt>standard-item-list-output-record</tt> implements the usual item list layout
+constraint solver.  <i>item-list-record</i> is the item list output record, and
+<i>stream</i> is the stream on which the item list is displayed.
+<p>
+<br><hr><br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="output-recording.html">Output Recording</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="graph-formatting.html">Graph Formatting</a></td>
+</tr></table>
+</body></html>

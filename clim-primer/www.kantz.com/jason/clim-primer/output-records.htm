@@ -1,0 +1,54 @@
+<html><head><title>Common Lisp Interface Manager (CLIM) Primer -- Output Records</title>
+<LINK REL=STYLESHEET HREF="clim-primer.css" TYPE="text/css"></head><body>
+<h1>Output Records</h1>
+
+part of <a href="index.htm">Common Lisp Interface Manager (CLIM)</a>
+by <a href="http://jason.kantz.com">Jason Kantz</a>
+
+<hr>
+
+<h2>Questions</h2> <li>What are output records?
+
+<h2>Reading</h2>
+
+<li><a href="http://www.lispworks.com/reference/lw44/CLIM/html/climguide-234.htm#pgfId-347294">Conceptual Overview of Output Recording</a>
+
+<h2>What are they?</h2>
+
+<p>An output record is a kind of display list--a collection of
+instructions for drawing something on the screen.
+
+<p>
+Some output records have children--a collection of inferior output
+records.
+
+<p>
+<i>Displayed output records</i> correspond directly to displayed
+information on the stream, and don't have children--they are leaf
+nodes of the tree.  Displayed output records can be replayed.
+
+<p>
+Presentations are a special case of output records that remember the
+object and type of object associated with the output.
+
+<p>
+<code>standard-tree-output-record</code> is a class provided by CLIM
+to store longer sequences of output records.  It is optimized to store
+output records that tend to be created one after another with
+ascending y coordinates, such as you would find in a scrolling window
+of text.  The insertion and retrieval complexity of this class is
+roughly O(log n), but can break down to be O(n).
+
+<pre><code>(define-application-frame test ()
+  ()
+  (:panes
+   (display :application 
+	    :output-record (make-instance 'standard-tree-output-record))
+   (:layouts
+    (:default display))))</code></pre>
+
+
+<p class=mtb>Next: <a href="accepting-values.htm">Menus and Dialogs</a>
+
+
+</body></html>

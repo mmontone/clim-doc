@@ -1,0 +1,140 @@
+<html><head><title>Common Lisp Interface Manager (CLIM) Primer -- Commands</title>
+<LINK REL=STYLESHEET HREF="clim-primer.css" TYPE="text/css"></head><body>
+
+<h1>Commands</h1>
+
+part of <a href="index.htm">Common Lisp Interface Manager (CLIM)</a>
+by <a href="http://jason.kantz.com">Jason Kantz</a>
+
+<hr>
+<!--"Do everything you ask of those you command."
+<br>--George S. Patton Jr. -->
+
+<h2>Questions</h2>
+<li>How are commands associated with a presentation?
+
+<h2>Reading</h2>
+<li><a href="http://www.lispworks.com/reference/lw44/CLIM/html/climguide-191.htm#pgfId-407832">Introduction to CLIM Commands </a>
+
+<li><a href="http://www.lispworks.com/reference/lw44/CLIM/html/climguide-195.htm#pgfId-407874">Command Objects</a>
+
+<li><a href="http://www.lispworks.com/reference/lw44/CLIM/html/climguide-124.htm#pgfId-384075">Conceptual Overview of Presentation Translators</a>
+
+<li><a href="http://www.lispworks.com/reference/lw44/CLIM/html/climguide-129.htm#marker-383296">define-presentation-to-command-translator [Macro]</a>
+
+
+<h2>Command Tables</h2>
+
+<p class=noi>
+When you make an application frame you can specify a command table and
+a command definer.
+
+<pre><code>(define-application-frame word ()
+ ()
+(:command-table word-command-table)
+(:command-definer define-word-command)
+...)</code></pre>
+
+<p class=noi>Command definers have the same args as define-command except you don't
+have to specify a command table:
+
+<pre><code><b>define-command</b> <i>name arguments &body body</i></code></pre>
+
+<p>For example ...
+
+<pre><code>(define-word-command (com-print		; name
+		      :name "Print"
+		      :keystroke (:p :control)
+		      :menu "Print Document")
+    ((document				; argument
+      (or memo outline)			; presentation-type
+      :documentation "Print the current document")) ; keyword-value pairs
+  (print document))				; body
+</code></pre>
+
+
+<h2>Associating Output with Commands</h2>
+
+<p>Below is an example of using <code>present</code> in combination
+with command-translators.  This code will print nodes of a tree at a
+certain level starting at the root.  It demonstrates how to associate
+the two commands <code>com-tree-up</code> and
+<code>com-tree-down</code> with the presentation of nodes.
+
+<pre><code>(in-package :clim-user)
+
+;;; Basic node representation
+
+(defclass node ()
+  ((id :accessor id :initarg :id :initform nil)
+   (parent :accessor parent :initarg :parent :initform nil)
+   (children :accessor children :initarg :children :initform nil)))
+
+(define-presentation-method present (node (type node) stream (view textual-view) &key)
+  (format stream "~%     ~A" (id node)))
+
+(defun rootp (node) (not (parent node)))
+
+(defmethod add-child ((parent node) (child node))
+  (pushnew child (children parent))
+  (setf (parent child) parent))
+
+(defun multiply (node &key (multiple 3))
+  (if (children node)
+      (dolist (n (children node)) (multiply n))
+      (dotimes (x multiple) 
+	(add-child node (make-instance 'node
+			  :id (format nil "~A.~A" (id node) (- multiple x)))))))
+
+;;; The application frame and the pane display function
+
+(define-application-frame tree () ()
+  (:panes (pane-tree 
+	   :application :scroll-bars nil
+	   :display-function #'display-tree
+	   :initial-cursor-visibility nil
+	   :display-after-commands nil))
+  (:layouts (:default pane-tree)))
+
+(defmethod display-tree ((frame tree) stream) 
+  (let ((node (make-instance 'node :id "N")))
+    (dotimes (x 5) (multiply node))
+    (present node 'node :stream stream)))
+
+(define-tree-command com-clear () 
+  (window-clear (get-frame-pane *application-frame* 'pane-tree)))
+
+;;; Two comands for moving up and down the tree
+
+(define-tree-command com-tree-up ((node 'node))
+  (let ((stream (get-frame-pane *application-frame* 'pane-tree)))
+    (cond ((rootp node))
+	  ((rootp (parent node)) (com-clear) (present (parent node) 'node :stream stream))
+	  (t (com-clear) (com-tree-down (parent (parent node)))))))
+
+(define-tree-command com-tree-down ((node 'node))
+  (when (children node) 
+    (com-clear)
+    (let ((stream (get-frame-pane *application-frame* 'pane-tree)))
+      (dolist (child (children node)) (present child 'node :stream stream)))))
+
+(define-presentation-to-command-translator move-down-tree
+    (node com-tree-down tree
+	  :gesture :select		;command activated with left-click on a node
+	  :menu t)			;includes this command in right-click menu
+  (object) (list object))
+
+(define-presentation-to-command-translator move-up-tree
+    (node com-tree-up tree
+	  :gesture :describe		;command activated with a middle-click on a node
+	  :menu t)			;includes this command in a right-click menu
+  (object) (list object))
+
+(run-frame-top-level (make-application-frame 'tree :width 200))</code></pre>
+
+
+<p class=mtb>Next: <a href="output-records.htm">Output Records</a>
+<br />
+<b>Warning</b>:  require(/usr/home/kantz/www/htdocs/comments.php) [<a href='http://www.kantz.com/jason/clim-primer/function.require'>function.require</a>]: failed to open stream: No such file or directory in <b>/usr/home/jkantz1/public_html/jason/clim-primer/commands.htm</b> on line <b>137</b><br />
+<br />
+<b>Fatal error</b>:  require() [<a href='http://www.kantz.com/jason/clim-primer/function.require'>function.require</a>]: Failed opening required '/usr/home/kantz/www/htdocs/comments.php' (include_path='.:/usr/local/lib/php') in <b>/usr/home/jkantz1/public_html/jason/clim-primer/commands.htm</b> on line <b>137</b><br />

@@ -1,0 +1,732 @@
+<html><head><title>CLIM: 16 Output Recording</title></head><body>
+<br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="extended-output.html">Extended Stream Output</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="table-formatting.html">Table Formatting</a></td>
+</tr></table><br><hr><br>
+<p>
+<br><a name="16"><h1>16 Output Recording</h1></a>
+<a name="LABEL=output-recording"></a> <a name="16.1"><h2>16.1 Overview of Output Recording</h2></a>
+CLIM provides a mechanism whereby output (textual and graphical) may be captured
+into an <a name="CONCEPT=output history"><b><i>output history</i></b></a> for later replay on the same stream.  This
+mechanism serves as the basis for many other tools, such as the formatted output
+and presentation mechanisms described elsewhere.
+<p>
+The output recording facility is layered on top of the graphics and text output
+protocols.  It works by intercepting the operations in the graphics and text
+output protocols, and saving information about these operations in objects
+called <a name="CONCEPT=output records"><b><i>output records</i></b></a> .  In general, an output record is a kind of
+display list, that is, a collection of instructions for drawing something on a
+stream.  Some output records may have <a name="CONCEPT=children"><b><i>children</i></b></a> , that is, a collection
+of inferior output records.  Other output records, which are called
+<a name="CONCEPT=displayed output records"><b><i>displayed output records</i></b></a> , correspond directly to displayed information
+on the stream, and do not have children.  If you think of output records being
+arranged in a tree, displayed output records are all of the leaf nodes in the
+tree, for example, displayed text and graphics records.
+<p>
+Displayed output records must record the state of the supplied drawing options
+at the instant the output record is created, as follows.  The ink supplied by
+the programmer must be captured without resolving indirect inks; this is so that
+a user can later change the default foreground and background ink of the medium
+and have that change affect the already-created output records during replay.
+The effect of the specified ``user'' transformation (composed with the medium
+transformation) must be captured; CLIM implementations are free to do this
+either by saving the transformation object or by saving the transformed values
+of all objects that are affected by the transformation.  The user clipping
+region and line style must be captured in the output record as well.  Subsequent
+replaying of the record under a new user transformation, clipping region, or
+line style will not affect the replayed output.  CLIM implementation are
+permitted to capture the text style either fully merged against the medium's
+default, or not; in the former case, subsequent changes to the medium's default
+text style will not affect replaying the record, but in the latter case changing
+the default text style will affect replaying.
+<p>
+A CLIM stream that supports output recording has an output history object, which
+is a special kind of output record that supports some other operations.  CLIM
+defines a standard set of output history implementations and a standard set of
+output record types.
+<p>
+The output recording mechanism is defined so as to permit application specific
+or host window system specific implementations of the various recording
+protocols.  CLIM implementations should provide several types of standard output
+records with different characteristics for search, storage, and retrieval.  Two
+examples are ``sequence'' output records (which store elements in a sequence,
+and whose insertion and retrieval complexity is O(n)) and ``tree'' output
+records (which store elements in some sort of tree based on the location of the
+element, and whose insertion and retrieval complexity is O(log~n)).
+<p>
+<hr><b>Issue:</b> York, SWM<br><i>There is a proposal on the table to unify the sheet and
+output record protocols, not by unifying the class structure, but by making them
+implement the same generic functions where that makes sense.  For instance,
+sheets and output records both have regions, transformations (that relate sheets
+to their parents), both support a repainting operation, and so forth.
+<p>
+In particular, <tt>sheet-parent</tt> and <tt>output-record-parent</tt> are equivalent,
+as are <tt>sheet-children</tt> and <tt>output-record-children</tt> ,
+<tt>sheet-adopt-child</tt> and <tt>add-output-record</tt> , <tt>sheet-disown-child</tt> and
+<tt>delete-output-record</tt> , and <tt>repaint-sheet</tt> and <tt>replay-output-record</tt> ,
+and the mapping functions.  <tt>output-record-position</tt> and its <tt>setf</tt> function have sheet analogs.  The sheet and output record notification functions
+are also equivalent.
+<p>
+This simplifies the conceptual framework of CLIM, and could eventually simplify
+the implementation as well.  Doing this work now opens the door for later
+unifications, such unifying the pane layout functionality with table formatting.</i><hr>
+<a name="16.2"><h2>16.2 Output Records</h2></a>
+<a name="Protocol&nbsp;Class output-record"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>output-record</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Protocol&nbsp;Class]</b></td></tr></table>The protocol class that is used to indicate that an object is an output record,
+that is, an object that contains other output records.  This is a subclass of
+<tt>bounding-rectangle</tt> , and as such, output records obey the bounding rectangle
+protocol.
+If you want to create a new class that behaves like an output record, it should be a subclass of <b>output-record</b>. Subclasses of <b>output-record</b> must obey the output record protocol.All output records are mutable.
+<p>
+<a name="Predicate output-record-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>output-record-p</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Predicate]</b></td></tr></table>Returns <a href="output-recording.html#CONCEPT=true"><i>true</i></a> if <i>object</i> is an <a href="output-recording.html#CONCEPT=output record"><i>output record</i></a> , otherwise
+returns <a href="output-recording.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Protocol&nbsp;Class displayed-output-record"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>displayed-output-record</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Protocol&nbsp;Class]</b></td></tr></table>The protocol class that is used to indicate that an object is a displayed output
+record, that is, an object that represents a visible piece of output on
+some output stream.  This is a subclass of <tt>bounding-rectangle</tt> .
+If you want to create a new class that behaves like a displayed output record, it should be a subclass of <b>displayed-output-record</b>. Subclasses of <b>displayed-output-record</b> must obey the displayed output record protocol.All displayed output records are mutable.
+<p>
+<a name="Predicate displayed-output-record-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>displayed-output-record-p</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Predicate]</b></td></tr></table>Returns <a href="output-recording.html#CONCEPT=true"><i>true</i></a> if <i>object</i> is a <a href="output-recording.html#CONCEPT=displayed output record"><i>displayed output record</i></a> ,
+otherwise returns <a href="output-recording.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Init&nbsp;arg :x-position"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:x-position</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table><a name="Init&nbsp;arg :y-position"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:y-position</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table><a name="Init&nbsp;arg :parent"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:parent</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table>All subclasses of either <tt>output-record</tt> or <tt>displayed-output-record</tt> must
+handle these three initargs, which are used to specify, respectively, the <tt>x</tt>
+and <tt>y</tt> position of the output record, and the parent of the output record.
+<p>
+<a name="Init&nbsp;arg :size"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:size</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table>All subclasses of <tt>output-record</tt> must handle the <tt>:size</tt> initarg.  It is
+used to specify how much room should be left for child output records (if, for
+example, the children are stored in a vector).  It is permissible for <tt>:size</tt> to be ignored, provided that the resulting output record is able to store the
+specified number of child output records.
+<p>
+
+<a name="16.2.1"><h3>16.2.1 The Basic Output Record Protocol</h3></a>
+All subclasses of <tt>output-record</tt> and <tt>displayed-output-record</tt> must
+inherit or implement methods for the following generic functions.
+<p>
+When the generic functions in this section take both <i>record</i> and a
+<i>stream</i> arguments, CLIM implementations will specialize the <i>stream</i> argument for the <tt>standard-output-recording-stream</tt> class and the
+<i>record</i> argument for all of the implementation-specific output record
+classes.
+<p>
+<a name="Generic function output-record-position"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>output-record-position</b></td><td valign="baseline" width="100%"><i>record</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the <tt>x</tt> and <tt>y</tt> position of the <a href="output-recording.html#CONCEPT=output record"><i>output record</i></a> <i>record</i> as two
+rational numbers.  The position of an output record is the position of the
+upper-left corner of its bounding rectangle.  The position is relative to the
+stream, where <tt>(0,0)</tt> is (initially) the upper-left corner of the stream.
+<p>
+<a name="Generic function (setf* output-record-position)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf* output-record-position)</b></td><td valign="baseline" width="100%"><i>x y record</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Changes the <tt>x</tt> and <tt>y</tt> position of the <a href="output-recording.html#CONCEPT=output record"><i>output record</i></a> <i>record</i> to be
+<i>x</i> and <i>y</i> (which are rational numbers), and updates the bounding
+rectangle to reflect the new position (and saved cursor positions, if the output
+record stores it).  If <i>record</i> has any children, all of the children (and
+their descendants as well) will be moved by the same amount as <i>record</i> was
+moved.  The bounding rectangles of all of <i>record</i> 's ancestors will also be
+updated to be large enough to contain <i>record</i> .  This does not replay the
+output record, but the next time the output record is replayed it will appear at
+the new position.
+<p>
+For CLIM implementations that do not support <tt>setf*</tt> , the ``setter'' function
+for this is <tt>output-record-set-position</tt> .
+<p>
+<a name="Generic function output-record-start-cursor-position"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>output-record-start-cursor-position</b></td><td valign="baseline" width="100%"><i>record</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the <tt>x</tt> and <tt>y</tt> starting cursor position of the <a href="output-recording.html#CONCEPT=output record"><i>output record</i></a> <i>record</i> as two integer values.  The positions are relative to the stream,
+where <tt>(0,0)</tt> is (initially) the upper-left corner of the stream.
+<p>
+Text output records and updating output records maintain the cursor position.
+Graphical output records and other output records that do not require or affect
+the cursor position will return <tt>nil</tt> as both of the values.
+<p>
+<a name="Generic function (setf* output-record-start-cursor-position)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf* output-record-start-cursor-position)</b></td><td valign="baseline" width="100%"><i>x y record</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Changes the <tt>x</tt> and <tt>y</tt> starting cursor position of the <a href="output-recording.html#CONCEPT=output record"><i>output record</i></a> <i>record</i> to be <i>x</i> and <i>y</i> (which are integers).  This does not
+affect the bounding rectangle of <i>record</i> , nor does it replay the output
+record.  For those output records that do not require or affect the cursor
+position, the method for this function is a no-op.
+<p>
+For CLIM implementations that do not support <tt>setf*</tt> , the ``setter'' function
+for this is <tt>output-record-set-start-cursor-position</tt> .
+<p>
+<a name="Generic function output-record-end-cursor-position"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>output-record-end-cursor-position</b></td><td valign="baseline" width="100%"><i>record</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the <tt>x</tt> and <tt>y</tt> ending cursor position of the <a href="output-recording.html#CONCEPT=output record"><i>output record</i></a> <i>record</i> as two integer values.  The positions are relative to the stream,
+where <tt>(0,0)</tt> is (initially) the upper-left corner of the stream.  Graphical
+output records do not track the cursor position, so only text output record (and
+some others) will return meaningful values for this.
+<p>
+Text output records and updating output records maintain the cursor position.
+Graphical output records and other output records that do not require or affect
+the cursor position will return <tt>nil</tt> as both of the values.
+<p>
+<a name="Generic function (setf* output-record-end-cursor-position)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf* output-record-end-cursor-position)</b></td><td valign="baseline" width="100%"><i>x y record</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Changes the <tt>x</tt> and <tt>y</tt> ending cursor position of the <a href="output-recording.html#CONCEPT=output record"><i>output record</i></a> <i>record</i> to be <i>x</i> and <i>y</i> (which are integers).  This does not
+affect the bounding rectangle of <i>record</i> , nor does it replay the output
+record.  For those output records that do not require or affect the cursor
+position, the method for this function is a no-op.
+<p>
+For CLIM implementations that do not support <tt>setf*</tt> , the ``setter'' function
+for this is <tt>output-record-set-end-cursor-position</tt> .
+<p>
+<a name="Generic function output-record-parent"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>output-record-parent</b></td><td valign="baseline" width="100%"><i>record</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the output record that is the parent of the <a href="output-recording.html#CONCEPT=output record"><i>output record</i></a> <i>record</i> , or <tt>nil</tt> if the record has no parent.
+<p>
+
+<a name="Function replay"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>replay</b></td><td valign="baseline" width="100%"><i>record stream <tt>&amp;optional</tt> region</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>This function bind <tt>stream-recording-p</tt> of <i>stream</i> to <a href="output-recording.html#CONCEPT=false"><i>false</i></a> , and
+then calls <tt>replay-output-record</tt> on the arguments <i>record</i> ,
+<i>stream</i> , and <i>region</i> .  If <tt>stream-drawing-p</tt> of <i>stream</i> is
+<a href="output-recording.html#CONCEPT=false"><i>false</i></a> , <tt>replay</tt> does nothing.  <tt>replay</tt> is typically called during
+scrolling, by repaint handlers, and so on.
+<p>
+CLIM implementations are permitted to default <i>region</i> either to <tt>nil</tt> or
+to the region corresponding to viewport of <i>stream</i> .
+<p>
+<a name="Generic function replay-output-record"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>replay-output-record</b></td><td valign="baseline" width="100%"><i>record stream <tt>&amp;optional</tt> region x-offset y-offset</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Displays the output captured by the <a href="output-recording.html#CONCEPT=output record"><i>output record</i></a> <i>record</i> on the
+<a href="output-recording.html#CONCEPT=output recording stream"><i>output recording stream</i></a> <i>stream</i> , exactly as it was originally
+captured (subject to subsequent modifications).  The current user
+transformation, line style, text style, ink, and clipping region of <i>stream</i> are all ignored during the replay operation.  Instead, these are gotten from the
+output record.
+<p>
+If <i>record</i> is not a displayed output record, then replaying it involves
+replaying all of its children.  If <i>record</i> is a displayed output record,
+then replaying it involves redoing the graphics operation captured in the
+record.
+<p>
+<i>region</i> is a region that can be supplied to limit what records are
+displayed.  Only those records that overlap <i>region</i> are replayed.  The
+default for <i>region</i> is <tt>+everywhere+</tt> .
+<p>
+It is permissible for implementations to restrict <tt>replay-output-record</tt> such
+that <i>stream</i> must be the same stream on which the output records were
+originally recorded.
+<p>
+<hr><b>Issue:</b> SWM<br><i>How does replaying a text output record (or any record that
+maintains the cursor position) affect the cursor position of the stream?  It
+is probably that case that <tt>replay</tt> should not affect the cursor position.</i><hr>
+<a name="Generic function output-record-hit-detection-rectangle*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>output-record-hit-detection-rectangle*</b></td><td valign="baseline" width="100%"><i>record</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>This method is used to establish the usual ``effective size'' of <i>record</i> for hit detection queries.  Four values are returned corresponding to the edges
+of the bounding rectangle that is the hit detection rectangle.  The default
+method (on CLIM's standard output record class) is equivalent to calling calling
+<tt>bounding-rectangle*</tt> on <i>record</i> , but this method can be specialized to
+return a larger bounding rectangle in order to implement a form of hysteresis.
+<p>
+<a name="Generic function output-record-refined-position-test"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>output-record-refined-position-test</b></td><td valign="baseline" width="100%"><i>record x y</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>This is used to definitively answer hit detection queries, that is, determining
+that the point <tt>(x,y)</tt> is contained within the output record <i>record</i> .  Once
+the position <tt>(x,y)</tt> has been determined to lie within
+<tt>output-record-hit-detection-rectangle*</tt> ,
+<tt>output-record-refined-sensitivity-test</tt> is invoked.  Output record
+subclasses can provide a method that provides a more precise definition of a
+hit, for example, output records for elliptical rings will implement a method
+that detects whether the pointing device is on the elliptical ring.
+<p>
+<a name="Generic function highlight-output-record"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>highlight-output-record</b></td><td valign="baseline" width="100%"><i>record stream state</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>This method is called in order to draw a highlighting box around the
+<a href="output-recording.html#CONCEPT=output record"><i>output record</i></a> <i>record</i> on the <a href="output-recording.html#CONCEPT=output recording stream"><i>output recording stream</i></a> <i>stream</i> .  <i>state</i> will be either <tt>:highlight</tt> (meaning to draw the
+highlighting) or <tt>:unhighlight</tt> (meaning to erase the highlighting).  The
+default method (on CLIM's standard output record class) will simply draw a
+rectangle that corresponds the the bounding rectangle of <i>record</i> .
+<p>
+<a name="Generic function displayed-output-record-ink"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>displayed-output-record-ink</b></td><td valign="baseline" width="100%"><i>displayed-output-record</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the ink used by the <a href="output-recording.html#CONCEPT=displayed output record"><i>displayed output record</i></a> <i>displayed-output-record</i> .
+<p>
+
+<a name="16.2.2"><h3>16.2.2 The Output Record ``Database'' Protocol</h3></a>
+All classes that are subclasses of <tt>output-record</tt> must implement methods for
+the following generic functions.
+<p>
+<a name="Generic function output-record-children"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>output-record-children</b></td><td valign="baseline" width="100%"><i>record</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns a sequence of all of the children of the <a href="output-recording.html#CONCEPT=output record"><i>output record</i></a> <i>record</i> .  It is unspecified whether the sequence is a freshly created
+object or a ``live'' object representing the state of <i>record</i> .
+<p>
+<a name="Generic function add-output-record"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>add-output-record</b></td><td valign="baseline" width="100%"><i>child record</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Adds the new <a href="output-recording.html#CONCEPT=output record"><i>output record</i></a> <i>child</i> to the <a href="output-recording.html#CONCEPT=output record"><i>output record</i></a> <i>record</i> .  The bounding rectangle for <i>record</i> (and all its ancestors)
+must be updated to account for the new child record.
+<p>
+The methods for the <tt>add-output-record</tt> will typically specialize only the
+<i>record</i> argument.
+<p>
+<a name="Generic function delete-output-record"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>delete-output-record</b></td><td valign="baseline" width="100%"><i>child record <tt>&amp;optional</tt> (errorp <tt>t</tt> )</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Removes the <a href="output-recording.html#CONCEPT=output record"><i>output record</i></a> <i>child</i> from the <a href="output-recording.html#CONCEPT=output record"><i>output record</i></a> <i>record</i> .  The bounding rectangle for <i>record</i> (and all its ancestors)
+may be updated to account for the child having been removed, although this is
+not mandatory.
+<p>
+If <i>errorp</i> is <a href="output-recording.html#CONCEPT=true"><i>true</i></a> (the default) and <i>child</i> is not contained
+within <i>record</i> , then an error is signalled.
+<p>
+The methods for the <tt>delete-output-record</tt> will typically specialize only the
+<i>record</i> argument.
+<p>
+<a name="Generic function clear-output-record"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>clear-output-record</b></td><td valign="baseline" width="100%"><i>record</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Removes all of the children from the <a href="output-recording.html#CONCEPT=output record"><i>output record</i></a> <i>record</i> , and
+resets the bounding rectangle of <i>record</i> to its initial state.
+<p>
+<a name="Generic function output-record-count"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>output-record-count</b></td><td valign="baseline" width="100%"><i>record</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the number of children contained within the <a href="output-recording.html#CONCEPT=output record"><i>output record</i></a> <i>record</i> .
+<p>
+
+<a name="Generic function map-over-output-records-containing-position"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>map-over-output-records-containing-position</b></td><td valign="baseline" width="100%"><i>function record x y <tt>&amp;optional</tt> x-offset y-offset <tt>&amp;rest</tt> function-args</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Maps over all of the children of the <a href="output-recording.html#CONCEPT=output record"><i>output record</i></a> <i>record</i> that
+contain the point at <tt>(x,y)</tt>, calling <i>function</i> on each one.
+<i>function</i> is a function of one or more arguments, the first argument being
+the record containing the point; it has dynamic extent.  <i>function</i> is also
+called with all of <i>function-args</i> as ``apply'' arguments.
+<p>
+If there are multiple records that contain the point and that overlap each
+other, <tt>map-over-output-records-containing-position</tt> must hit the uppermost
+(most recently inserted) record first and the bottommost (least recently
+inserted) record last.  Otherwise, the order in which the records are traversed
+is unspecified.
+<p>
+<a name="Generic function map-over-output-records-overlapping-region"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>map-over-output-records-overlapping-region</b></td><td valign="baseline" width="100%"><i>function record region <tt>&amp;optional</tt> x-offset y-offset <tt>&amp;rest</tt> function-args</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Maps over all of the children of the <a href="output-recording.html#CONCEPT=output record"><i>output record</i></a> <i>record</i> that
+overlap the <a href="regions.html#CONCEPT=region"><i>region</i></a> <i>region</i> , calling <i>function</i> on each one.
+<i>function</i> is a function of one or more arguments, the first argument being
+the record overlapping the region; it has dynamic extent.  <i>function</i> is
+also called with all of <i>function-args</i> as ``apply'' arguments.
+<p>
+If there are multiple records that overlap the region and that overlap each
+other, <tt>map-over-output-records-overlapping-region</tt> must hit the bottommost
+(least recently inserted) record first and the uppermost (most recently
+inserted) record last.  Otherwise, the order in which the records are traversed
+is unspecified.
+<p>
+
+<a name="16.2.3"><h3>16.2.3 Output Record Change Notification Protocol</h3></a>
+The following functions are called by programmers and by CLIM itself in order to
+notify a parent output record when the bounding rectangle of one of its child output
+record changes.
+<p>
+<a name="Generic function recompute-extent-for-new-child"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>recompute-extent-for-new-child</b></td><td valign="baseline" width="100%"><i>record child</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>This function is called whenever a new child is added to an output record.  Its
+contract is to update the bounding rectangle of the <a href="output-recording.html#CONCEPT=output record"><i>output record</i></a> <i>record</i> to be large enough to completely contain the new child <a href="output-recording.html#CONCEPT=output
+record"><i>output
+record</i></a> <i>child</i> . The parent of <i>record</i> must be notified by calling
+<tt>recompute-extent-for-changed-child</tt> .
+<p>
+<tt>add-output-record</tt> is required to call <tt>recompute-extent-for-new-child</tt> .
+<p>
+<a name="Generic function recompute-extent-for-changed-child"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>recompute-extent-for-changed-child</b></td><td valign="baseline" width="100%"><i>record child 
+                                                  old-min-x old-min-y old-max-x old-max-y</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>This function is called whenever the bounding rectangle of one of the childs of
+a record has been changed.  Its contract is to update the bounding rectangle of
+the <a href="output-recording.html#CONCEPT=output record"><i>output record</i></a> <i>record</i> to be large enough to completely contain
+the new bounding rectangle of the child <a href="output-recording.html#CONCEPT=output record"><i>output record</i></a> <i>child</i> .  All
+of the ancestors of <i>record</i> must be notified by recursively calling
+<tt>recompute-extent-for-changed-child</tt> .
+<p>
+Whenever the bounding rectangle of an output record is changed or
+<tt>delete-output-record</tt> is called, <tt>recompute-extent-for-changed-child</tt> must be called to inform the parent of the record that a change has taken place.
+<p>
+<a name="Generic function tree-recompute-extent"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>tree-recompute-extent</b></td><td valign="baseline" width="100%"><i>record</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>This function is called whenever the bounding rectangles of a number of children
+of a record have been changed, such as happens during table and graph
+formatting.  Its contract is to compute the bounding rectangle large enough to
+contain all of the children of the output record <i>record</i> , adjust the
+bounding rectangle of the <a href="output-recording.html#CONCEPT=output record"><i>output record</i></a> <i>record</i> accordingly, and
+then call <tt>recompute-extent-for-changed-child</tt> on <i>record</i> .
+<p>
+
+<a name="16.3"><h2>16.3 Types of Output Records</h2></a>
+This section discusses several types of output records, including two standard
+classes of output records and the displayed output record protocol.
+<p>
+<a name="16.3.1"><h3>16.3.1 Standard Output Record Classes</h3></a>
+<a name="Class standard-sequence-output-record"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>standard-sequence-output-record</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>The standard instantiable class provided by CLIM to store a relatively short
+sequence of output records; a subclass of <tt>output-record</tt> .  The insertion and
+retrieval complexity of this class is O(n).  Most of the formatted output
+facilities (such as <tt>formatting-table</tt> ) create output records that are a
+subclass of <tt>standard-sequence-output-record</tt> .
+<p>
+<a name="Class standard-tree-output-record"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>standard-tree-output-record</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>The standard instantiable class provided by CLIM to store longer sequences of
+output records.  Typically, the child records of a tree output record will be
+maintained in some sort of sorted order, such as a lexicographic ordering on the
+<tt>x</tt> and <tt>y</tt> coordinates of the children.  The insertion and retrieval complexity
+of this class is O(log~n).
+<p>
+
+<a name="16.3.2"><h3>16.3.2 Graphics Displayed Output Records</h3></a>
+Graphics displayed output records are used to record the output produced by the
+graphics functions, such as <tt>draw-line*</tt> .  Each graphics displayed output
+record describes the output produced by a call to one of the graphics functions.
+<p>
+The exact contents of graphics displayed output records is unspecified, but they
+must store sufficient information to be able to exactly redraw the original
+output at replay time.  The minimum information that must be captured for
+all graphics displayed output records is as follows:
+<p>
+<ul> <li> The description of the graphical object itself, for example, the end
+points of a line or the center point and radius of a circle.
+<p>
+<li> The programmer-supplied ink at the time the drawing function was called.
+Indirect inks must not be resolved, so that a user can later change the default
+foreground and background ink of the medium and have that change affect the
+already-created output records during replay.
+<p>
+<li> For paths, the programmer-supplied line-style at the time the drawing
+function was called.
+<p>
+<li> The programmer-supplied clipping region at the time the drawing function
+was called.
+<p>
+<li> The user transformation.  This may be accomplished by either explicitly
+storing the transformation, or by transforming the coordinates supplied to the
+drawing function and capturing the transformed coordinates.
+</ul> <a name="Protocol&nbsp;Class graphics-displayed-output-record"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>graphics-displayed-output-record</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Protocol&nbsp;Class]</b></td></tr></table>The protocol class that corresponds to output records for the graphics
+functions, such as <tt>draw-line*</tt> .  This is a subclass of
+<tt>displayed-output-record</tt> .
+If you want to create a new class that behaves like a graphics displayed output record, it should be a subclass of <b>graphics-displayed-output-record</b>. Subclasses of <b>graphics-displayed-output-record</b> must obey the graphics displayed output record protocol.<a name="Predicate graphics-displayed-output-record-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>graphics-displayed-output-record-p</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Predicate]</b></td></tr></table>Returns <a href="output-recording.html#CONCEPT=true"><i>true</i></a> if <i>object</i> is a <a href="output-recording.html#CONCEPT=graphics displayed output
+record"><i>graphics displayed output
+record</i></a> , otherwise returns <a href="output-recording.html#CONCEPT=false"><i>false</i></a> .
+<p>
+
+<a name="16.3.3"><h3>16.3.3 Text Displayed Output Record</h3></a>
+Text displayed output records are used to record the textual output produced by
+such functions as <tt>stream-write-char</tt> and <tt>stream-write-string</tt> .  Each
+text displayed output record corresponds to no more than one line of textual
+output (that is, line breaks caused by <tt>terpri</tt> and <tt>fresh-line</tt> create a
+new text output record, as do certain other stream operations described below).
+<p>
+The exact contents of text displayed output records is unspecified, but they
+must store sufficient information to be able to exactly redraw the original
+output at replay time.  The minimum information that must be captured for all
+text displayed output records is as follows:
+<p>
+<ul> <li> The displayed text strings.
+<p>
+<li> The starting and ending cursor positions.
+<p>
+<li> The text style in which the text string was written.  Depending on the
+CLIM implementation, this may be either fully merged against the medium's
+default or not; in the former case, subsequent changes to the medium's default
+text style will not affect replaying the record, but in the latter case changing
+the default text style will affect replaying.
+<p>
+<li> The programmer-supplied ink at the time the drawing function was called.
+Indirect inks must not be resolved, so that a user can later change the default
+foreground and background ink of the medium and have that change affect the
+already-created output records during replay.
+<p>
+<li> The programmer-supplied clipping region at the time the drawing function
+was called.
+</ul> <a name="Protocol&nbsp;Class text-displayed-output-record"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>text-displayed-output-record</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Protocol&nbsp;Class]</b></td></tr></table>The protocol class that corresponds to text displayed output records.  This is
+a subclass of <tt>displayed-output-record</tt> .
+If you want to create a new class that behaves like a text displayed output record, it should be a subclass of <b>text-displayed-output-record</b>. Subclasses of <b>text-displayed-output-record</b> must obey the text displayed output record protocol.<a name="Predicate text-displayed-output-record-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>text-displayed-output-record-p</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Predicate]</b></td></tr></table>Returns <a href="output-recording.html#CONCEPT=true"><i>true</i></a> if <i>object</i> is a <a href="output-recording.html#CONCEPT=text displayed output record"><i>text displayed output record</i></a> ,
+otherwise returns <a href="output-recording.html#CONCEPT=false"><i>false</i></a> .
+<p>
+The following two generic functions comprise the text displayed output record
+protocol.
+<p>
+<a name="Generic function add-character-output-to-text-record"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>add-character-output-to-text-record</b></td><td valign="baseline" width="100%"><i>text-record character text-style 
+                                                   width height baseline</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Adds the character <i>character</i> to the <a href="output-recording.html#CONCEPT=text displayed output record"><i>text displayed output record</i></a> <i>text-record</i> in the text style <i>text-style</i> .  <i>width</i> and
+<i>height</i> are the width and height of the character in device units, and are
+used to compute the bounding rectangle for the text record.  <i>baseline</i> is
+the new baseline for characters in the output record.
+<p>
+<a name="Generic function add-string-output-to-text-record"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>add-string-output-to-text-record</b></td><td valign="baseline" width="100%"><i>text-record string start end text-style 
+                                                width height baseline</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Adds the string <i>string</i> to the <a href="output-recording.html#CONCEPT=text displayed output record"><i>text displayed output record</i></a> <i>text-record</i> in the text style <i>text-style</i> .  <i>start</i> and <i>end</i> are integers that specify the substring within <i>string</i> to add to the text
+output record.  <i>width</i> and <i>height</i> are the width and height of the
+character in device units, and are used to compute the bounding rectangle for
+the text record.  <i>baseline</i> is the new baseline for characters in the
+output record.
+<p>
+<a name="Generic function text-displayed-output-record-string"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>text-displayed-output-record-string</b></td><td valign="baseline" width="100%"><i>text-record</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the string contained by the <a href="output-recording.html#CONCEPT=text displayed output record"><i>text displayed output record</i></a> <i>text-record</i> .
+<i>This function returns objects that reveal CLIM's internal state; do not modify those objects. </i><a name="16.3.4"><h3>16.3.4 Top-Level Output Records</h3></a>
+Top-level output records are similar to ordinary output records, except that
+they must maintain additional state, such as the information required to display
+scroll bars.
+<p>
+<a name="Class stream-output-history-mixin"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>stream-output-history-mixin</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>This class is mixed into some other output record class to produce a new class
+that is suitable for use as a a top-level output history.  This class is not
+intended to be instantiated.
+<p>
+When the bounding rectangle of an member of this class is updated, CLIM
+implementations must update any window decorations (such as scroll bars)
+associated with the stream with which the <a href="output-recording.html#CONCEPT=output record"><i>output record</i></a> <i>history</i> is
+associated.
+<p>
+<a name="Class standard-tree-output-history"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>standard-tree-output-history</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>The standard instantiable class provided by CLIM to use as the top-level output
+history.  This will typically be a subclass of both
+<tt>standard-tree-output-record</tt> and <tt>stream-output-history-mixin</tt> .
+<p>
+<a name="Class standard-sequence-output-history"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>standard-sequence-output-history</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>Another instantiable class provided by CLIM to use for top-level output records
+that have only a small number of children.  This will typically be a subclass of
+both <tt>standard-sequence-output-record</tt> and <tt>stream-output-history-mixin</tt> .
+<p>
+
+<a name="16.4"><h2>16.4 Output Recording Streams</h2></a>
+CLIM defines an extension to the stream protocol that supports output recording.
+The stream has an associated output history record and provides controls to
+enable and disable output recording.
+<p>
+<hr><b>Issue:</b> SWM<br><i>Do we want to support only output recording streams, or do we
+want to support output recording sheets as well?  If the latter, we need to
+split apart graphics output recording and textual output recording, and rename
+lots of things.</i><hr>
+<a name="Protocol&nbsp;Class output-recording-stream"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>output-recording-stream</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Protocol&nbsp;Class]</b></td></tr></table>The protocol class that indicates that a stream is an output recording stream.
+If you want to create a new class that behaves like an output recording stream, it should be a subclass of <b>output-recording-stream</b>. Subclasses of <b>output-recording-stream</b> must obey the output recording stream protocol.<a name="Predicate output-recording-stream-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>output-recording-stream-p</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Predicate]</b></td></tr></table>Returns <a href="output-recording.html#CONCEPT=true"><i>true</i></a> if <i>object</i> is an <a href="output-recording.html#CONCEPT=output recording stream"><i>output recording stream</i></a> ,
+otherwise returns <a href="output-recording.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Class standard-output-recording-stream"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>standard-output-recording-stream</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>The class used by CLIM to implement output record streams.  This is a subclass
+of <tt>output-recording-stream</tt> .
+<i>Members of this class are mutable. </i><a name="16.4.1"><h3>16.4.1 The Output Recording Stream Protocol</h3></a>
+The following generic functions comprise the output recording stream protocol.
+All subclasses of <tt>output-recording-stream</tt> must implement methods for these
+generic functions.
+<p>
+<a name="Generic function stream-recording-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-recording-p</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns <a href="output-recording.html#CONCEPT=true"><i>true</i></a> when the <a href="output-recording.html#CONCEPT=output recording stream"><i>output recording stream</i></a> <i>stream</i> is
+recording all output performed to it, otherwise returns <a href="output-recording.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Generic function (setf stream-recording-p)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf stream-recording-p)</b></td><td valign="baseline" width="100%"><i>recording-p stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Changes the state of <tt>stream-recording-p</tt> to be <i>recording-p</i> , which must
+be either <tt>t</tt> or <tt>nil</tt> .
+<p>
+<a name="Generic function stream-drawing-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-drawing-p</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns <a href="output-recording.html#CONCEPT=true"><i>true</i></a> when the <a href="output-recording.html#CONCEPT=output recording stream"><i>output recording stream</i></a> <i>stream</i> will
+actually draw on the viewport when output is being performed to it, otherwise
+returns <a href="output-recording.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Generic function (setf stream-drawing-p)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf stream-drawing-p)</b></td><td valign="baseline" width="100%"><i>drawing-p stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Changes the state of <tt>stream-recording-p</tt> to be <i>drawing-p</i> , which must
+be either <tt>t</tt> or <tt>nil</tt> .
+<p>
+<a name="Generic function stream-output-history"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-output-history</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the history (or top-level output record) for the <a href="output-recording.html#CONCEPT=output recording
+stream"><i>output recording
+stream</i></a> <i>stream</i> .
+<p>
+<a name="Generic function stream-current-output-record"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-current-output-record</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>The current ``open'' output record for the <a href="output-recording.html#CONCEPT=output recording stream"><i>output recording stream</i></a> <i>stream</i> , the one to which <tt>stream-add-output-record</tt> will add a new
+child record.  Initially, this is the same as <tt>stream-output-history</tt> .  As
+nested output records are created, this acts as a ``stack''.
+<p>
+<a name="Generic function (setf stream-current-output-record)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf stream-current-output-record)</b></td><td valign="baseline" width="100%"><i>record stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Sets the current ``open'' output record for the <a href="output-recording.html#CONCEPT=output recording stream"><i>output recording stream</i></a> <i>stream</i> to the <a href="output-recording.html#CONCEPT=output record"><i>output record</i></a> <i>record</i> .
+<p>
+<a name="Generic function stream-add-output-record"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-add-output-record</b></td><td valign="baseline" width="100%"><i>stream record</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Adds the <a href="output-recording.html#CONCEPT=output record"><i>output record</i></a> <i>record</i> to the current output record on the
+<a href="output-recording.html#CONCEPT=output recording stream"><i>output recording stream</i></a> <i>stream</i> (that is,
+<tt>stream-current-output-record</tt> ).
+<p>
+<a name="Generic function stream-replay"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-replay</b></td><td valign="baseline" width="100%"><i>stream <tt>&amp;optional</tt> region</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Directs the <a href="output-recording.html#CONCEPT=output recording stream"><i>output recording stream</i></a> <i>stream</i> to invoke <tt>replay</tt> on its output history.  Only those records that overlap the <a href="regions.html#CONCEPT=region"><i>region</i></a> <i>region</i> (which defaults to the viewport of the stream) are replayed.
+<p>
+<a name="Generic function erase-output-record"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>erase-output-record</b></td><td valign="baseline" width="100%"><i>record stream <tt>&amp;optional</tt> (errorp <tt>t</tt> )</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Erases the <a href="output-recording.html#CONCEPT=output record"><i>output record</i></a> <i>record</i> from the <a href="output-recording.html#CONCEPT=output recording
+stream"><i>output recording
+stream</i></a> <i>stream</i> , removes <i>record</i> from <i>stream</i> 's output history,
+and ensures that all other output records that were covered by <i>record</i> are
+visible.  In effect, this draws background ink over the record, and then redraws
+all the records that overlap <i>record</i> .
+<p>
+If <i>record</i> is not in the stream's output history, then an error is
+signalled, unless <i>errorp</i> is <a href="output-recording.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Function copy-textual-output-history"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>copy-textual-output-history</b></td><td valign="baseline" width="100%"><i>window stream <tt>&amp;optional</tt> region record</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Given an <a href="output-recording.html#CONCEPT=output recording stream"><i>output recording stream</i></a> <i>window</i> and a character output
+stream <i>stream</i> , <tt>copy-textual-output-history</tt> maps over all of the
+textual output records in the region <i>region</i> and writes them to
+<i>stream</i> , in order from the top of the output to the bottom of the output.
+<p>
+If <i>record</i> is supplied, it is the top-level record to map over.  It
+defaults to <tt>stream-output-history</tt> of <i>window</i> .
+<p>
+
+<a name="16.4.2"><h3>16.4.2 Graphics Output Recording</h3></a>
+Using <tt>draw-line*</tt> as an example, calling any of the drawing functions
+specified in Section <a href="graphics.html#LABEL=drawing-functions"><b><i>Drawing Functions</i></b></i></a> and
+Section <a href="graphics.html#LABEL=graphics-protocols"><b><i>Graphics Protocols</i></b></i></a> on an output recording stream results in the
+following series of function calls:
+<p>
+<ul> <li> A program calls <tt>draw-line*</tt> on arguments <i>stream</i> (and output
+recording stream), <i>x1</i> , <i>y1</i> , <i>x2</i> , and <i>y2</i> , and perhaps some
+drawing options.
+<p>
+<li> <tt>draw-line*</tt> merges the supplied drawing options into the stream's
+medium, and then calls <tt>medium-draw-line*</tt> on the stream.  (Note that a
+compiler macro could detect the case where there are no drawing options or
+constant drawing options, and do this at compile time.)
+<p>
+<li> The <tt>:around</tt> method for <tt>medium-draw-line*</tt> on the output recording
+stream is called.  If <tt>stream-recording-p</tt> is <a href="output-recording.html#CONCEPT=true"><i>true</i></a> , this creates an
+output record with all of the information necessary to replay the output record.
+If <tt>stream-drawing-p</tt> is <a href="output-recording.html#CONCEPT=true"><i>true</i></a> , this then does a <tt>call-next-method</tt> .
+(Note that the <tt>call-next-method</tt> could be replaced by a call to the
+<tt>medium-draw-line*</tt> method on the stream's medium, avoiding the need for a
+trampolining function call.)
+<p>
+<li> An <tt>:around</tt> method for <tt>medium-draw-line*</tt> performs the necessary
+user transformations by applying the medium transformation to <i>x1</i> ,
+<i>y1</i> , <i>x2</i> , and <i>y2</i> , and to the clipping region, and then calls the
+medium-specific method.
+<p>
+<li> The ``real'' <tt>medium-draw-line*</tt> transforms the start and end
+coordinates of the line by the stream's device transformation, decodes the ink
+and line style into port-specific objects, and finally invokes a port-specific
+function (such as <tt>xlib:draw-line</tt> ) to do the actual drawing.
+</ul> <tt>replay-output-record</tt> for a graphics displayed output record simply binds
+the state of the medium to the state captured in the output record, and calls
+the medium drawing function (such as <tt>medium-draw-line*</tt> ) directly on the
+medium, with <tt>stream-recording-p</tt> of the stream set to <a href="output-recording.html#CONCEPT=false"><i>false</i></a> and
+<tt>stream-drawing-p</tt> set to <a href="output-recording.html#CONCEPT=true"><i>true</i></a> .
+<p>
+
+<a name="16.4.3"><h3>16.4.3 Text Output Recording</h3></a>
+<hr><b>Issue:</b> SWM<br><i>This is the place where <tt>write-string</tt> and friends get captured
+in order to create output record.  The generic functions include things like
+<tt>stream-write-string</tt> , which are specialized by output recording streams to
+do the output recording.  Describe exactly what happens.</i><hr>
+<a name="Generic function stream-text-output-record"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-text-output-record</b></td><td valign="baseline" width="100%"><i>stream text-style</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns a text output record for the <a href="output-recording.html#CONCEPT=output recording stream"><i>output recording stream</i></a> <i>stream</i> suitable for holding characters in the text style <i>text-style</i> .  If there is
+a currently ``open'' text output record that can hold characters in the
+specified text style, it is simply returned.  Otherwise a new text output record
+is created that can hold characters in that text style, and its starting cursor
+position set to the cursor position of <i>stream</i> .
+<p>
+<a name="Generic function stream-close-text-output-record"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-close-text-output-record</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Closes the <a href="output-recording.html#CONCEPT=output recording stream"><i>output recording stream</i></a> <i>stream</i> 's currently ``open'' text
+output record by recording the stream's current cursor position as the ending
+cursor position of the record and adding the text output record to
+<i>stream</i> 's current output record by calling <tt>stream-add-output-record</tt> .
+<p>
+If there is no ``open'' text output record, <tt>stream-close-text-output-record</tt> does nothing.
+<p>
+Calling <tt>stream-finish-output</tt> or <tt>stream-force-output</tt> , calling
+<tt>redisplay</tt> , setting the text cursor position (via
+<tt>stream-set-cursor-position</tt> , <tt>terpri</tt> , or <tt>fresh-line</tt> ), creating a
+new output record (for example, via <tt>with-new-output-record</tt> ), or changing
+the state of <tt>stream-recording-p</tt> must close the current text output record.
+Some CLIM implementations may also choose to close the current text output
+record when the stream's drawing options or text style are changed, depending on
+the exact implementation of text output records.
+<p>
+
+<a name="Generic function stream-add-character-output"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-add-character-output</b></td><td valign="baseline" width="100%"><i>stream character text-style
+                                           width height baseline</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Adds the character <i>character</i> to the <a href="output-recording.html#CONCEPT=output recording stream"><i>output recording stream</i></a> <i>stream</i> 's text output record in the <a href="text-styles.html#CONCEPT=text style"><i>text style</i></a> <i>text-style</i> .
+<i>width</i> and <i>height</i> are the width and height of the character in device
+units.  <i>baseline</i> is the new baseline for the stream.
+<tt>stream-add-character-output</tt> must be implemented by calling
+<tt>add-character-output-to-text-record</tt> .
+<p>
+<tt>stream-write-char</tt> on an output recording stream will call
+<tt>stream-add-character-output</tt> when <tt>stream-recording-p</tt> is <a href="output-recording.html#CONCEPT=true"><i>true</i></a> .
+<p>
+<a name="Generic function stream-add-string-output"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-add-string-output</b></td><td valign="baseline" width="100%"><i>stream string start end text-style
+                                        width height baseline</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Adds the string <i>string</i> to the <a href="output-recording.html#CONCEPT=output recording stream"><i>output recording stream</i></a> <i>stream</i> 's text output record in the <a href="text-styles.html#CONCEPT=text style"><i>text style</i></a> <i>text-style</i> .
+<i>start</i> and <i>end</i> are integers that specify the substring within
+<i>string</i> to add to the text output record.  <i>width</i> and <i>height</i> are
+the width and height of the string in device units.  <i>baseline</i> is the new
+baseline for the stream.  <tt>stream-add-string-output</tt> must be implemented by
+calling <tt>add-string-output-to-text-record</tt> .
+<p>
+<tt>stream-write-string</tt> on an output recording stream will call
+<tt>stream-add-string-output</tt> when <tt>stream-recording-p</tt> is <a href="output-recording.html#CONCEPT=true"><i>true</i></a> .
+<p>
+
+<a name="16.4.4"><h3>16.4.4 Output Recording Utilities</h3></a>
+CLIM provides several helper macros to control the output recording facility.
+<p>
+<a name="Macro with-output-recording-options"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>with-output-recording-options</b></td><td valign="baseline" width="100%"><i>(stream <tt>&amp;key</tt> record draw) <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Enables or disables output recording and/or drawing on the <a href="output-recording.html#CONCEPT=output
+recording stream"><i>output
+recording stream</i></a> designated by <i>stream</i> , within the extent of <i>body</i> .
+<p>
+The <i>stream</i> argument is not evaluated, and must be a symbol that is bound to
+an output recording stream.  If <i>stream</i> is <tt>t</tt> , <tt>*standard-output*</tt> is
+used. <i>body</i> may have zero or more declarations as its first forms.
+<p>
+<tt>with-output-recording-options</tt> must be implemented by expanding into a call
+to <tt>invoke-with-output-recording-options</tt> , supplying a function that executes
+<i>body</i> as the <i>continuation</i> argument to
+<tt>invoke-with-output-recording-options</tt> .  The exact behavior of this macro is
+described under <tt>invoke-with-output-recording-options</tt> .
+<p>
+<a name="Generic function invoke-with-output-recording-options"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>invoke-with-output-recording-options</b></td><td valign="baseline" width="100%"><i>stream continuation record draw</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Enables or disables output recording and/or drawing on the <a href="output-recording.html#CONCEPT=output
+recording stream"><i>output
+recording stream</i></a> <i>stream</i> , and calls the function <i>continuation</i> with
+the new output recording options in effect.  <i>continuation</i> is a function
+of one argument, the stream; it has dynamic extent.
+<p>
+If <i>draw</i> is <a href="output-recording.html#CONCEPT=false"><i>false</i></a> , output to the stream is not drawn on the
+viewport, but recording proceeds according to <i>record</i> ; if <i>draw</i> is
+<a href="output-recording.html#CONCEPT=true"><i>true</i></a> , the output is drawn.  If <i>record</i> is <tt>nil</tt> , output recording
+is disabled, but output otherwise proceeds according to <i>draw</i> ; if
+<i>draw</i> is <a href="output-recording.html#CONCEPT=true"><i>true</i></a> , output recording is enabled.
+<p>
+All output recording streams must implement a method for
+<tt>invoke-with-output-recording-options</tt> .
+<p>
+
+<a name="Macro with-new-output-record"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>with-new-output-record</b></td><td valign="baseline" width="100%"><i>(stream <tt>&amp;optional</tt> record-type record
+                                     <tt>&amp;rest</tt> initargs)
+                                    <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Creates a new output record of type <i>record-type</i> (which defaults to
+<tt>standard-sequence-output-record</tt> ) and then captures the output of <i>body</i> into the new output record, and inserts the new record into the current ``open''
+output record associated with the <a href="output-recording.html#CONCEPT=output recording stream"><i>output recording stream</i></a> designated by
+<i>stream</i> .  While <i>body</i> is being evaluated, the current output record
+for <i>stream</i> will be bound to the new output record.
+<p>
+If <i>record</i> is supplied, it is the name of a variable that will be lexically
+bound to the new output record inside of body.  <i>initargs</i> are CLOS initargs
+that are passed to <tt>make-instance</tt> when the new output record is created.
+<p>
+<tt>with-new-output-record</tt> returns the output record it creates. 
+<p>
+The <i>stream</i> argument is not evaluated, and must be a symbol that is bound to
+an output recording stream.  If <i>stream</i> is <tt>t</tt> , <tt>*standard-output*</tt> is
+used.  <i>body</i> may have zero or more declarations as its first forms.
+<p>
+<tt>with-new-output-record</tt> must be implemented by expanding into a call to
+<tt>invoke-with-new-output-record</tt> supplying a function that executes <i>body</i> as the <i>continuation</i> argument to <tt>invoke-with-new-output-record</tt> .  The exact
+behavior of this macro is described under <tt>invoke-with-new-output-record</tt> .
+<p>
+<a name="Generic function invoke-with-new-output-record"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>invoke-with-new-output-record</b></td><td valign="baseline" width="100%"><i>stream continuation record-type
+                                             <tt>&amp;rest</tt> initargs <tt>&amp;key</tt> parent <tt>&amp;allow-other-keys</tt> </i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Creates a new output record of type <i>record-type</i> .  The function
+<i>continuation</i> is then called, and any output it does to the <a href="output-recording.html#CONCEPT=output
+recording stream"><i>output
+recording stream</i></a> <i>stream</i> is captured in the new output record.  The new
+record is then inserted into the current ``open'' output record associated with
+<i>stream</i> (or the top-level output record if there is no currently ``open''
+one).  While <i>continuation</i> is being executed, the current output record for
+<i>stream</i> will be bound to the new output record.
+<p>
+<i>continuation</i> is a function of two arguments, the stream and the output
+record; it has dynamic extent.
+<p>
+<i>initargs</i> are CLOS initargs that are passed to <tt>make-instance</tt> when the
+new output record is created.  The <i>parent</i> initarg is handled specially,
+and specifies what output record should serve as the parent for the newly
+created record.  If unspecified, <tt>stream-current-output-record</tt> of
+<i>stream</i> will be used as the parent.
+<p>
+<tt>invoke-with-new-output-record</tt> returns the output record it creates.
+<p>
+All output recording streams must implement a method for
+<tt>invoke-with-new-output-record</tt> .
+<p>
+
+<a name="Macro with-output-to-output-record"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>with-output-to-output-record</b></td><td valign="baseline" width="100%"><i>(stream <tt>&amp;optional</tt> record-type record
+                                           <tt>&amp;rest</tt> initargs))
+                                          <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>This is identical to <tt>with-new-output-record</tt> except that the new output record
+is not inserted into the output record hierarchy, and the text cursor position
+of <i>stream</i> is initially bound to <tt>(0,0)</tt>.
+<p>
+<i>record-type</i> is the type of output record to create, which defaults to
+<tt>standard-sequence-output-record</tt> .  <i>initargs</i> are CLOS initargs that are
+passed to <tt>make-instance</tt> when the new output record is created.
+<p>
+If <i>record</i> is supplied, it is a variable that will be bound to the new
+output record while body is evaluated.
+<p>
+<tt>with-output-to-output-record</tt> returns the output record it creates.
+<p>
+The <i>stream</i> argument is not evaluated, and must be a symbol that is bound to
+an output recording stream.  If <i>stream</i> is <tt>t</tt> , <tt>*standard-output*</tt> is
+used.  Unlike facilities such as <tt>with-output-to-string</tt> , <i>stream</i> must be
+an actual stream, but no output will be done to it.  <i>body</i> may have zero or
+more declarations as its first forms.
+<p>
+<tt>with-output-to-output-record</tt> must be implemented by expanding into a call
+to <tt>invoke-with-output-to-output-record</tt> supplying a function that executes
+<i>body</i> as the <i>continuation</i> argument to
+<tt>invoke-with-output-to-output-record</tt> .  The exact behavior of this macro is
+described under <tt>invoke-with-output-to-output-record</tt> .
+<p>
+<a name="Generic function invoke-with-output-to-output-record"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>invoke-with-output-to-output-record</b></td><td valign="baseline" width="100%"><i>stream continuation record-type 
+                                                   <tt>&amp;rest</tt> initargs <tt>&amp;key</tt> </i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>This is similar to <tt>invoke-with-new-output-record</tt> except that the new output
+record is not inserted into the output record hierarchy, and the text cursor
+position of <i>stream</i> is initially bound to <tt>(0,0)</tt>.  That is, when
+<tt>invoke-with-output-to-output-record</tt> is used, no drawing on the stream
+occurs and nothing is put into the stream's normal output history.  The function
+<i>continuation</i> is called, and any output it does to <i>stream</i> is captured in
+the output record.
+<p>
+<i>continuation</i> is a function of two arguments, the stream and the output
+record; it has dynamic extent.  <i>record-type</i> is the type of output record
+to create.  <i>initargs</i> are CLOS initargs that are passed to
+<tt>make-instance</tt> when the new output record is created.
+<p>
+<tt>invoke-with-output-to-output-record</tt> returns the output record it creates.
+<p>
+All output recording streams must implement a method for
+<tt>invoke-with-output-to-output-record</tt> .
+<p>
+
+<a name="Generic function make-design-from-output-record"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>make-design-from-output-record</b></td><td valign="baseline" width="100%"><i>record</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Makes a design that replays the <a href="output-recording.html#CONCEPT=output record"><i>output record</i></a> <i>record</i> when drawn via
+<tt>draw-design</tt> .  If <i>record</i> is changed after the design is made, the
+consequences are unspecified.  Applying a transformation to the design and
+calling <tt>draw-design</tt> on the new design is equivalent to establishing the
+same transformation before creating the output record.
+<p>
+It is permissible for implementations to support this only for those output
+records that correspond to the geometric object classes (for example, the output
+records created by <tt>draw-line*</tt> and <tt>draw-ellipse*</tt> ).
+<br><hr><br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="extended-output.html">Extended Stream Output</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="table-formatting.html">Table Formatting</a></td>
+</tr></table>
+</body></html>

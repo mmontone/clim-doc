@@ -1,0 +1,320 @@
+<html><head><title>CLIM Table of Contents</title></head><body>
+<br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="clim.html">Cover</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="acknowledgments.html">Acknowledgments</a></td>
+</tr></table><br><hr><br>
+<h1>Table of Contents</h1>
+<table>
+<tr valign="baseline"><td></td><td><huge>Overview and Conventions</huge></td></tr>
+<tr valign="baseline"><td>1</td><td><a href="overview.html#1">Overview of CLIM</a></td></tr>
+<tr valign="baseline"><td>2</td><td><a href="conventions.html#2">Conventions</a></td></tr>
+<tr valign="baseline"><td>2.1</td><td><a href="conventions.html#2.1">Audience, Goals, and Purpose</a></td></tr>
+<tr valign="baseline"><td>2.2</td><td><a href="conventions.html#2.2">Package Structure</a></td></tr>
+<tr valign="baseline"><td>2.3</td><td><a href="conventions.html#2.3">``Spread'' Point Arguments to Functions </a></td></tr>
+<tr valign="baseline"><td>2.4</td><td><a href="conventions.html#2.4">Immutability of Objects</a></td></tr>
+<tr valign="baseline"><td>2.4.1</td><td><a href="conventions.html#2.4.1">Behavior of Interfaces</a></td></tr>
+<tr valign="baseline"><td>2.5</td><td><a href="conventions.html#2.5">Protocol Classes and Predicates</a></td></tr>
+<tr valign="baseline"><td>2.6</td><td><a href="conventions.html#2.6">Specialized Arguments to Generic Functions</a></td></tr>
+<tr valign="baseline"><td>2.7</td><td><a href="conventions.html#2.7">Multiple Value <tt>setf</tt></a></td></tr>
+<tr valign="baseline"><td>2.8</td><td><a href="conventions.html#2.8">Sheet, Stream, or Medium Arguments to Macros</a></td></tr>
+<tr valign="baseline"><td>2.9</td><td><a href="conventions.html#2.9">Macros that Expand into Calls to Advertised Functions</a></td></tr>
+<tr valign="baseline"><td>2.10</td><td><a href="conventions.html#2.10">Terminology Pertaining to Error Conditions</a></td></tr>
+<tr valign="baseline"><td></td><td><huge>Geometry Substrate</huge></td></tr>
+<tr valign="baseline"><td>3</td><td><a href="regions.html#3">Regions</a></td></tr>
+<tr valign="baseline"><td>3.1</td><td><a href="regions.html#3.1">General Regions</a></td></tr>
+<tr valign="baseline"><td>3.1.1</td><td><a href="regions.html#3.1.1">The Region Predicate Protocol</a></td></tr>
+<tr valign="baseline"><td>3.1.2</td><td><a href="regions.html#3.1.2">Region Composition Protocol</a></td></tr>
+<tr valign="baseline"><td>3.2</td><td><a href="regions.html#3.2">Other Region Types</a></td></tr>
+<tr valign="baseline"><td>3.2.1</td><td><a href="regions.html#3.2.1">Points</a></td></tr>
+<tr valign="baseline"><td>3.2.1.1</td><td><a href="regions.html#3.2.1.1">The Point Protocol</a></td></tr>
+<tr valign="baseline"><td>3.2.2</td><td><a href="regions.html#3.2.2">Polygons and Polylines</a></td></tr>
+<tr valign="baseline"><td>3.2.2.1</td><td><a href="regions.html#3.2.2.1">The Polygon and Polyline Protocol</a></td></tr>
+<tr valign="baseline"><td>3.2.3</td><td><a href="regions.html#3.2.3">Lines</a></td></tr>
+<tr valign="baseline"><td>3.2.3.1</td><td><a href="regions.html#3.2.3.1">The Line Protocol</a></td></tr>
+<tr valign="baseline"><td>3.2.4</td><td><a href="regions.html#3.2.4">Rectangles</a></td></tr>
+<tr valign="baseline"><td>3.2.4.1</td><td><a href="regions.html#3.2.4.1">The Rectangle Protocol</a></td></tr>
+<tr valign="baseline"><td>3.2.5</td><td><a href="regions.html#3.2.5">Ellipses and Elliptical Arcs</a></td></tr>
+<tr valign="baseline"><td>3.2.5.1</td><td><a href="regions.html#3.2.5.1">The Ellipse and Elliptical Arc Protocol</a></td></tr>
+<tr valign="baseline"><td>4</td><td><a href="bboxes.html#4">Bounding Rectangles</a></td></tr>
+<tr valign="baseline"><td>4.1</td><td><a href="bboxes.html#4.1">Bounding Rectangles</a></td></tr>
+<tr valign="baseline"><td>4.1.1</td><td><a href="bboxes.html#4.1.1">The Bounding Rectangle Protocol</a></td></tr>
+<tr valign="baseline"><td>4.1.2</td><td><a href="bboxes.html#4.1.2">Bounding Rectangle Convenience Functions</a></td></tr>
+<tr valign="baseline"><td>5</td><td><a href="transforms.html#5">Affine Transformations</a></td></tr>
+<tr valign="baseline"><td>5.1</td><td><a href="transforms.html#5.1">Transformations</a></td></tr>
+<tr valign="baseline"><td>5.1.1</td><td><a href="transforms.html#5.1.1">Transformation Conditions</a></td></tr>
+<tr valign="baseline"><td>5.2</td><td><a href="transforms.html#5.2">Transformation Constructors</a></td></tr>
+<tr valign="baseline"><td>5.3</td><td><a href="transforms.html#5.3">The Transformation Protocol</a></td></tr>
+<tr valign="baseline"><td>5.3.1</td><td><a href="transforms.html#5.3.1">Transformation Predicates</a></td></tr>
+<tr valign="baseline"><td>5.3.2</td><td><a href="transforms.html#5.3.2">Composition of Transformations</a></td></tr>
+<tr valign="baseline"><td>5.3.3</td><td><a href="transforms.html#5.3.3">Applying Transformations</a></td></tr>
+<tr valign="baseline"><td></td><td><huge>Windowing Substrate</huge></td></tr>
+<tr valign="baseline"><td>6</td><td><a href="silica.html#6">Overview of Window Facilities</a></td></tr>
+<tr valign="baseline"><td>6.1</td><td><a href="silica.html#6.1">Introduction</a></td></tr>
+<tr valign="baseline"><td>6.2</td><td><a href="silica.html#6.2">Properties of Sheets</a></td></tr>
+<tr valign="baseline"><td>6.3</td><td><a href="silica.html#6.3">Sheet Protocols</a></td></tr>
+<tr valign="baseline"><td>7</td><td><a href="silica.html#7">Properties of Sheets</a></td></tr>
+<tr valign="baseline"><td>7.1</td><td><a href="silica.html#7.1">Basic Sheet Classes</a></td></tr>
+<tr valign="baseline"><td>7.2</td><td><a href="silica.html#7.2">Relationships Between Sheets</a></td></tr>
+<tr valign="baseline"><td>7.2.1</td><td><a href="silica.html#7.2.1">Sheet Relationship Functions</a></td></tr>
+<tr valign="baseline"><td>7.2.2</td><td><a href="silica.html#7.2.2">Sheet Genealogy Classes</a></td></tr>
+<tr valign="baseline"><td>7.3</td><td><a href="silica.html#7.3">Sheet Geometry</a></td></tr>
+<tr valign="baseline"><td>7.3.1</td><td><a href="silica.html#7.3.1">Sheet Geometry Functions</a></td></tr>
+<tr valign="baseline"><td>7.3.2</td><td><a href="silica.html#7.3.2">Sheet Geometry Classes</a></td></tr>
+<tr valign="baseline"><td>8</td><td><a href="silica.html#8">Sheet Protocols</a></td></tr>
+<tr valign="baseline"><td>8.1</td><td><a href="silica.html#8.1">Input Protocol</a></td></tr>
+<tr valign="baseline"><td>8.1.1</td><td><a href="silica.html#8.1.1">Input Protocol Functions</a></td></tr>
+<tr valign="baseline"><td>8.1.2</td><td><a href="silica.html#8.1.2">Input Protocol Classes</a></td></tr>
+<tr valign="baseline"><td>8.2</td><td><a href="silica.html#8.2">Standard Device Events</a></td></tr>
+<tr valign="baseline"><td>8.3</td><td><a href="silica.html#8.3">Output Protocol</a></td></tr>
+<tr valign="baseline"><td>8.3.1</td><td><a href="silica.html#8.3.1">Output Properties</a></td></tr>
+<tr valign="baseline"><td>8.3.2</td><td><a href="silica.html#8.3.2">Output Protocol Functions</a></td></tr>
+<tr valign="baseline"><td>8.3.3</td><td><a href="silica.html#8.3.3">Output Protocol Classes</a></td></tr>
+<tr valign="baseline"><td>8.3.4</td><td><a href="silica.html#8.3.4">Associating a Medium with a Sheet</a></td></tr>
+<tr valign="baseline"><td>8.3.4.1</td><td><a href="silica.html#8.3.4.1">Grafting and Degrafting of Mediums</a></td></tr>
+<tr valign="baseline"><td>8.4</td><td><a href="silica.html#8.4">Repaint Protocol</a></td></tr>
+<tr valign="baseline"><td>8.4.1</td><td><a href="silica.html#8.4.1">Repaint Protocol Functions</a></td></tr>
+<tr valign="baseline"><td>8.4.2</td><td><a href="silica.html#8.4.2">Repaint Protocol Classes</a></td></tr>
+<tr valign="baseline"><td>8.5</td><td><a href="silica.html#8.5">Sheet Notification Protocol</a></td></tr>
+<tr valign="baseline"><td>8.5.1</td><td><a href="silica.html#8.5.1">Relationship to Window System Change Notifications</a></td></tr>
+<tr valign="baseline"><td>8.5.2</td><td><a href="silica.html#8.5.2">Sheet Geometry Notifications</a></td></tr>
+<tr valign="baseline"><td>9</td><td><a href="silica.html#9">Ports, Grafts, and Mirrored Sheets</a></td></tr>
+<tr valign="baseline"><td>9.1</td><td><a href="silica.html#9.1">Introduction</a></td></tr>
+<tr valign="baseline"><td>9.2</td><td><a href="silica.html#9.2">Ports</a></td></tr>
+<tr valign="baseline"><td>9.3</td><td><a href="silica.html#9.3">Grafts</a></td></tr>
+<tr valign="baseline"><td>9.4</td><td><a href="silica.html#9.4">Mirrors and Mirrored Sheets</a></td></tr>
+<tr valign="baseline"><td>9.4.1</td><td><a href="silica.html#9.4.1">Mirror Functions</a></td></tr>
+<tr valign="baseline"><td>9.4.2</td><td><a href="silica.html#9.4.2">Internal Interfaces for Native Coordinates</a></td></tr>
+<tr valign="baseline"><td></td><td><huge>Sheet and Medium Output Facilities</huge></td></tr>
+<tr valign="baseline"><td>10</td><td><a href="drawing-options.html#10">Drawing Options</a></td></tr>
+<tr valign="baseline"><td>10.1</td><td><a href="drawing-options.html#10.1">Medium Components</a></td></tr>
+<tr valign="baseline"><td>10.2</td><td><a href="drawing-options.html#10.2">Drawing Option Binding Forms</a></td></tr>
+<tr valign="baseline"><td>10.2.1</td><td><a href="drawing-options.html#10.2.1">Transformation ``Convenience'' Forms</a></td></tr>
+<tr valign="baseline"><td>10.2.2</td><td><a href="drawing-options.html#10.2.2">Establishing Local Coordinate Systems</a></td></tr>
+<tr valign="baseline"><td>10.3</td><td><a href="drawing-options.html#10.3">Line Styles</a></td></tr>
+<tr valign="baseline"><td>10.3.1</td><td><a href="drawing-options.html#10.3.1">Line Style Protocol and Line Style Suboptions</a></td></tr>
+<tr valign="baseline"><td>10.3.2</td><td><a href="drawing-options.html#10.3.2">Contrasting Dash Patterns</a></td></tr>
+<tr valign="baseline"><td>11</td><td><a href="text-styles.html#11">Text Styles</a></td></tr>
+<tr valign="baseline"><td>11.1</td><td><a href="text-styles.html#11.1">Text Styles</a></td></tr>
+<tr valign="baseline"><td>11.1.1</td><td><a href="text-styles.html#11.1.1">Text Style Protocol and Text Style Suboptions</a></td></tr>
+<tr valign="baseline"><td>11.2</td><td><a href="text-styles.html#11.2">Text Style Binding Forms</a></td></tr>
+<tr valign="baseline"><td>11.3</td><td><a href="text-styles.html#11.3">Controlling Text Style Mappings</a></td></tr>
+<tr valign="baseline"><td>12</td><td><a href="graphics.html#12">Graphics</a></td></tr>
+<tr valign="baseline"><td>12.1</td><td><a href="graphics.html#12.1">Overview of Graphics</a></td></tr>
+<tr valign="baseline"><td>12.2</td><td><a href="graphics.html#12.2">Definitions</a></td></tr>
+<tr valign="baseline"><td>12.3</td><td><a href="graphics.html#12.3">Drawing is Approximate</a></td></tr>
+<tr valign="baseline"><td>12.4</td><td><a href="graphics.html#12.4">Rendering Conventions for Geometric Shapes</a></td></tr>
+<tr valign="baseline"><td>12.4.1</td><td><a href="graphics.html#12.4.1">Permissible Alternatives During Rendering</a></td></tr>
+<tr valign="baseline"><td>12.5</td><td><a href="graphics.html#12.5">Drawing Functions</a></td></tr>
+<tr valign="baseline"><td>12.5.1</td><td><a href="graphics.html#12.5.1">Basic Drawing Functions</a></td></tr>
+<tr valign="baseline"><td>12.5.2</td><td><a href="graphics.html#12.5.2">Compound Drawing Functions</a></td></tr>
+<tr valign="baseline"><td>12.6</td><td><a href="graphics.html#12.6">Pixmaps</a></td></tr>
+<tr valign="baseline"><td>12.7</td><td><a href="graphics.html#12.7">Graphics Protocols</a></td></tr>
+<tr valign="baseline"><td>12.7.1</td><td><a href="graphics.html#12.7.1">General Behavior of Drawing Functions</a></td></tr>
+<tr valign="baseline"><td>12.7.2</td><td><a href="graphics.html#12.7.2">Medium-specific Drawing Functions</a></td></tr>
+<tr valign="baseline"><td>12.7.3</td><td><a href="graphics.html#12.7.3">Other Medium-specific Output Functions</a></td></tr>
+<tr valign="baseline"><td>13</td><td><a href="colors.html#13">Drawing in Color</a></td></tr>
+<tr valign="baseline"><td>13.1</td><td><a href="colors.html#13.1">The <tt>:ink</tt> Drawing Option</a></td></tr>
+<tr valign="baseline"><td>13.2</td><td><a href="colors.html#13.2">Basic Designs</a></td></tr>
+<tr valign="baseline"><td>13.3</td><td><a href="colors.html#13.3">Color</a></td></tr>
+<tr valign="baseline"><td>13.3.1</td><td><a href="colors.html#13.3.1">Standard Color Names and Constants</a></td></tr>
+<tr valign="baseline"><td>13.3.2</td><td><a href="colors.html#13.3.2">Contrasting Colors</a></td></tr>
+<tr valign="baseline"><td>13.4</td><td><a href="colors.html#13.4">Opacity</a></td></tr>
+<tr valign="baseline"><td>13.5</td><td><a href="colors.html#13.5">Color Blending</a></td></tr>
+<tr valign="baseline"><td>13.6</td><td><a href="colors.html#13.6">Indirect Inks</a></td></tr>
+<tr valign="baseline"><td>13.7</td><td><a href="colors.html#13.7">Flipping Ink</a></td></tr>
+<tr valign="baseline"><td>13.8</td><td><a href="colors.html#13.8">Examples of Simple Drawing Effects</a></td></tr>
+<tr valign="baseline"><td>14</td><td><a href="designs.html#14">General Designs</a></td></tr>
+<tr valign="baseline"><td>14.1</td><td><a href="designs.html#14.1">The Compositing Protocol</a></td></tr>
+<tr valign="baseline"><td>14.2</td><td><a href="designs.html#14.2">Patterns and Stencils</a></td></tr>
+<tr valign="baseline"><td>14.3</td><td><a href="designs.html#14.3">Tiling</a></td></tr>
+<tr valign="baseline"><td>14.4</td><td><a href="designs.html#14.4">Regions as Designs</a></td></tr>
+<tr valign="baseline"><td>14.5</td><td><a href="designs.html#14.5">Arbitrary Designs</a></td></tr>
+<tr valign="baseline"><td>14.6</td><td><a href="designs.html#14.6">Examples of More Complex Drawing Effects</a></td></tr>
+<tr valign="baseline"><td>14.7</td><td><a href="designs.html#14.7">Design Protocol</a></td></tr>
+<tr valign="baseline"><td></td><td><huge>Extended Stream Output Facilities</huge></td></tr>
+<tr valign="baseline"><td>15</td><td><a href="extended-output.html#15">Extended Stream Output</a></td></tr>
+<tr valign="baseline"><td>15.1</td><td><a href="extended-output.html#15.1">Basic Output Streams</a></td></tr>
+<tr valign="baseline"><td>15.2</td><td><a href="extended-output.html#15.2">Extended Output Streams</a></td></tr>
+<tr valign="baseline"><td>15.3</td><td><a href="extended-output.html#15.3">The Text Cursor</a></td></tr>
+<tr valign="baseline"><td>15.3.1</td><td><a href="extended-output.html#15.3.1">Text Cursor Protocol</a></td></tr>
+<tr valign="baseline"><td>15.3.2</td><td><a href="extended-output.html#15.3.2">Stream Text Cursor Protocol</a></td></tr>
+<tr valign="baseline"><td>15.4</td><td><a href="extended-output.html#15.4">Text Protocol</a></td></tr>
+<tr valign="baseline"><td>15.4.1</td><td><a href="extended-output.html#15.4.1">Mixing Text and Graphics</a></td></tr>
+<tr valign="baseline"><td>15.4.2</td><td><a href="extended-output.html#15.4.2">Wrapping of Text Lines</a></td></tr>
+<tr valign="baseline"><td>15.5</td><td><a href="extended-output.html#15.5">Attracting the User's Attention</a></td></tr>
+<tr valign="baseline"><td>15.6</td><td><a href="extended-output.html#15.6">Buffering of Output</a></td></tr>
+<tr valign="baseline"><td>16</td><td><a href="output-recording.html#16">Output Recording</a></td></tr>
+<tr valign="baseline"><td>16.1</td><td><a href="output-recording.html#16.1">Overview of Output Recording</a></td></tr>
+<tr valign="baseline"><td>16.2</td><td><a href="output-recording.html#16.2">Output Records</a></td></tr>
+<tr valign="baseline"><td>16.2.1</td><td><a href="output-recording.html#16.2.1">The Basic Output Record Protocol</a></td></tr>
+<tr valign="baseline"><td>16.2.2</td><td><a href="output-recording.html#16.2.2">The Output Record ``Database'' Protocol</a></td></tr>
+<tr valign="baseline"><td>16.2.3</td><td><a href="output-recording.html#16.2.3">Output Record Change Notification Protocol</a></td></tr>
+<tr valign="baseline"><td>16.3</td><td><a href="output-recording.html#16.3">Types of Output Records</a></td></tr>
+<tr valign="baseline"><td>16.3.1</td><td><a href="output-recording.html#16.3.1">Standard Output Record Classes</a></td></tr>
+<tr valign="baseline"><td>16.3.2</td><td><a href="output-recording.html#16.3.2">Graphics Displayed Output Records</a></td></tr>
+<tr valign="baseline"><td>16.3.3</td><td><a href="output-recording.html#16.3.3">Text Displayed Output Record</a></td></tr>
+<tr valign="baseline"><td>16.3.4</td><td><a href="output-recording.html#16.3.4">Top-Level Output Records</a></td></tr>
+<tr valign="baseline"><td>16.4</td><td><a href="output-recording.html#16.4">Output Recording Streams</a></td></tr>
+<tr valign="baseline"><td>16.4.1</td><td><a href="output-recording.html#16.4.1">The Output Recording Stream Protocol</a></td></tr>
+<tr valign="baseline"><td>16.4.2</td><td><a href="output-recording.html#16.4.2">Graphics Output Recording</a></td></tr>
+<tr valign="baseline"><td>16.4.3</td><td><a href="output-recording.html#16.4.3">Text Output Recording</a></td></tr>
+<tr valign="baseline"><td>16.4.4</td><td><a href="output-recording.html#16.4.4">Output Recording Utilities</a></td></tr>
+<tr valign="baseline"><td>17</td><td><a href="table-formatting.html#17">Table Formatting</a></td></tr>
+<tr valign="baseline"><td>17.1</td><td><a href="table-formatting.html#17.1">Overview of Table Formatting Facilities</a></td></tr>
+<tr valign="baseline"><td>17.2</td><td><a href="table-formatting.html#17.2">Table Formatting Functions</a></td></tr>
+<tr valign="baseline"><td>17.3</td><td><a href="table-formatting.html#17.3">The Table and Item List Formatting Protocols</a></td></tr>
+<tr valign="baseline"><td>17.3.1</td><td><a href="table-formatting.html#17.3.1">Table Formatting Protocol</a></td></tr>
+<tr valign="baseline"><td>17.3.2</td><td><a href="table-formatting.html#17.3.2">Row and Column Formatting Protocol</a></td></tr>
+<tr valign="baseline"><td>17.3.3</td><td><a href="table-formatting.html#17.3.3">Cell Formatting Protocol</a></td></tr>
+<tr valign="baseline"><td>17.3.4</td><td><a href="table-formatting.html#17.3.4">Item List Formatting Protocol</a></td></tr>
+<tr valign="baseline"><td>18</td><td><a href="graph-formatting.html#18">Graph Formatting</a></td></tr>
+<tr valign="baseline"><td>18.1</td><td><a href="graph-formatting.html#18.1">Graph Formatting Functions</a></td></tr>
+<tr valign="baseline"><td>18.2</td><td><a href="graph-formatting.html#18.2">The Graph Formatting Protocols</a></td></tr>
+<tr valign="baseline"><td>19</td><td><a href="bordered-output.html#19">Bordered Output</a></td></tr>
+<tr valign="baseline"><td>20</td><td><a href="text-formatting.html#20">Text Formatting</a></td></tr>
+<tr valign="baseline"><td>20.1</td><td><a href="text-formatting.html#20.1">Textual List Formatting</a></td></tr>
+<tr valign="baseline"><td>20.2</td><td><a href="text-formatting.html#20.2">Indented Output</a></td></tr>
+<tr valign="baseline"><td>20.3</td><td><a href="text-formatting.html#20.3">Filled Output</a></td></tr>
+<tr valign="baseline"><td>21</td><td><a href="redisplay.html#21">Incremental Redisplay</a></td></tr>
+<tr valign="baseline"><td>21.1</td><td><a href="redisplay.html#21.1">Overview of Incremental Redisplay</a></td></tr>
+<tr valign="baseline"><td>21.1.1</td><td><a href="redisplay.html#21.1.1">Examples of Incremental Redisplay</a></td></tr>
+<tr valign="baseline"><td>21.2</td><td><a href="redisplay.html#21.2">Standard Programmer Interface</a></td></tr>
+<tr valign="baseline"><td>21.3</td><td><a href="redisplay.html#21.3">Incremental Redisplay Protocol</a></td></tr>
+<tr valign="baseline"><td>21.4</td><td><a href="redisplay.html#21.4">Incremental Redisplay Stream Protocol</a></td></tr>
+<tr valign="baseline"><td></td><td><huge>Extended Stream Input Facilities</huge></td></tr>
+<tr valign="baseline"><td>22</td><td><a href="extended-input.html#22">Extended Stream Input</a></td></tr>
+<tr valign="baseline"><td>22.1</td><td><a href="extended-input.html#22.1">Basic Input Streams</a></td></tr>
+<tr valign="baseline"><td>22.2</td><td><a href="extended-input.html#22.2">Extended Input Streams</a></td></tr>
+<tr valign="baseline"><td>22.2.1</td><td><a href="extended-input.html#22.2.1">The Extended Input Stream Protocol</a></td></tr>
+<tr valign="baseline"><td>22.2.2</td><td><a href="extended-input.html#22.2.2">Extended Input Stream Conditions</a></td></tr>
+<tr valign="baseline"><td>22.3</td><td><a href="extended-input.html#22.3">Gestures and Gesture Names</a></td></tr>
+<tr valign="baseline"><td>22.3.1</td><td><a href="extended-input.html#22.3.1">Standard Gesture Names</a></td></tr>
+<tr valign="baseline"><td>22.4</td><td><a href="extended-input.html#22.4">The Pointer Protocol</a></td></tr>
+<tr valign="baseline"><td>22.5</td><td><a href="extended-input.html#22.5">Pointer Tracking</a></td></tr>
+<tr valign="baseline"><td>23</td><td><a href="presentation-types.html#23">Presentation Types</a></td></tr>
+<tr valign="baseline"><td>23.1</td><td><a href="presentation-types.html#23.1">Overview of Presentation Types</a></td></tr>
+<tr valign="baseline"><td>23.2</td><td><a href="presentation-types.html#23.2">Presentations</a></td></tr>
+<tr valign="baseline"><td>23.2.1</td><td><a href="presentation-types.html#23.2.1">The Presentation Protocol</a></td></tr>
+<tr valign="baseline"><td>23.3</td><td><a href="presentation-types.html#23.3">Presentation Types</a></td></tr>
+<tr valign="baseline"><td>23.3.1</td><td><a href="presentation-types.html#23.3.1">Defining Presentation Types</a></td></tr>
+<tr valign="baseline"><td>23.3.2</td><td><a href="presentation-types.html#23.3.2">Presentation Type Abbreviations</a></td></tr>
+<tr valign="baseline"><td>23.3.3</td><td><a href="presentation-types.html#23.3.3">Presentation Methods</a></td></tr>
+<tr valign="baseline"><td>23.3.4</td><td><a href="presentation-types.html#23.3.4">Presentation Type Functions</a></td></tr>
+<tr valign="baseline"><td>23.4</td><td><a href="presentation-types.html#23.4">Typed Output</a></td></tr>
+<tr valign="baseline"><td>23.5</td><td><a href="presentation-types.html#23.5">Context-dependent (Typed) Input</a></td></tr>
+<tr valign="baseline"><td>23.6</td><td><a href="presentation-types.html#23.6">Views</a></td></tr>
+<tr valign="baseline"><td>23.7</td><td><a href="presentation-types.html#23.7">Presentation Translators</a></td></tr>
+<tr valign="baseline"><td>23.7.1</td><td><a href="presentation-types.html#23.7.1">Defining Presentation Translators</a></td></tr>
+<tr valign="baseline"><td>23.7.2</td><td><a href="presentation-types.html#23.7.2">Presentation Translator Functions</a></td></tr>
+<tr valign="baseline"><td>23.7.3</td><td><a href="presentation-types.html#23.7.3">Finding Applicable Presentations</a></td></tr>
+<tr valign="baseline"><td>23.7.4</td><td><a href="presentation-types.html#23.7.4">Translator Applicability</a></td></tr>
+<tr valign="baseline"><td>23.8</td><td><a href="presentation-types.html#23.8">Standard Presentation Types</a></td></tr>
+<tr valign="baseline"><td>23.8.1</td><td><a href="presentation-types.html#23.8.1">Basic Presentation Types</a></td></tr>
+<tr valign="baseline"><td>23.8.2</td><td><a href="presentation-types.html#23.8.2">Numeric Presentation Types</a></td></tr>
+<tr valign="baseline"><td>23.8.3</td><td><a href="presentation-types.html#23.8.3">Character and String Presentation Types</a></td></tr>
+<tr valign="baseline"><td>23.8.4</td><td><a href="presentation-types.html#23.8.4">Pathname Presentation Type</a></td></tr>
+<tr valign="baseline"><td>23.8.5</td><td><a href="presentation-types.html#23.8.5">``One-of'' and ``Some-of'' Presentation Types</a></td></tr>
+<tr valign="baseline"><td>23.8.6</td><td><a href="presentation-types.html#23.8.6">Sequence Presentation Types</a></td></tr>
+<tr valign="baseline"><td>23.8.7</td><td><a href="presentation-types.html#23.8.7">``Meta'' Presentation Types</a></td></tr>
+<tr valign="baseline"><td>23.8.8</td><td><a href="presentation-types.html#23.8.8">Compound Presentation Types</a></td></tr>
+<tr valign="baseline"><td>23.8.9</td><td><a href="presentation-types.html#23.8.9">Lisp Expression Presentation Types</a></td></tr>
+<tr valign="baseline"><td>24</td><td><a href="input-editing.html#24">Input Editing and Completion Facilities</a></td></tr>
+<tr valign="baseline"><td>24.1</td><td><a href="input-editing.html#24.1">The Input Editor</a></td></tr>
+<tr valign="baseline"><td>24.1.1</td><td><a href="input-editing.html#24.1.1">The Input Editing Stream Protocol</a></td></tr>
+<tr valign="baseline"><td>24.1.2</td><td><a href="input-editing.html#24.1.2">Suggestions for Input Editing Commands</a></td></tr>
+<tr valign="baseline"><td>24.2</td><td><a href="input-editing.html#24.2">Activation and Delimiter Gestures</a></td></tr>
+<tr valign="baseline"><td>24.3</td><td><a href="input-editing.html#24.3">Signalling Errors Inside <tt>present</tt> Methods</a></td></tr>
+<tr valign="baseline"><td>24.4</td><td><a href="input-editing.html#24.4">Reading and Writing of Tokens</a></td></tr>
+<tr valign="baseline"><td>24.5</td><td><a href="input-editing.html#24.5">Completion</a></td></tr>
+<tr valign="baseline"><td>25</td><td><a href="menus.html#25">Menu Facilities</a></td></tr>
+<tr valign="baseline"><td>26</td><td><a href="dialogs.html#26">Dialog Facilities</a></td></tr>
+<tr valign="baseline"><td></td><td><huge>Building Applications</huge></td></tr>
+<tr valign="baseline"><td>27</td><td><a href="commands.html#27">Command Processing</a></td></tr>
+<tr valign="baseline"><td>27.1</td><td><a href="commands.html#27.1">Commands</a></td></tr>
+<tr valign="baseline"><td>27.2</td><td><a href="commands.html#27.2">Command Tables</a></td></tr>
+<tr valign="baseline"><td>27.3</td><td><a href="commands.html#27.3">Command Menus</a></td></tr>
+<tr valign="baseline"><td>27.4</td><td><a href="commands.html#27.4">Keystroke Accelerators</a></td></tr>
+<tr valign="baseline"><td>27.5</td><td><a href="commands.html#27.5">Presentation Translator Utilities</a></td></tr>
+<tr valign="baseline"><td>27.6</td><td><a href="commands.html#27.6">The Command Processor</a></td></tr>
+<tr valign="baseline"><td>27.6.1</td><td><a href="commands.html#27.6.1">Command Presentation Types</a></td></tr>
+<tr valign="baseline"><td>28</td><td><a href="frames.html#28">Application Frames</a></td></tr>
+<tr valign="baseline"><td>28.1</td><td><a href="frames.html#28.1">Overview of Application Frames</a></td></tr>
+<tr valign="baseline"><td>28.2</td><td><a href="frames.html#28.2">Defining and Creating Application Frames</a></td></tr>
+<tr valign="baseline"><td>28.2.1</td><td><a href="frames.html#28.2.1">Specifying the Panes of a Frame</a></td></tr>
+<tr valign="baseline"><td>28.3</td><td><a href="frames.html#28.3">Application Frame Functions</a></td></tr>
+<tr valign="baseline"><td>28.3.1</td><td><a href="frames.html#28.3.1">Interface with Presentation Types</a></td></tr>
+<tr valign="baseline"><td>28.4</td><td><a href="frames.html#28.4">The Generic Command Loop</a></td></tr>
+<tr valign="baseline"><td>28.5</td><td><a href="frames.html#28.5">Frame Managers</a></td></tr>
+<tr valign="baseline"><td>28.5.1</td><td><a href="frames.html#28.5.1">Finding Frame Managers</a></td></tr>
+<tr valign="baseline"><td>28.5.2</td><td><a href="frames.html#28.5.2">Frame Manager Operations</a></td></tr>
+<tr valign="baseline"><td>28.5.3</td><td><a href="frames.html#28.5.3">Frame Manager Settings</a></td></tr>
+<tr valign="baseline"><td>28.6</td><td><a href="frames.html#28.6">Examples of Applications</a></td></tr>
+<tr valign="baseline"><td>29</td><td><a href="panes.html#29">Panes</a></td></tr>
+<tr valign="baseline"><td>29.1</td><td><a href="panes.html#29.1">Overview of Panes</a></td></tr>
+<tr valign="baseline"><td>29.2</td><td><a href="panes.html#29.2">Basic Pane Construction</a></td></tr>
+<tr valign="baseline"><td>29.2.1</td><td><a href="panes.html#29.2.1">Pane Initialization Options </a></td></tr>
+<tr valign="baseline"><td>29.2.2</td><td><a href="panes.html#29.2.2">Pane Properties</a></td></tr>
+<tr valign="baseline"><td>29.3</td><td><a href="panes.html#29.3">Composite and Layout Panes</a></td></tr>
+<tr valign="baseline"><td>29.3.1</td><td><a href="panes.html#29.3.1">Layout Pane Options</a></td></tr>
+<tr valign="baseline"><td>29.3.2</td><td><a href="panes.html#29.3.2">Layout Pane Classes</a></td></tr>
+<tr valign="baseline"><td>29.3.3</td><td><a href="panes.html#29.3.3">Scroller Pane Classes</a></td></tr>
+<tr valign="baseline"><td>29.3.4</td><td><a href="panes.html#29.3.4">The Layout Protocol</a></td></tr>
+<tr valign="baseline"><td>29.4</td><td><a href="panes.html#29.4">CLIM Stream Panes</a></td></tr>
+<tr valign="baseline"><td>29.4.1</td><td><a href="panes.html#29.4.1">CLIM Stream Pane Options</a></td></tr>
+<tr valign="baseline"><td>29.4.2</td><td><a href="panes.html#29.4.2">CLIM Stream Pane Classes</a></td></tr>
+<tr valign="baseline"><td>29.4.3</td><td><a href="panes.html#29.4.3">Making CLIM Stream Panes</a></td></tr>
+<tr valign="baseline"><td>29.4.4</td><td><a href="panes.html#29.4.4">CLIM Stream Pane Functions</a></td></tr>
+<tr valign="baseline"><td>29.4.5</td><td><a href="panes.html#29.4.5">Creating a Standalone CLIM Window</a></td></tr>
+<tr valign="baseline"><td>29.5</td><td><a href="panes.html#29.5">Defining New Pane Types</a></td></tr>
+<tr valign="baseline"><td>29.5.1</td><td><a href="panes.html#29.5.1">Defining a New Leaf Pane</a></td></tr>
+<tr valign="baseline"><td>29.5.2</td><td><a href="panes.html#29.5.2">Defining a New Composite Pane</a></td></tr>
+<tr valign="baseline"><td>30</td><td><a href="gadgets.html#30">Gadgets</a></td></tr>
+<tr valign="baseline"><td>30.1</td><td><a href="gadgets.html#30.1">Overview of Gadgets</a></td></tr>
+<tr valign="baseline"><td>30.2</td><td><a href="gadgets.html#30.2">Abstract Gadgets</a></td></tr>
+<tr valign="baseline"><td>30.2.1</td><td><a href="gadgets.html#30.2.1">Using Gadgets</a></td></tr>
+<tr valign="baseline"><td>30.2.2</td><td><a href="gadgets.html#30.2.2">Implementing Gadgets</a></td></tr>
+<tr valign="baseline"><td>30.3</td><td><a href="gadgets.html#30.3">Basic Gadget Classes</a></td></tr>
+<tr valign="baseline"><td>30.4</td><td><a href="gadgets.html#30.4">Abstract Gadget Classes</a></td></tr>
+<tr valign="baseline"><td>30.4.1</td><td><a href="gadgets.html#30.4.1">The <tt>push-button</tt> Gadget</a></td></tr>
+<tr valign="baseline"><td>30.4.2</td><td><a href="gadgets.html#30.4.2">The <tt>toggle-button</tt> Gadget</a></td></tr>
+<tr valign="baseline"><td>30.4.3</td><td><a href="gadgets.html#30.4.3">The <tt>menu-button</tt> Gadget</a></td></tr>
+<tr valign="baseline"><td>30.4.4</td><td><a href="gadgets.html#30.4.4">The <tt>scroll-bar</tt> Gadget</a></td></tr>
+<tr valign="baseline"><td>30.4.5</td><td><a href="gadgets.html#30.4.5">The <tt>slider</tt> Gadget</a></td></tr>
+<tr valign="baseline"><td>30.4.6</td><td><a href="gadgets.html#30.4.6">The <tt>radio-box</tt> and <tt>check-box</tt> Gadgets</a></td></tr>
+<tr valign="baseline"><td>30.4.7</td><td><a href="gadgets.html#30.4.7">The <tt>list-pane</tt> and <tt>option-pane</tt> Gadgets</a></td></tr>
+<tr valign="baseline"><td>30.4.8</td><td><a href="gadgets.html#30.4.8">The <tt>text-field</tt> Gadget</a></td></tr>
+<tr valign="baseline"><td>30.4.9</td><td><a href="gadgets.html#30.4.9">The <tt>text-editor</tt> Gadget</a></td></tr>
+<tr valign="baseline"><td>30.5</td><td><a href="gadgets.html#30.5">Integrating Gadgets and Output Records</a></td></tr>
+<tr valign="baseline"><td></td><td><huge>Appendices</huge></td></tr>
+<tr valign="baseline"><td>31</td><td><a href="glossary.html#31">Glossary</a></td></tr>
+<tr valign="baseline"><td>32</td><td><a href="clim-sys.html#32">The CLIM-SYS Package</a></td></tr>
+<tr valign="baseline"><td>32.1</td><td><a href="clim-sys.html#32.1">Resources</a></td></tr>
+<tr valign="baseline"><td>32.2</td><td><a href="clim-sys.html#32.2">Multi-processing</a></td></tr>
+<tr valign="baseline"><td>32.3</td><td><a href="clim-sys.html#32.3">Locks</a></td></tr>
+<tr valign="baseline"><td>32.4</td><td><a href="clim-sys.html#32.4">Multiple Value <tt>setf</tt></a></td></tr>
+<tr valign="baseline"><td>33</td><td><a href="encapsulating-streams.html#33">Encapsulating Streams</a></td></tr>
+<tr valign="baseline"><td>33.1</td><td><a href="encapsulating-streams.html#33.1">Encapsulating Stream Classes</a></td></tr>
+<tr valign="baseline"><td>33.1.1</td><td><a href="encapsulating-streams.html#33.1.1">Encapsulating Stream Protocol</a></td></tr>
+<tr valign="baseline"><td>33.1.2</td><td><a href="encapsulating-streams.html#33.1.2">The ``Delegation Problem''</a></td></tr>
+<tr valign="baseline"><td>34</td><td><a href="gray-streams.html#34">Common Lisp Streams</a></td></tr>
+<tr valign="baseline"><td>34.1</td><td><a href="gray-streams.html#34.1">Stream Classes</a></td></tr>
+<tr valign="baseline"><td>34.2</td><td><a href="gray-streams.html#34.2">Basic Stream Functions</a></td></tr>
+<tr valign="baseline"><td>34.3</td><td><a href="gray-streams.html#34.3">Character Input</a></td></tr>
+<tr valign="baseline"><td>34.4</td><td><a href="gray-streams.html#34.4">Character Output</a></td></tr>
+<tr valign="baseline"><td>34.5</td><td><a href="gray-streams.html#34.5">Binary Streams</a></td></tr>
+<tr valign="baseline"><td>35</td><td><a href="extensions.html#35">Suggested Extensions to CLIM</a></td></tr>
+<tr valign="baseline"><td>35.1</td><td><a href="extensions.html#35.1">Support for PostScript Output</a></td></tr>
+<tr valign="baseline"><td>35.2</td><td><a href="extensions.html#35.2">Support for Reading Bitmap Files</a></td></tr>
+<tr valign="baseline"><td>36</td><td><a href="changes.html#36">Changes from CLIM 1.0</a></td></tr>
+<tr valign="baseline"><td></td><td><huge>Index</huge></td></tr>
+<tr valign="baseline"><td></td><td><a href="index.html">Index</a></td></tr>
+</table>
+<br><hr><br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="clim.html">Cover</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="acknowledgments.html">Acknowledgments</a></td>
+</tr></table>
+</body></html>

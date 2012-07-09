@@ -1,0 +1,93 @@
+<html><head><title>CLIM: 20 Text Formatting</title></head><body>
+<br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="bordered-output.html">Bordered Output</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="redisplay.html">Incremental Redisplay</a></td>
+</tr></table><br><hr><br>
+<p>
+<br><a name="20"><h1>20 Text Formatting</h1></a>
+<a name="LABEL=text-formatting"></a> <a name="20.1"><h2>20.1 Textual List Formatting</h2></a>
+<a name="Function format-textual-list"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>format-textual-list</b></td><td valign="baseline" width="100%"><i>sequence printer
+                              <tt>&amp;key</tt> stream separator conjunction</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Outputs the sequence of items in <i>sequence</i> as a ``textual list''.  For
+example, the list <tt>(1 2 3 4)</tt> might be printed as
+<pre>1, 2, 3, and 4
+</pre> <i>printer</i> is a function of two arguments: an element of the sequence and a
+stream; it has dynamic extent.  It is called to output each element of the
+sequence.
+<p>
+<i>stream</i> specifies the output stream.  The default is <tt>*standard-output*</tt> .
+<p>
+The <i>separator</i> and <i>conjunction</i> arguments provide control over the
+appearance of each element of the sequence and over the separators used between
+each pair of elements.  <i>separator</i> is a string that is output after every
+element but the last one; the default for <i>separator</i> is <tt>", "</tt> (that is,
+a comma followed by a space).  <i>conjunction</i> is a string that is output
+before the last element.  The default is <tt>nil</tt> , meaning that there is no
+conjunction.  Typical values for <i>conjunction</i> are the strings <tt>"and"</tt> and <tt>"or"</tt> .
+<p>
+
+<a name="20.2"><h2>20.2 Indented Output</h2></a>
+<a name="Macro indenting-output"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>indenting-output</b></td><td valign="baseline" width="100%"><i>(stream indentation <tt>&amp;key</tt> (move-cursor <tt>t</tt> ))
+                              <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Binds <i>stream</i> to a stream that inserts whitespace at the beginning of each
+line of output produced by <i>body</i> , and then writes the indented output to
+the stream that is the original value of <i>stream</i> .
+<p>
+The <i>stream</i> argument is not evaluated, and must be a symbol that is bound to
+an output recording stream.  If <i>stream</i> is <tt>t</tt> , <tt>*standard-output*</tt> is
+used.  <i>body</i> may have zero or more declarations as its first forms.
+<p>
+<i>indentation</i> specifies how much whitespace should be inserted at the
+beginning of each line.  It is specified in the same way as the <tt>:x-spacing</tt> option to <tt>formatting-table</tt> .
+<p>
+If the boolean <i>move-cursor</i> is <a href="text-formatting.html#CONCEPT=true"><i>true</i></a> (the default), CLIM moves the
+cursor to the end of the table.
+<p>
+Programmers using <tt>indenting-output</tt> should begin the body with a call to
+<i>fresh-line</i> (or some equivalent) to position the stream to the initial
+indentation.
+<p>
+<b>Implementation note:</b> Some CLIM implementations restrict the use of
+<tt>indenting-output</tt> and <tt>filling-output</tt> such that a call to
+<tt>indenting-output</tt> should appear outside of a call to <tt>filling-output</tt> .
+Implementations are encouraged to relax this restriction if the behavior is
+well-defined, but uses of <tt>indenting-output</tt> inside of <tt>filling-output</tt> may not be portable.
+<p>
+
+<a name="20.3"><h2>20.3 Filled Output</h2></a>
+<a name="Macro filling-output"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>filling-output</b></td><td valign="baseline" width="100%"><i>(stream <tt>&amp;key</tt> fill-width break-characters
+                                         after-line-break after-line-break-initially) 
+                            <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Binds <i>stream</i> to a stream that inserts line breaks into the textual output
+written to it (by such functions as <tt>write-char</tt> and <tt>write-string</tt> ) so
+that the output is usually no wider then <i>fill-width</i> .  The filled output is
+then written on the original stream.
+<p>
+The <i>stream</i> argument is not evaluated, and must be a symbol that is bound
+to a stream.  If <i>stream</i> is <tt>t</tt> , <tt>*standard-output*</tt> is used.
+<i>body</i> may have zero or more declarations as its first forms.
+<p>
+<i>fill-width</i> specifies the width of filled lines, and defaults to 80
+characters.  It is specified the same way as the <tt>:x-spacing</tt> option for
+<tt>formatting-table</tt> .
+<p>
+``Words'' are separated by the characters specified in the list
+<i>break-characters</i> .  When a line is broken to prevent wrapping past the end
+of a line, the line break is made at one of these separators.  That is,
+<tt>filling-output</tt> does not split ``words'' across lines, so it might produce
+output wider than <i>fill-width</i> .
+<p>
+<i>after-line-break</i> specifies a string to be sent to <i>stream</i> after line
+breaks; the string appears at the beginning of each new line.  The string must
+not be wider than <i>fill-width</i> .
+<p>
+If the boolean <i>after-line-break-initially</i> is <a href="text-formatting.html#CONCEPT=true"><i>true</i></a> , then the
+<i>after-line-break</i> text is to be written to <i>stream</i> before executing
+<i>body</i> , that is, at the beginning of the first line.  The default is
+<a href="text-formatting.html#CONCEPT=false"><i>false</i></a> .
+<br><hr><br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="bordered-output.html">Bordered Output</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="redisplay.html">Incremental Redisplay</a></td>
+</tr></table>
+</body></html>

@@ -1,0 +1,454 @@
+<html><head><title>CLIM: 15 Extended Stream Output</title></head><body>
+<br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="designs.html">General Designs</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="output-recording.html">Output Recording</a></td>
+</tr></table><br><hr><br>
+<p>
+<br><a name="15"><h1>15 Extended Stream Output</h1></a>
+<a name="LABEL=extended-output"></a> CLIM provides a stream-oriented output layer that is implemented on top of the
+sheet output architecture.  The basic CLIM output stream protocol is based on
+the character output stream protocol proposal submitted to the ANSI Common Lisp
+committee by David Gray.  This proposal was not approved by the committee, but
+has been implemented by most Lisp vendors.
+<p>
+<a name="15.1"><h2>15.1 Basic Output Streams</h2></a>
+CLIM provides an implementation of the basic output stream facilities (described
+in more detail in Appendix <a href="gray-streams.html#LABEL=gray-streams"><b><i>Common Lisp Streams</i></b></i></a> ), either by directly using the
+underlying Lisp implementation, or by implementing the facilities itself.
+<p>
+<a name="Class standard-output-stream"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>standard-output-stream</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>This class provides an implementation of the CLIM basic output stream protocol,
+based on the CLIM output kernel.
+<i>Members of this class are mutable. </i><a name="Generic function stream-write-char"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-write-char</b></td><td valign="baseline" width="100%"><i>stream character</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Writes the character <i>character</i> to the <a href="extended-output.html#CONCEPT=output stream"><i>output stream</i></a> <i>stream</i> ,
+and returns <i>character</i> as its value.
+<p>
+<a name="Generic function stream-write-string"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-write-string</b></td><td valign="baseline" width="100%"><i>stream string <tt>&amp;optional</tt> (start <tt>0</tt> ) end</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Writes the string <i>string</i> to the <a href="extended-output.html#CONCEPT=output stream"><i>output stream</i></a> <i>stream</i> .  If
+<i>start</i> and <i>end</i> are supplied, they are integers that specify what part
+of <i>string</i> to output.  <i>string</i> is returned as the value.
+<p>
+<a name="Generic function stream-terpri"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-terpri</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Writes an end of line character on the <a href="extended-output.html#CONCEPT=output stream"><i>output stream</i></a> <i>stream</i> , and
+returns <a href="extended-output.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Generic function stream-fresh-line"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-fresh-line</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Writes an end of line character on the <a href="extended-output.html#CONCEPT=output stream"><i>output stream</i></a> <i>stream</i> only if
+the stream is not at the beginning of the line.
+<p>
+<a name="Generic function stream-finish-output"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-finish-output</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Ensures that all the output sent to the <a href="extended-output.html#CONCEPT=output stream"><i>output stream</i></a> <i>stream</i> has
+reached its destination, and only then return <a href="extended-output.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Generic function stream-force-output"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-force-output</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Like <tt>stream-finish-output</tt> , except that it may immediately return
+<a href="extended-output.html#CONCEPT=false"><i>false</i></a> without waiting for the output to complete.
+<p>
+<a name="Generic function stream-clear-output"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-clear-output</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Aborts any outstanding output operation in progress on the <a href="extended-output.html#CONCEPT=output stream"><i>output stream</i></a> <i>stream</i> , and returns <a href="extended-output.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Generic function stream-line-column"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-line-column</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>This function returns the column number where the next character will be written
+on the <a href="extended-output.html#CONCEPT=output stream"><i>output stream</i></a> <i>stream</i> .  The first column on a line is
+numbered 0.
+<p>
+<a name="Generic function stream-start-line-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-start-line-p</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns <a href="extended-output.html#CONCEPT=true"><i>true</i></a> if the <a href="extended-output.html#CONCEPT=output stream"><i>output stream</i></a> <i>stream</i> is positioned at
+the beginning of a line (that is, column 0), otherwise returns <a href="extended-output.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Generic function stream-advance-to-column"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-advance-to-column</b></td><td valign="baseline" width="100%"><i>stream column</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Writes enough blank space on the <a href="extended-output.html#CONCEPT=output stream"><i>output stream</i></a> <i>stream</i> so that the
+next character will be written at the position specified by <i>column</i> , which
+is an integer.
+<p>
+
+<a name="15.2"><h2>15.2 Extended Output Streams</h2></a>
+In addition to the basic output stream protocol, CLIM defines an extended output
+stream protocol.  This protocol extends the stream model to maintain the state
+of a text cursor, margins, text styles, inter-line spacing, and so forth.
+<p>
+<a name="Protocol&nbsp;Class extended-output-stream"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>extended-output-stream</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Protocol&nbsp;Class]</b></td></tr></table>The protocol class for CLIM extended output streams.  This is a subclass of
+<tt>output-stream</tt> .
+If you want to create a new class that behaves like an extended output stream, it should be a subclass of <b>extended-output-stream</b>. Subclasses of <b>extended-output-stream</b> must obey the extended output stream protocol.<a name="Predicate extended-output-stream-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>extended-output-stream-p</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Predicate]</b></td></tr></table>Returns <a href="extended-output.html#CONCEPT=true"><i>true</i></a> if <i>object</i> is a CLIM <a href="extended-output.html#CONCEPT=extended output stream"><i>extended output stream</i></a> ,
+otherwise returns <a href="extended-output.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Init&nbsp;arg :foreground"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:foreground</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table><a name="Init&nbsp;arg :background"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:background</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table><a name="Init&nbsp;arg :text-style"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:text-style</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table><a name="Init&nbsp;arg :vertical-spacing"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:vertical-spacing</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table><a name="Init&nbsp;arg :text-margin"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:text-margin</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table><a name="Init&nbsp;arg :end-of-line-action"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:end-of-line-action</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table><a name="Init&nbsp;arg :end-of-page-action"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:end-of-page-action</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table><a name="Init&nbsp;arg :default-view"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:default-view</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table>All subclasses of <tt>extended-output-stream</tt> must handle these initargs, which
+are used to specify, respectively, the medium foreground and background, default
+text style, vertical spacing, default text margin, end of line and end of page
+actions, and the default view for the stream.
+<p>
+<tt>:foreground</tt> , <tt>:background</tt> , and <tt>:text-style</tt> are handled via the
+usual pane initialize options (see Section <a href="panes.html#LABEL=pane-init"><b><i>Pane Initialization Options </i></b></i></a> ).
+<p>
+<a name="Class standard-extended-output-stream"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>standard-extended-output-stream</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>This class provides an implementation of the CLIM extended output stream
+protocol, based on the CLIM output kernel.
+<p>
+<i>Members of this class are mutable. </i><a name="15.3"><h2>15.3 The Text Cursor</h2></a>
+In the days when display devices displayed only two dimensional arrays of fixed
+width characters, the text cursor was a simple thing.  A discrete position was
+selected in integer character units, and a character could go there and noplace
+else.  Even for variable width fonts, simply addressing a character by the pixel
+position of one of its corners is sufficient.  However, variable height fonts
+with variable baselines on pixel-addressable displays upset this simple model.
+The ``logical'' vertical reference point is the baseline, as it is in
+typesetting.  In typesetting, however, an entire line of text is created with
+baselines aligned and padded to the maximum ascent and descent, then the entire
+line is put below the previous line.  
+<p>
+It is clearly desirable to have the characters on a line aligned with their
+baselines, but when the line on the display is formed piece by piece, it is
+impossible to pick in advance the proper baseline.  The solution CLIM adopts is
+to choose a baseline, but not commit to it.
+<p>
+The CLIM model says that text has at least 6 properties.  With a reference point
+of <tt>(0,0)</tt> at the upper left of the text, it has a bounding box consisting of
+ascent, descent, left kerning, right extension, and a displacement to the next
+reference point in both <tt>x</tt> and <tt>y</tt>.  CLIM determines the position of the
+reference point and draws the text relative to that, and then the cursor
+position is adjusted by the displacement.  In this way, text has width and
+height, but the <tt>x</tt> and <tt>y</tt> displacements need not equal the width and height.
+<p>
+CLIM adopts the following approach to the actual rendering of a glyph.  Textual
+output using the stream functions (<b><i>not</i></b> the graphics functions) maintains
+text on a ``line''.   Note that a line is not an output record, but is rather a
+collection of ``text so far'', a top (which is positioned at the bottom of the
+previous line plus the stream's vertical spacing), a baseline, a bottom, and a
+``cursor position''.  The cursor position is defined to be at the top of the
+line, not at the baseline.  The reason for this is that the baseline can move,
+but the top is relative to the previous line, which has been completed and
+therefore doesn't move.  If text is drawn on the current line whose ascent is
+greater than the current ascent of the line, then the line is moved down to make
+room.  This can be done easily using the output records for the existing text on
+the line.  When there is enough room, the reference point for the text is the
+<tt>x</tt> position of the cursor at the baseline, and the cursor position is adjusted
+by the displacement.
+<p>
+The following figures show this in action before and after each of three
+characters are drawn.  In all three figure, the small circle is the ``cursor
+position''.  At first, there is nothing on the line.  The first character
+establishes the initial baseline, and is then drawn.  The upper left corner of
+the character is where the cursor was (as in the traditional model), but this
+will not remain the case.  Drawing the second character, which is larger than
+the first, requires moving the first character down in order to get the
+baselines to align; during this time, the top of the line remains the same.
+Again, the upper left of the second character is where the cursor was, but that
+is no longer the case for the first character (which has moved down).  The third
+character is smaller than the second, so no moving of characters needs to be
+done.  However, the character is drawn to align the baselines, which in this
+case means the upper left is <b><i>not</i></b> where the cursor was.  Nor is the cursor
+at the upper right of the character as it was for the previous two characters.
+It is, however, at the upper right of the collective line.
+<p>
+
+
+
+
+
+<p>
+
+        
+        
+        
+        
+<center><pre>
+                                        (w1+w2,y)\         
+                                                  \        
+               (w1,y)\             (w1,y)\         \       
+                      \                   \         \      
+(0,y)\    (0,y)\       \      (0,y)\       \         \     
+      \         \       \           \       \         \    
+       ----      ------------        ----------------------
+                 |       |                   |         |   
+                 |       |           --------|         |   
+                 |       |           |       |         |   
+                 |       |           |       |         |   
+                 |       |           |       |         |   
+                 | small |           |       |         |   
+                 |       |           |       |         |   
+                 |       |           | small |   BIG   |   
+                 |       |           |       |         |   
+                 ----------          |       |         |   
+                 |       |           |       |         |   
+                 ---------           --------------------  
+                /                    |       |         |   
+                                     --------|         |   
+                                    /        |         |   
+       bl-small/                             -----------   
+                                                           
+                             bl-BIG/                       
+                                                           
+                                                           
+                                                           
+                       (w1+w2+w3,y)\                       
+                                    \                      
+                    (w1+w2,y)\       \                     
+                              \       \                    
+               (w1,y)\         \       \                   
+                      \         \       \                  
+          (0,y)\       \         \       \                 
+                \       \         \       \                
+                 ------------------------------            
+                         |         |                       
+                 --------|         ---------               
+                 |       |         |       |               
+                 |       |         |       |               
+                 |       |         |       |               
+                 |       |         |       |               
+                 |       |         |       |               
+                 | small |   BIG   | small |               
+                 |       |         |       |               
+                 |       |         |       |               
+                 |       |         |       |               
+                 ----------------------------              
+                 |       |         |       |               
+                 --------|         ---------               
+                /        |         |                       
+                         -----------                       
+                                                           
+         bl-BIG/                                           
+</pre></center>
+
+<p>
+<hr><b>Issue:</b> DCPL<br><i>The above may be too simplistic. The displacement probably
+wants to depend not only on language but language rendering mode.  For example,
+Japanese can apparently go either vertically or horizontally.  It may be
+necessary to have the bounding box and perhaps the reference point dispatch as
+well.  Similarly, ``newline'' could mean ``down one line, all the way to the
+left'' for English, ``down one line, all the way to the right'' for Arabic, or
+``to the left one line, all the way to the top.''  ``Home cursor'' is another
+ditty to consider.  We need to discuss this on a larger scale with people who
+know multi-lingual rendering issues.</i><hr>
+<a name="15.3.1"><h3>15.3.1 Text Cursor Protocol</h3></a>
+Many streams that maintain a text cursor display some visible indication of the
+text cursor.  The object that represents this display is (somewhat confusingly)
+also called a cursor.
+<p>
+An <a name="CONCEPT=active"><b><i>active</i></b></a> cursor is one that is being actively maintained by its
+owning sheet.  A active cursor has a <a name="CONCEPT=state"><b><i>state</i></b></a> that is either on or off.
+An active cursor can also has a state that indicates the the owning sheet has
+the input focus.
+<p>
+<a name="Protocol&nbsp;Class cursor"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>cursor</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Protocol&nbsp;Class]</b></td></tr></table>The protocol class that corresponds to cursors.
+If you want to create a new class that behaves like a cursor, it should be a subclass of <b>cursor</b>. Subclasses of <b>cursor</b> must obey the cursor protocol.<i>Members of this class are mutable. </i><a name="Predicate cursorp"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>cursorp</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Predicate]</b></td></tr></table>Returns <a href="extended-output.html#CONCEPT=true"><i>true</i></a> if <i>object</i> is a <a href="extended-output.html#CONCEPT=cursor"><i>cursor</i></a> , otherwise returns
+<a href="extended-output.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Init&nbsp;arg :sheet"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:sheet</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table>The <tt>:sheet</tt> initarg is used to specify the sheet with which the cursor is
+associated.
+<p>
+<a name="Class standard-text-cursor"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>standard-text-cursor</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>The instantiable class that implements a text cursor.  Typically, ports will
+further specialize this class.
+<p>
+<a name="Generic function cursor-sheet"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>cursor-sheet</b></td><td valign="baseline" width="100%"><i>cursor</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the sheet with which the <a href="extended-output.html#CONCEPT=cursor"><i>cursor</i></a> <i>cursor</i> is associated.
+<p>
+<a name="Generic function cursor-position"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>cursor-position</b></td><td valign="baseline" width="100%"><i>cursor</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the <tt>x</tt> and <tt>y</tt> position of the <a href="extended-output.html#CONCEPT=cursor"><i>cursor</i></a> <i>cursor</i> as two
+values.  <tt>x</tt> and <tt>y</tt> are in the coordinate system of the cursor's sheet.
+<p>
+<a name="Generic function (setf* cursor-position)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf* cursor-position)</b></td><td valign="baseline" width="100%"><i>x y cursor</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Sets the <tt>x</tt> and <tt>y</tt> position of the <a href="extended-output.html#CONCEPT=cursor"><i>cursor</i></a> <i>cursor</i> to the specified
+position.  <tt>x</tt> and <tt>y</tt> are in the coordinate system of the cursor's sheet.
+<p>
+For CLIM implementations that do not support <tt>setf*</tt> , the ``setter'' function
+for this is <tt>cursor-set-position</tt> .
+<p>
+<a name="Generic function cursor-active"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>cursor-active</b></td><td valign="baseline" width="100%"><i>cursor</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function (setf cursor-active)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf cursor-active)</b></td><td valign="baseline" width="100%"><i>value cursor</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns (or sets) the ``active'' attribute of the cursor.  When <a href="extended-output.html#CONCEPT=true"><i>true</i></a> , the
+cursor is active.
+<p>
+<a name="Generic function cursor-state"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>cursor-state</b></td><td valign="baseline" width="100%"><i>cursor</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function (setf cursor-state)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf cursor-state)</b></td><td valign="baseline" width="100%"><i>value cursor</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns (or sets) the ``state'' attribute of the cursor.  When <a href="extended-output.html#CONCEPT=true"><i>true</i></a> , the
+cursor is visible.  When <a href="extended-output.html#CONCEPT=false"><i>false</i></a> , the cursor is not visible.
+<p>
+<a name="Generic function cursor-focus"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>cursor-focus</b></td><td valign="baseline" width="100%"><i>cursor</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the ``focus'' attribute of the cursor.  When <a href="extended-output.html#CONCEPT=true"><i>true</i></a> , the sheet
+owning the cursor has the input focus.
+<p>
+<a name="Generic function cursor-visibility"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>cursor-visibility</b></td><td valign="baseline" width="100%"><i>cursor</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function (setf cursor-visibility)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf cursor-visibility)</b></td><td valign="baseline" width="100%"><i>visibility cursor</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>These are convenience functions that combine the functionality of
+<tt>cursor-active</tt> and <tt>cursor-state</tt> .  The visibility can be either <tt>:on</tt> (meaning that the cursor is active and visible at its current position),
+<tt>:off</tt> (meaning that the cursor is active, but not visible at its current
+position), or <tt>nil</tt> (meaning that the cursor is not activate).
+<p>
+
+<a name="15.3.2"><h3>15.3.2 Stream Text Cursor Protocol</h3></a>
+The following generic functions comprise the stream text cursor protocol.  Any
+extended output stream class must implement methods for these generic functions.
+<p>
+<a name="Generic function stream-text-cursor"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-text-cursor</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function (setf stream-text-cursor)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf stream-text-cursor)</b></td><td valign="baseline" width="100%"><i>cursor stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns (or sets) the text cursor object for the stream <i>stream</i> .
+<p>
+
+<a name="Generic function stream-cursor-position"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-cursor-position</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the current text cursor position for the <a href="extended-output.html#CONCEPT=extended output stream"><i>extended output stream</i></a> <i>stream</i> as two integer values, the <tt>x</tt> and <tt>y</tt> positions.
+<p>
+<a name="Generic function (setf* stream-cursor-position)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf* stream-cursor-position)</b></td><td valign="baseline" width="100%"><i>x y stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Sets the text cursor position of the <a href="extended-output.html#CONCEPT=extended output stream"><i>extended output stream</i></a> <i>stream</i> to <i>x</i> and <i>y</i> .  <i>x</i> and <i>y</i> are in device units, and must be
+integers.
+<p>
+For CLIM implementations that do not support <tt>setf*</tt> , the ``setter'' function
+for this is <tt>stream-set-cursor-position</tt> .
+<p>
+<a name="Generic function stream-increment-cursor-position"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-increment-cursor-position</b></td><td valign="baseline" width="100%"><i>stream dx dy</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Moves the text cursor position of the <a href="extended-output.html#CONCEPT=extended output stream"><i>extended output stream</i></a> <i>stream</i> relatively, adding <i>dx</i> to the <tt>x</tt> coordinate and <i>dy</i> to the <tt>y</tt>
+coordinate.  Either of <i>dx</i> or <i>dy</i> may be <tt>nil</tt> , meaning the the <tt>x</tt>
+or <tt>y</tt> cursor position will be unaffected.  Otherwise, <i>dx</i> and <i>dy</i> must be integers.
+<p>
+
+<a name="15.4"><h2>15.4 Text Protocol</h2></a>
+The following generic functions comprise the text protocol.  Any extended output
+stream class must implement methods for these generic functions.
+<p>
+<a name="Generic function stream-character-width"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-character-width</b></td><td valign="baseline" width="100%"><i>stream character <tt>&amp;key</tt> text-style</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns a rational number corresponding to the amount of horizontal motion of
+the cursor position that would occur if the character <i>character</i> were
+output to the <a href="extended-output.html#CONCEPT=extended output stream"><i>extended output stream</i></a> <i>stream</i> in the <a href="extended-output.html#CONCEPT=text
+style"><i>text
+style</i></a> <i>text-style</i> (which defaults to the current text style for the
+stream).  This ignores the stream's text margin.
+<p>
+<a name="Generic function stream-string-width"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-string-width</b></td><td valign="baseline" width="100%"><i>stream character <tt>&amp;key</tt> start end text-style</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Computes how the cursor position would move horizontally if the string
+<i>string</i> were output to the <a href="extended-output.html#CONCEPT=extended output stream"><i>extended output stream</i></a> <i>stream</i> in
+the <a href="text-styles.html#CONCEPT=text style"><i>text style</i></a> <i>text-style</i> (which defaults to the current text style
+for the stream) starting at the left margin.  This ignores the stream's text
+margin.
+<p>
+The first returned value is the <tt>x</tt> coordinate that the cursor position would
+move to.  The second returned value is the maximum <tt>x</tt> coordinate the cursor
+would visit during the output. (This is the same as the first value unless the
+string contains a <tt><huge>#\Newline</huge></tt> character.)
+<p>
+<i>start</i> and <i>end</i> are integers, and default to 0 and the length of the
+string, respectively.
+<p>
+
+<a name="Generic function stream-text-margin"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-text-margin</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function (setf stream-text-margin)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf stream-text-margin)</b></td><td valign="baseline" width="100%"><i>margin stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>The <tt>x</tt> coordinate at which text wraps around on the <a href="extended-output.html#CONCEPT=extended output
+stream"><i>extended output
+stream</i></a> <i>stream</i> (see <tt>stream-end-of-line-action</tt> ).  The default setting
+is the width of the viewport, which is the right-hand edge of the viewport when
+it is horizontally scrolled to the ``initial position''.
+<p>
+You can use <tt>setf</tt> with <tt>stream-text-margin</tt> to establish a new text
+margin.  If <i>margin</i> is <tt>nil</tt> , then the width of the viewport will be
+used.  If the width of the viewport is later changed, the text margin will
+change, too.
+<p>
+
+<a name="Generic function stream-line-height"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-line-height</b></td><td valign="baseline" width="100%"><i>stream <tt>&amp;key</tt> text-style</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns what the line height of a line on the <a href="extended-output.html#CONCEPT=extended output stream"><i>extended output stream</i></a> <i>stream</i> containing text in the <a href="text-styles.html#CONCEPT=text style"><i>text style</i></a> <i>text-style</i> would be,
+as a rational number.  The height of the line is measured from the baseline of
+the text style to its ascent.  <i>text-style</i> defaults to the current text
+style for the stream.
+<p>
+
+<a name="Generic function stream-vertical-spacing"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-vertical-spacing</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the current inter-line spacing (as a rational number) for the
+<a href="extended-output.html#CONCEPT=extended output stream"><i>extended output stream</i></a> <i>stream</i> .
+<p>
+<a name="Generic function stream-baseline"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-baseline</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the current text baseline (as a rational number) for the <a href="extended-output.html#CONCEPT=extended
+output stream"><i>extended
+output stream</i></a> <i>stream</i> .
+<p>
+
+<a name="15.4.1"><h3>15.4.1 Mixing Text and Graphics</h3></a>
+The following macro provides a convenient way to mix text and graphics on the
+same output stream.
+<p>
+<a name="Macro with-room-for-graphics"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>with-room-for-graphics</b></td><td valign="baseline" width="100%"><i>(<tt>&amp;optional</tt> stream
+                                     <tt>&amp;key</tt> (first-quadrant <tt>t</tt> ) height (move-cursor <tt>t</tt> )
+                                          record-type)
+                                    <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Binds the dynamic environment to establish a local coordinate system for doing
+graphics output onto the <a href="extended-output.html#CONCEPT=extended output stream"><i>extended output stream</i></a> designated by
+<i>stream</i> .  If <i>first-quadrant</i> is <a href="extended-output.html#CONCEPT=true"><i>true</i></a> (the default), a local
+Cartesian coordinate system is established with the origin <tt>(0,0)</tt> of the local
+coordinate system placed at the current cursor position; <tt>(0,0)</tt> is in the lower
+left corner of the area created.  If the boolean <i>move-cursor</i> is
+<a href="extended-output.html#CONCEPT=true"><i>true</i></a> (the default), then after the graphic output is completed, the
+cursor is positioned past (immediately below) this origin.  The bottom of the
+vertical block allocated is at this location (that is, just below point <tt>(0,0)</tt>,
+not necessarily at the bottom of the output done).
+<p>
+The <i>stream</i> argument is not evaluated, and must be a symbol that is bound
+to a stream.  If <i>stream</i> is <tt>t</tt> (the default), <tt>*standard-output*</tt> is
+used.  <i>body</i> may have zero or more declarations as its first forms.
+<p>
+If <i>height</i> is supplied, it must be a rational number that specifies the
+amount of vertical space to allocate for the output, in device units. If it is
+not supplied, the height is computed from the output.
+<p>
+<i>record-type</i> specifies the class of output record to create to hold the
+graphical output.  The default is <tt>standard-sequence-output-record</tt> .
+<p>
+
+<a name="15.4.2"><h3>15.4.2 Wrapping of Text Lines</h3></a>
+<a name="Generic function stream-end-of-line-action"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-end-of-line-action</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function (setf stream-end-of-line-action)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf stream-end-of-line-action)</b></td><td valign="baseline" width="100%"><i>action stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>The end-of-line action controls what happens if the text cursor position moves
+horizontally out of the viewport, or if text output reaches the text margin.
+(By default the text margin is the width of the viewport, so these are usually
+the same thing.)
+<p>
+<tt>stream-end-of-line-action</tt> returns the end-of-line action for the
+<a href="extended-output.html#CONCEPT=extended output stream"><i>extended output stream</i></a> <i>stream</i> .  It can be changed by using
+<tt>setf</tt> on <tt>stream-end-of-line-action</tt> .
+<p>
+The end-of-line action is one of: 
+<p>
+<ul> <li> <tt>:wrap</tt> ---when doing text output, wrap the text around (that is, break
+the text line and start another line).  When setting the cursor position, scroll
+the window horizontally to keep the cursor position inside the viewport.  This
+is the default.
+<p>
+<li> <tt>:scroll</tt> ---scroll the window horizontally to keep the cursor
+position inside the viewport, then keep doing the output.
+<p>
+<li> <tt>:allow</tt> ---ignore the text margin and do the output on the drawing
+plane beyond the visible part of the viewport.
+</ul> <a name="Macro with-end-of-line-action"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>with-end-of-line-action</b></td><td valign="baseline" width="100%"><i>(stream action) <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Temporarily changes <i>stream</i> 's end-of-line action for the duration of
+execution of body.  <i>action</i> must be one of the actions described in
+<tt>stream-end-of-line-action</tt> .
+<p>
+The <i>stream</i> argument is not evaluated, and must be a symbol that is bound
+to a stream.  If <i>stream</i> is <tt>t</tt> , <tt>*standard-output*</tt> is used.
+<i>body</i> may have zero or more declarations as its first forms.
+<p>
+
+<a name="Generic function stream-end-of-page-action"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-end-of-page-action</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function (setf stream-end-of-page-action)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf stream-end-of-page-action)</b></td><td valign="baseline" width="100%"><i>action stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>The end-of-page action controls what happens if the text cursor position moves
+vertically out of the viewport.
+<p>
+<tt>stream-end-of-page-action</tt> returns the end-of-page action for the
+<a href="extended-output.html#CONCEPT=extended output stream"><i>extended output stream</i></a> <i>stream</i> .  It can be changed by using
+<tt>setf</tt> on <tt>stream-end-of-page-action</tt> .
+<p>
+The end-of-page action is one of: 
+<p>
+<ul> <li> <tt>:scroll</tt> ---scroll the window vertically to keep the cursor position
+inside the viewport, then keep doing output.  This is the default.
+<p>
+<li> <tt>:allow</tt> ---ignore the viewport and do the output on the drawing plane
+beyond the visible part of the viewport.
+<p>
+<li> <tt>:wrap</tt> ---when doing text output, wrap the text around (that is, go back
+to the top of the viewport).
+</ul> <a name="Macro with-end-of-page-action"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>with-end-of-page-action</b></td><td valign="baseline" width="100%"><i>(stream action) <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Temporarily changes <i>stream</i> 's end-of-page action for the duration of
+execution of body.  <i>action</i> must be one of the actions described in
+<tt>stream-end-of-page-action</tt> .
+<p>
+The <i>stream</i> argument is not evaluated, and must be a symbol that is bound
+to a stream.  If <i>stream</i> is <tt>t</tt> , <tt>*standard-output*</tt> is used.
+<i>body</i> may have zero or more declarations as its first forms.
+<p>
+
+<a name="15.5"><h2>15.5 Attracting the User's Attention</h2></a>
+<a name="Generic function beep"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>beep</b></td><td valign="baseline" width="100%"><i><tt>&amp;optional</tt> medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Attracts the user's attention, usually with an audible sound.
+<p>
+
+<a name="15.6"><h2>15.6 Buffering of Output</h2></a>
+Some mediums that support the output protocol may buffer output.  When buffering
+is enabled on a medium, the time at which output is actually done on the medium
+is unpredictable.  <tt>force-output</tt> or <tt>finish-output</tt> can be used to ensure
+that all pending output gets completed.  If the medium is a bidirectional
+stream, a <tt>force-output</tt> is performed whenever any sort of input is requested
+on the stream.
+<p>
+<tt>with-buffered-output</tt> provides a way to control when buffering is enabled on
+a medium.  By default, CLIM's interactive streams are buffered if the underlying
+window system supports buffering.
+<p>
+<a name="Generic function medium-buffering-output-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>medium-buffering-output-p</b></td><td valign="baseline" width="100%"><i>medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns <a href="extended-output.html#CONCEPT=true"><i>true</i></a> if the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> is currently buffering
+output, otherwise returns <a href="extended-output.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Generic function (setf medium-buffering-output-p)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf medium-buffering-output-p)</b></td><td valign="baseline" width="100%"><i>buffer-p medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Sets <tt>medium-buffering-output-p</tt> of the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> to
+<i>buffer-p</i> .
+<p>
+<a name="Macro with-output-buffered"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>with-output-buffered</b></td><td valign="baseline" width="100%"><i>(medium <tt>&amp;optional</tt> (buffer-p <tt>t</tt> ))
+                                  <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>If <i>buffer-p</i> is <a href="extended-output.html#CONCEPT=true"><i>true</i></a> (the default), this causes the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> designated by <i>medium</i> to start buffering output, and evaluates <i>body</i> in that context.  If <i>buffer-p</i> is <a href="extended-output.html#CONCEPT=false"><i>false</i></a> , <tt>force-output</tt> will be
+called before <i>body</i> is evaluated.  When <i>body</i> is exited (or aborted
+from), <tt>force-output</tt> will be called if output buffering will be disabled
+after <tt>with-output-buffered</tt> is exited.
+<p>
+The <i>medium</i> argument is not evaluated, and must be a symbol that is bound
+to a medium.  If <i>medium</i> is <tt>t</tt> , <tt>*standard-output*</tt> is used.
+<i>body</i> may have zero or more declarations as its first forms.
+<br><hr><br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="designs.html">General Designs</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="output-recording.html">Output Recording</a></td>
+</tr></table>
+</body></html>

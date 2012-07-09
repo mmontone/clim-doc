@@ -1,0 +1,823 @@
+<html><head><title>CLIM: 12 Graphics</title></head><body>
+<br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="text-styles.html">Text Styles</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="colors.html">Drawing in Color</a></td>
+</tr></table><br><hr><br>
+<p>
+<br><a name="12"><h1>12 Graphics</h1></a>
+<a name="LABEL=graphics"></a> <a name="12.1"><h2>12.1 Overview of Graphics</h2></a>
+The CLIM graphic drawing model is an idealized model of graphical pictures.  The
+model provides the language that application programs use to describe the
+intended visual appearance of textual and graphical output.  Usually not all of
+the contents of the screen are described using the graphic drawing model.  For
+example, menus and scroll bars might be described in higher-level terms.
+<p>
+An important aspect of the CLIM graphic drawing model is its extreme device
+independence.  The model describes ideal graphical images and ignores
+limitations of actual graphics devices.  One consequence of this is that the
+actual visual appearance of the screen can only be an approximation of the
+appearance specified by the model.  Another consequence of this is that the
+model is highly portable.
+<p>
+CLIM separates output into two layers, a text/graphics layer in which one
+specifies the desired visual appearance independent of device resolution and
+characteristics, and a rendering layer in which some approximation of the
+desired visual appearance is created on the device.  Of course application
+programs can inquire about the device resolution and characteristics if they
+wish and modify their desired visual appearance on that basis.  (There is also a
+third layer above these two layers, the adaptive toolkit layer where one
+specifies the desired functionality rather than the desired visual appearance.)
+<p>
+<hr><b>Issue:</b> SWM<br><i>There are still no functions to ask about device resolution and
+characteristics.  What characteristics do we need to be able to get to besides
+the obvious ones of resolution and ``color depth''.  Also, do we really need to
+refer to the adaptive toolkit layer here?</i><hr>
+CLIM's drawing functions provide convenient ways to draw several commonly-used
+shapes.
+<p>
+The interaction between graphics and output recording will be described in
+Chapter <a href="output-recording.html#LABEL=output-recording"><b><i>Output Recording</i></b></i></a> .
+<p>
+
+<a name="12.2"><h2>12.2 Definitions</h2></a>
+<p><b>Drawing plane.</b><br>
+A drawing plane is an infinite two-dimensional plane on which graphical output
+occurs.  The drawing plane contains an arrangement of colors and opacities that
+is modified by each graphical output operation.  It is not possible to read back
+the contents of a drawing plane, except by examining the output-history.
+Normally each window has its own drawing plane.
+<p>
+<p><b>Coordinates.</b><br>
+Coordinates are a pair of real numbers in implementation-defined units that
+identify a point in the drawing plane.
+<p>
+<p><b>Sheets and Mediums.</b><br>
+In this chapter, we use a medium as a destination for output.  The medium has a
+drawing plane, two designs called the medium's foreground and background, a
+transformation, a clipping region, a line style, and a text style.  There are
+per-medium, dynamically scoped, default drawing options.  Different medium
+classes are provided to allow programmers to draw on different sorts of devices,
+such as displays, printers, and virtual devices such as bitmaps.
+<p>
+Many sheets can be used for doing output, so the drawing functions can also take
+a sheet as the output argument.  In this case, drawing function ``trampolines''
+to the sheet's medium.  So, while the functions defined here are specified to be
+called on sheets, they can also be called on sheets.
+<p>
+A stream is a special kind of sheet that implements the stream protocol; streams
+include additional state such as the current text cursor (which is some point in
+the drawing plane).
+<p>
+By default, the ``fundamental'' coordinate system of a CLIM stream (not a
+general sheet or medium, whose fundamental coordinate system is not defined) is
+a left handed system with <tt>x</tt> increasing to the right, and <tt>y</tt> increasing
+downward.  <tt>(0,0)</tt> is at the upper left corner.
+<p>
+
+<a name="12.3"><h2>12.3 Drawing is Approximate</h2></a>
+Note that although the drawing plane contains an infinite number of mathematical
+points, and drawing can be described as an infinite number of color and opacity
+computations, the drawing plane cannot be viewed directly and has no material
+existence.  It is only an abstraction.  What can be viewed directly is the
+result of rendering portions of the drawing plane onto a medium.  No infinite
+computations or objects of infinite size are required to implement CLIM, because
+the results of rendering have finite size and finite resolution.
+<p>
+A drawing plane is described as having infinitely fine spatial, color, and
+opacity resolution, and as allowing coordinates of unbounded positive or
+negative magnitude.  A viewport into a drawing plane, on the other hand, views
+only a finite region (usually rectangular) of the drawing plane.  Furthermore, a
+viewport has limited spatial resolution and can only produce a limited number of
+colors.  These limitations are imposed by the display hardware on which the
+viewport is displayed.  A viewport also has limited opacity resolution,
+determined by the finite arithmetic used in the drawing engine (which may be
+hardware or software or both).
+<p>
+Coordinates are real numbers in implementation-defined units.  Often these units
+equal the spatial resolution of a viewport, so that a line of thickness 1 is
+equivalent to the thinnest visible line.  However, this equivalence is not
+required and should not be assumed by application programs.
+<p>
+A valid CLIM implementation can be quite restrictive in the size and resolution
+of its viewports.  For example, the spatial resolution might be only a few dozen
+points per inch, the maximum size might be only a few hundred points on a side,
+and there could be as few as two displayable colors (usually black and white).
+The fully transparent and fully opaque opacity levels must always be supported,
+but a valid CLIM implementation might support only a few opacity levels in
+between (or possibly even none).  A valid CLIM implementation might implement
+color blending and unsaturated colors by stippling, although it is preferred,
+when possible, for a viewport to display a uniform color as a uniform color
+rather than as a perceptible stipple.
+<p>
+When CLIM records the output to a sheet, there are no such limitations since
+CLIM just remembers the drawing operations that were performed, not the results
+of rendering.
+<p>
+CLIM provides some ways to ask what resolution limits are in effect for a
+medium.  See Chapter <a href="drawing-options.html#LABEL=drawing-options"><b><i>Drawing Options</i></b></i></a> for their descriptions.
+<p>
+The application programmer uses the CLIM graphic drawing model as an interface
+to describe the intended visual appearance.  An implementation does its best to
+approximate that ideal appearance in a viewport, within its limitations of
+spatial resolution, color resolution, number of simultaneously displayable
+colors, and drawing speed.  This will usually require tradeoffs, for example
+between speed and accuracy, and each implementation must make these tradeoffs
+according to its own hardware/software environment and user concerns.  For
+example, if the actual device supports a limited number of colors, the desired
+color may be approximated by techniques such as dithering or stippling.  If the
+actual device cannot draw curves exactly, they may be approximated, with or
+without anti-aliasing.  If the actual device has limited opacity resolution,
+color blending may be approximate.  A viewport might display colors that don't
+appear in the drawing plane, both because of color and opacity approximation and
+because of anti-aliasing at the edges of drawn shapes.
+<p>
+It is likely that different implementations will produce somewhat different
+visual appearance when running the same application.  If an application requires
+more detailed control, it must resort to a lower-level interface, and will
+become less portable as a result.  These lower-level interfaces will be
+documented on a per-platform basis.
+<p>
+Drawing computations are always carried out ``in color'', even if the viewport
+is only capable of displaying black and white.  In other words, the CLIM drawing
+model is always the fully general model, even if an implementation's color
+resolution is limited enough that full use of the model is not possible.  Of
+course an application that fundamentally depends on color will not work well on
+a viewport that cannot display color.  Other applications will degrade
+gracefully.
+<p>
+Whether the implementation uses raster graphics or some other display technique
+is invisible at this interface.  CLIM does not specify the existence of pixels
+nor the exact details of scan conversion, which will vary from one drawing
+engine to the next.
+<p>
+Performance will also vary between implementations.  This interface is defined
+in terms of simple conceptual operations, however an actual implementation may
+use caching, specialized object representations, and other optimizations to
+avoid materializing storage-intensive or computation-costly intermediate results
+and to take advantage of available hardware.
+<p>
+
+<a name="12.4"><h2>12.4 Rendering Conventions for Geometric Shapes</h2></a>
+The intent of this section is to describe the conventions for how CLIM should
+render a shape on a display device.  These conventions and the accompanying
+examples are meant to describe a set of goals that a CLIM implementation should
+try to meet.  However, compliant CLIM implementations may deviate from these
+goals if necessary (for example, if the rendering performance on a specific
+platform would be unacceptably slow if these goals were met exactly and
+implementors feel that users would be better served by speed than by accuracy).
+Note that we discuss only pixel-based display devices here, which are the most
+common, but by no means the only, sort of display device that can be supported
+by CLIM.
+<p>
+When CLIM draws a geometric shape on some sort of display device, the idealized
+geometric shape must somehow be rendered on the display device.  The geometric
+shapes are made up of a set of mathematical points, which have no size; the
+rendering of the shape is usually composed of pixels, which are roughly square.
+These pixels exist in ``device coordinates'', which are gotten by transforming
+the user-supplied coordinates by all of the user-supplied transformation, the
+medium transformation, and the transformation that maps from the sheet to the
+display device.  (Note that if the last transformation is a pure translation
+that translates by an integer multiple of device units, then it has no effect on
+the rendering other than placement of the figure drawn on the display device.)
+<p>
+Roughly speaking, a pixel is affected by drawing a shape only when it is inside
+the shape (we will define what we mean by ``inside'' in a moment).  Since pixels
+are little squares and the abstract points have no size, for most shapes there
+will be many pixels that lie only partially inside the shape.  Therefore, it is
+important to describe the conventions used by CLIM as to which pixels should be
+affected when drawing a shape, so that the proper interface to the per-platform
+rendering engine can be constructed.  (It is worth noting that on devices that
+support color or grayscale, the rendering engine may attempt to draw a pixel
+that is partially inside the shape darker or lighter, depending on how much of
+it is inside the shape.  This is called <a name="CONCEPT=anti-aliasing"><b><i>anti-aliasing</i></b></a> .)  The conventions
+used by CLIM is the same as the conventions used by X11:
+<p>
+<ul> <li> A pixel is a addressed by its upper-left corner.
+<p>
+<li> A pixel is considered to be <a name="CONCEPT=inside"><b><i>inside</i></b></a> a shape, and hence affected
+by the rendering of that shape, if the center of the pixel is inside the shape.
+If the center of the pixel lies exactly on the boundary of the shape, it is
+considered to be inside if the inside of the shape is immediately to the right
+(increasing <tt>x</tt> direction on the display device) of the center point of the
+pixel.  If the center of the pixel lies exactly on a horizontal boundary, it is
+considered to be inside if the inside of the shape is immediately below
+(increasing <tt>y</tt> direction on the display device) the center point of the pixel.
+<p>
+<li> An unfilled shape is drawn by taking the filled shape consisting of those
+points that are within 1/2 the line thickness from the outline curve (using a
+normal distance function, that is, the length of the line drawn at right angles
+to the tangent to the outline curve at the nearest point), and applying the
+second rule, above.
+</ul> It is important to note that these rules imply that the decision point used for
+insideness checking is offset from the point used for addressing the pixel by
+half a device unit in both the <tt>x</tt> and <tt>y</tt> directions.  It is worth considering
+the motivations for these conventions.
+<p>
+When two shapes share a common edge, it is important that only one of the shapes
+own any pixel.  The two triangles in Figure <a href="graphics.html#LABEL=two-triangles"><b><i>12.1</i></b></i></a> illustrate this.
+The pixels along the diagonal belong to the lower figure.  When the decision
+point of the pixel (its center) lies to one side of the line or the other, there
+is no issue.  When the boundary passes through a decision point, which side the
+inside of the figure is on is used to decide.  These are the triangles that CLIM
+implementations should attempt to draw in this case.
+<p>
+<center><img src="two-triangles.jpg"></center>
+<center><b>Figure 12.1: </b><a name="LABEL=two-triangles"></a> Pixel assignment with boundary on decision points.</center>
+The reason for choosing the decision point half a pixel offset from the address
+point is to reduce the number of common figures (such as rectilinear lines and
+rectangles with integral coordinates) that invoke the boundary condition rule.
+This usually leads to more symmetrical results.  For instance, in
+Figure <a href="graphics.html#LABEL=corner-circle"><b><i>12.2</i></b></i></a> , we see a circle drawn when the decision point is the
+same as the address point.  The four lighter points are indeterminate: it is not
+clear whether they are inside or outside the shape.  Since we want to have each
+boundary case determined according to which side has the figure on it, and since
+we must apply the same rule uniformly for all figures, we have no choice but to
+pick only two of the four points, leading to an undesirable lopsided figure.
+<p>
+<center><img src="corner-circle.jpg"></center>
+<center><b>Figure 12.2: </b><a name="LABEL=corner-circle"></a> Choosing any two of the shaded pixels causes asymmetry.</center>
+If we had instead chosen to take all four boundary points, we would have a nice
+symmetrical figure.  However, since this figure is symmetrical about a whole
+pixel, it is one pixel wider than it ought to be.  The problem with this can be
+seen clearly in Figure <a href="graphics.html#LABEL=inscribed-circle"><b><i>12.3</i></b></i></a> if we attempt to draw a rectangle
+and circle overlaid with the following code:
+<p>
+<pre>(defun draw-test (medium radius)
+  (draw-circle* medium 0 0 radius :ink +foreground-ink+)
+  (draw-rectangle* medium (- radius) (- radius) (+ radius) (+ radius)
+                   :ink +flipping-ink+))
+</pre> <center><img src="inscribed-circle.jpg"></center>
+<center><b>Figure 12.3: </b><a name="LABEL=inscribed-circle"></a> Two forms of a circle inscribed in a rectangle.</center>
+It is for this reason that we choose to have the decision point at the center of
+the pixel.  This draws circles that look like the one in
+Figure <a href="graphics.html#LABEL=correct-circle"><b><i>12.4</i></b></i></a> .  It is this shape that CLIM implementations should
+attempt to draw.
+<p>
+<center><img src="correct-circle.jpg"></center>
+<center><b>Figure 12.4: </b><a name="LABEL=correct-circle"></a> An aesthetically pleasing circle.</center>
+A consequence of these rendering conventions is that, when the start or end
+coordinate (minus 1/2 the line thickness, if the shape is a path) is not an
+integer, then rendering is not symmetric under reflection transformations.  Thus
+to correctly and portably draw an outline of thickness 1 around a (rectilinear)
+rectangular area with integral coordinates, the outline path must have
+half-integral coordinates.  Drawing rectilinear areas whose boundaries are not
+on pixel boundaries cannot be guaranteed to be portable.  Another way to say the
+same thing is that the ``control points'' for a rectangular area are at the
+corners, while the control points for a rectilinear path are in the center of
+the path, not at the corners.  Therefore, in order for a path and an area to
+abut seamlessly, the coordinates of the path must be offset from the coordinates
+of the area by half the path's thickness.
+<p>
+<a name="12.4.1"><h3>12.4.1 Permissible Alternatives During Rendering</h3></a>
+Some platforms may distinguish between lines of the minimum thinness from lines
+that are thicker than that.  The two rasterizations depicted in
+Figure <a href="graphics.html#LABEL=thin-lines"><b><i>12.5</i></b></i></a> are both perfectly reasonable rasterizations of tilted
+lines that are a single device unit wide.  The right-hand line is drawn as a
+tilted rectangle, the left as the ``thinnest visible'' line.
+<p>
+<center><img src="thin-lines.jpg"></center>
+<center><b>Figure 12.5: </b><a name="LABEL=thin-lines"></a> Two examples of lines of thickness 1.</center>
+For thick lines, a platform may choose to draw the exact tilted fractional
+rectangle, or the coordinates of that rectangle might be rounded so that it is
+distorted into another polygonal shape.  The latter case may be prove to be
+faster on some platforms.  The two rasterizations depicted in
+Figure <a href="graphics.html#LABEL=thick-lines"><b><i>12.6</i></b></i></a> are both reasonable.
+<p>
+<center><img src="thick-lines.jpg"></center>
+<center><b>Figure 12.6: </b><a name="LABEL=thick-lines"></a> Two examples of lines of thickness 2.</center>
+The decision about which side of the shape to take when a boundary line passes
+through the decision point is made arbitrarily, although we have chosen to be
+compatible with the X11 definition.  This is not necessarily the most convenient
+decision.  The main problem with this is illustrated by the case of a horizontal
+line (see Figure <a href="graphics.html#LABEL=horizontal-lines"><b><i>12.7</i></b></i></a> ).  Our definition chooses to draw the
+rectangular slice above the coordinates, since those pixels are the ones whose
+centers have the figure immediately above them.  This definition makes it
+simpler to draw rectilinear borders around rectilinear areas.
+<p>
+<center><img src="horizontal-lines.jpg"></center>
+<center><b>Figure 12.7: </b><a name="LABEL=horizontal-lines"></a> Two possible definitions of horizontal lines. 
+Left figure is X11 definition.</center>
+<a name="LABEL=drawing-functions"></a> 
+<a name="12.5"><h2>12.5 Drawing Functions</h2></a>
+
+
+
+
+
+
+<p>
+Each drawing function takes keyword arguments allowing any drawing option or
+suboption to be supplied separately in the call to the function.  In some
+implementations of CLIM, the drawing functions may ignore drawing options that
+are irrelevant to that function; in other implementations, an error may be
+signalled.  See Chapter <a href="drawing-options.html#LABEL=drawing-options"><b><i>Drawing Options</i></b></i></a> for a more complete discussion of
+the drawing options.  An error will be signalled if any drawing function is
+called on a sheet that is mute for output.
+<p>
+While the functions in this section are specified to be called on mediums, they
+can also be called on sheets and streams.  CLIM implementations will typically
+implement the method on a medium, and write a ``trampoline'' on the various
+sheet and stream classes that trampolines to the medium.
+<p>
+<b>Implementation note:</b> The drawing functions are all specified as ordinary
+functions, not as generic functions.  This is intended to ease the task of
+writing compile-time optimizations that avoid keyword argument taking, check for
+such things as constant drawing options, and so forth.  If you need to
+specialize any of the drawing methods, use <tt>define-graphics-method</tt> .
+<p>
+Each drawing function comes in two forms, a ``structured'' version and a
+``spread'' version.  The structured version passes points, whereas the spread
+version passes coordinates.  See Section <a href="conventions.html#LABEL=spread-vs-point"><b><i>``Spread'' Point Arguments to Functions </i></b></i></a> for more
+information on this.
+<p>
+Any drawing functions may create an <a href="graphics.html#CONCEPT=output record"><i>output record</i></a> that corresponds to the
+figure being drawn.  See Chapter <a href="extended-output.html#LABEL=extended-output"><b><i>Extended Stream Output</i></b></i></a> for a complete discussion
+of output recording.  During output recording, none of these functions capture
+any arguments that are points, point sequences, coordinate sequences, or text
+strings.  Line styles, text styles, transformations, and clipping regions may be
+captured.
+<p>
+Note that the CLIM specification does not specify more complex shapes such as
+cubic splines and B'ezier curves.  These are suitable candidates for
+extensions to CLIM.
+<p>
+
+<a name="12.5.1"><h3>12.5.1 Basic Drawing Functions</h3></a>
+<a name="Function draw-point"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>draw-point</b></td><td valign="baseline" width="100%"><i>medium point <tt>&amp;key</tt> ink clipping-region transformation line-style line-thickness line-unit</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table><a name="Function draw-point*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>draw-point*</b></td><td valign="baseline" width="100%"><i>medium x y   <tt>&amp;key</tt> ink clipping-region transformation line-style line-thickness line-unit</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>These functions (structured and spread arguments, respectively) draw a single
+point on the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> at the <a href="regions.html#CONCEPT=point"><i>point</i></a> <i>point</i> (or the
+position <tt>(x,y)</tt>).
+<p>
+The unit and thickness components of the current line style (see
+Chapter <a href="drawing-options.html#LABEL=drawing-options"><b><i>Drawing Options</i></b></i></a> ) affect the drawing of the point by controlling
+the size on the display device of the ``blob'' that is used to render the point.
+<p>
+
+<a name="Function draw-points"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>draw-points</b></td><td valign="baseline" width="100%"><i>medium points <tt>&amp;key</tt> ink clipping-region transformation line-style line-thickness line-unit</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table><a name="Function draw-points*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>draw-points*</b></td><td valign="baseline" width="100%"><i>medium position-seq <tt>&amp;key</tt> ink clipping-region transformation line-style line-thickness line-unit</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>These functions (structured and spread arguments, respectively) draw a set of
+points on the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> .  <i>points</i> is a sequence of point
+objects; <i>position-seq</i> is a sequence of coordinate pairs, which are real
+numbers.  It is an error if <i>position-seq</i> does not contain an even number
+of elements.
+<p>
+Ignoring the drawing options, these functions exist as equivalents to
+<pre>(map nil #`(lambda (point) (draw-point medium point)) points)
+</pre> and
+<pre>(do ((i 0 (+ i 2)))
+    ((= i (length position-seq)))
+  (draw-point* medium (elt position-seq i) (elt position-seq (+ i 1))))
+</pre> for convenience and efficiency.
+<p>
+
+<a name="Function draw-line"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>draw-line</b></td><td valign="baseline" width="100%"><i>medium point1 point2 <tt>&amp;key</tt> ink clipping-region transformation line-style line-thickness line-unit line-dashes line-cap-shape</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table><a name="Function draw-line*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>draw-line*</b></td><td valign="baseline" width="100%"><i>medium x1 y1  x2 y2  <tt>&amp;key</tt> ink clipping-region transformation line-style line-thickness line-unit line-dashes line-cap-shape</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>These functions (structured and spread arguments, respectively) draw a line
+segment on the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> from the <a href="regions.html#CONCEPT=point"><i>point</i></a> <i>point1</i> to
+<i>point2</i> (or from the position (<i>x1</i> ,<i>y1</i> ) to (<i>x2</i> ,<i>y2</i> )).
+<p>
+The current line style (see Chapter <a href="drawing-options.html#LABEL=drawing-options"><b><i>Drawing Options</i></b></i></a> ) affects the drawing
+of the line in the obvious way, except that the joint shape has no effect.
+Dashed lines start dashing at <i>point1</i> .
+<p>
+
+<a name="Function draw-lines"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>draw-lines</b></td><td valign="baseline" width="100%"><i>medium points <tt>&amp;key</tt> ink clipping-region transformation line-style line-thickness line-unit line-dashes line-cap-shape</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table><a name="Function draw-lines*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>draw-lines*</b></td><td valign="baseline" width="100%"><i>medium position-seq <tt>&amp;key</tt> ink clipping-region transformation line-style line-thickness line-unit line-dashes line-cap-shape</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>These functions (structured and spread arguments, respectively) draw a set of
+disconnected line segments.  <i>points</i> is a sequence of point objects;
+<i>position-seq</i> is a sequence of coordinate pairs.  It is an error if
+<i>position-seq</i> does not contain an even number of elements.
+<p>
+Ignoring the drawing options, these functions are equivalent to
+<pre>(do ((i 0 (+ i 2)))
+    ((= i (length points)))
+  (draw-line medium (elt points i) (elt points (1+ i))))
+</pre> and
+<pre>(do ((i 0 (+ i 4)))
+    ((= i (length position-seq)))
+  (draw-line* medium (elt position-seq i)       (elt position-seq (+ i 1))
+                     (elt position-seq (+ i 2)) (elt position-seq (+ i 3))))
+</pre> <a name="Function draw-polygon"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>draw-polygon</b></td><td valign="baseline" width="100%"><i>medium point-seq <tt>&amp;key</tt> (filled <tt>t</tt> ) (closed <tt>t</tt> )
+                        ink clipping-region transformation line-style line-thickness line-unit line-dashes line-joint-shape line-cap-shape</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table><a name="Function draw-polygon*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>draw-polygon*</b></td><td valign="baseline" width="100%"><i>medium coord-seq <tt>&amp;key</tt> (filled <tt>t</tt> ) (closed <tt>t</tt> ) 
+                        ink clipping-region transformation line-style line-thickness line-unit line-dashes line-joint-shape line-cap-shape</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Draws a polygon or polyline on the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> .  When
+<i>filled</i> is <a href="graphics.html#CONCEPT=false"><i>false</i></a> , this draws a set of connected lines, otherwise it
+draws a filled polygon.  If <i>closed</i> is <a href="graphics.html#CONCEPT=true"><i>true</i></a> (the default) and
+<i>filled</i> is <a href="graphics.html#CONCEPT=false"><i>false</i></a> , it ensures that a segment is drawn that connects
+the ending point of the last segment to the starting point of the first segment.
+The current line style (see Chapter <a href="drawing-options.html#LABEL=drawing-options"><b><i>Drawing Options</i></b></i></a> ) affects the drawing
+of unfilled polygons in the obvious way.  The cap shape affects only the
+``open'' vertices in the case when <i>closed</i> is <a href="graphics.html#CONCEPT=false"><i>false</i></a> .  Dashed lines
+start dashing at the starting point of the first segment, and may or may not
+continue dashing across vertices, depending on the window system.
+<p>
+<i>point-seq</i> is a sequence of point objects; <i>coord-seq</i> is a sequence of
+coordinate pairs.  It is an error if <i>coord-seq</i> does not contain an even
+number of elements.
+<p>
+If <i>filled</i> is <a href="graphics.html#CONCEPT=true"><i>true</i></a> , a closed polygon is drawn and filled in.  In
+this case, <i>closed</i> is assumed to be <a href="graphics.html#CONCEPT=true"><i>true</i></a> as well.
+<p>
+
+<a name="Function draw-rectangle"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>draw-rectangle</b></td><td valign="baseline" width="100%"><i>medium point1 point2 <tt>&amp;key</tt> (filled <tt>t</tt> )
+                         ink clipping-region transformation line-style line-thickness line-unit line-dashes line-joint-shape</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table><a name="Function draw-rectangle*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>draw-rectangle*</b></td><td valign="baseline" width="100%"><i>medium x1 y1 x2 y2 <tt>&amp;key</tt> (filled <tt>t</tt> )
+                          ink clipping-region transformation line-style line-thickness line-unit line-dashes line-joint-shape</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Draws either a filled or unfilled rectangle on the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> that
+has its sides aligned with the coordinate axes of the native coordinate system.
+One corner of the rectangle is at the position (<i>x1</i> ,<i>y1</i> ) and the
+opposite corner is at (<i>x2</i> ,<i>y2</i> ).  The arguments <i>x1</i> , <i>y1</i> ,
+<i>x2</i> , and <i>y1</i> are real numbers that are canonicalized in the same way
+as for <tt>make-bounding-rectangle</tt> .  <i>filled</i> is as for <tt>draw-polygon*</tt> .
+<p>
+The current line style (see Chapter <a href="drawing-options.html#LABEL=drawing-options"><b><i>Drawing Options</i></b></i></a> ) affects the drawing
+of unfilled rectangles in the obvious way, except that the cap shape has no
+effect.
+<p>
+
+<a name="Function draw-rectangles"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>draw-rectangles</b></td><td valign="baseline" width="100%"><i>medium points <tt>&amp;key</tt> ink clipping-region transformation line-style line-thickness line-unit line-dashes line-joint-shape</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table><a name="Function draw-rectangles*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>draw-rectangles*</b></td><td valign="baseline" width="100%"><i>medium position-seq <tt>&amp;key</tt> ink clipping-region transformation line-style line-thickness line-unit line-dashes line-joint-shape</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>These functions (structured and spread arguments, respectively) draw a set of
+rectangles.  <i>points</i> is a sequence of point objects; <i>position-seq</i> is
+a sequence of coordinate pairs.  It is an error if <i>position-seq</i> does not
+contain an even number of elements.
+<p>
+Ignoring the drawing options, these functions are equivalent to
+<pre>(do ((i 0 (+ i 2)))
+    ((= i (length points)))
+  (draw-rectangle medium (elt points i) (elt points (1+ i))))
+</pre> and
+<pre>(do ((i 0 (+ i 4)))
+    ((= i (length position-seq)))
+  (draw-rectangle* medium (elt position-seq i)       (elt position-seq (+ i 1))
+                          (elt position-seq (+ i 2)) (elt position-seq (+ i 3))))
+</pre> <a name="Function draw-ellipse"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>draw-ellipse</b></td><td valign="baseline" width="100%"><i>medium center-pt radius-1-dx radius-1-dy radius-2-dx radius-2-dy
+                        <tt>&amp;key</tt> (filled <tt>t</tt> ) start-angle end-angle
+                        ink clipping-region transformation line-style line-thickness line-unit line-dashes line-cap-shape</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table><a name="Function draw-ellipse*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>draw-ellipse*</b></td><td valign="baseline" width="100%"><i>medium center-x center-y radius-1-dx radius-1-dy radius-2-dx radius-2-dy
+                        <tt>&amp;key</tt> (filled <tt>t</tt> ) start-angle end-angle
+                        ink clipping-region transformation line-style line-thickness line-unit line-dashes line-cap-shape</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>These functions (structured and spread arguments, respectively) draw an ellipse
+(when <i>filled</i> is <a href="graphics.html#CONCEPT=true"><i>true</i></a> , the default) or an elliptical arc (when
+<i>filled</i> is <a href="graphics.html#CONCEPT=false"><i>false</i></a> ) on the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> .  The center of
+the ellipse is the <a href="regions.html#CONCEPT=point"><i>point</i></a> <i>center-pt</i> (or the position
+(<i>center-x</i> ,<i>center-y</i> )).
+<p>
+Two vectors, (<i>radius-1-dx</i> ,<i>radius-1-dy</i> ) and
+(<i>radius-2-dx</i> ,<i>radius-2-dy</i> ) specify the bounding parallelogram of the
+ellipse as explained in Chapter <a href="regions.html#LABEL=regions"><b><i>Regions</i></b></i></a> .  All of the radii are real
+numbers.  If the two vectors are collinear, the ellipse is not well-defined and
+the <tt>ellipse-not-well-defined</tt> error will be signalled.  The special case
+of an ellipse with its major axes aligned with the coordinate axes can be
+obtained by setting both <i>radius-1-dy</i> and <i>radius-2-dx</i> to 0.
+<p>
+<i>start-angle</i> and <i>end-angle</i> are real numbers that specify an arc
+rather than a complete ellipse.  Angles are measured with respect to the
+positive <tt>x</tt> axis.  The elliptical arc runs positively (counter-clockwise) from
+<i>start-angle</i> to <i>end-angle</i> .  The default for <i>start-angle</i> is <tt>0</tt>;
+the default for <i>end-angle</i> is <tt>2<i><huge>pi</huge></i> </tt>.
+<p>
+In the case of a ``filled arc'' (that is when <i>filled</i> is <a href="graphics.html#CONCEPT=true"><i>true</i></a> and
+<i>start-angle</i> or <i>end-angle</i> are supplied and are not <tt>0</tt> and <tt>2<i><huge>pi</huge></i> </tt>),
+the figure drawn is the ``pie slice'' area swept out by a line from the center
+of the ellipse to a point on the boundary as the boundary point moves from
+<i>start-angle</i> to <i>end-angle</i> .
+<p>
+When drawing unfilled ellipses, the current line style (see
+Chapter <a href="drawing-options.html#LABEL=drawing-options"><b><i>Drawing Options</i></b></i></a> ) affects the drawing in the obvious way, except
+that the joint shape has no effect.  Dashed elliptical arcs start ``dashing'' at
+<i>start-angle</i> .
+<p>
+
+<a name="Function draw-circle"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>draw-circle</b></td><td valign="baseline" width="100%"><i>medium center-pt radius <tt>&amp;key</tt> (filled <tt>t</tt> ) start-angle end-angle
+                       ink clipping-region transformation line-style line-thickness line-unit line-dashes line-cap-shape</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table><a name="Function draw-circle*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>draw-circle*</b></td><td valign="baseline" width="100%"><i>medium center-x center-y radius <tt>&amp;key</tt> (filled <tt>t</tt> ) start-angle end-angle
+                       ink clipping-region transformation line-style line-thickness line-unit line-dashes line-cap-shape</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>These functions (structured and spread arguments, respectively) draw a circle
+(when <i>filled</i> is <a href="graphics.html#CONCEPT=true"><i>true</i></a> , the default) or a circular arc (when
+<i>filled</i> is <a href="graphics.html#CONCEPT=false"><i>false</i></a> ) on the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> .  The center of
+the circle is <i>center-pt</i> or (<i>center-x</i> ,<i>center-y</i> ) and the radius
+is <i>radius</i> .  These are just special cases of <tt>draw-ellipse</tt> and
+<tt>draw-ellipse*</tt> .  <i>filled</i> is as for <tt>draw-ellipse*</tt> .
+<p>
+<i>start-angle</i> and <i>end-angle</i> allow the specification of an arc rather
+than a complete circle in the same manner as that of the ellipse functions,
+above.
+<p>
+The ``filled arc'' behavior is the same as that of an ellipse, above.
+<p>
+
+<a name="Function draw-text"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>draw-text</b></td><td valign="baseline" width="100%"><i>medium string-or-char point
+                     <tt>&amp;key</tt> text-style (start <tt>0</tt> ) end
+                          (align-x <tt>:left</tt> ) (align-y <tt>:baseline</tt> )
+                          toward-point transform-glyphs
+                     ink clipping-region transformation text-style text-family text-face text-size</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table><a name="Function draw-text*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>draw-text*</b></td><td valign="baseline" width="100%"><i>medium string-or-char x y
+                     <tt>&amp;key</tt> text-style (start <tt>0</tt> ) end
+                          (align-x <tt>:left</tt> ) (align-y <tt>:baseline</tt> )
+                          toward-x toward-y transform-glyphs
+                     ink clipping-region transformation text-style text-family text-face text-size</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>The text specified by <i>string-or-char</i> is drawn on the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> starting at the position specified by the <a href="regions.html#CONCEPT=point"><i>point</i></a> <i>point</i> (or the position <tt>(x,y)</tt>).  The exact definition of ``starting at'' is dependent
+on <i>align-x</i> and <i>align-y</i> .  <i>align-x</i> is one of <tt>:left</tt> ,
+<tt>:center</tt> , or <tt>:right</tt> .  <i>align-y</i> is one of <tt>:baseline</tt> ,
+<tt>:top</tt> , <tt>:center</tt> , or <tt>:bottom</tt> .  <i>align-x</i> defaults to <tt>:left</tt> and <i>align-y</i> defaults to <tt>:baseline</tt> ; with these defaults, the first
+glyph is drawn with its left edge and its baseline at <i>point</i> .
+<p>
+<i>text-style</i> defaults to <tt>nil</tt> , meaning that the text will be drawn using
+the current text style of the medium.
+<p>
+<i>start</i> and <i>end</i> specify the start and end of the string, in the case
+where <i>string-or-char</i> is a string.  If <i>start</i> is supplied, it must be
+an integer that is less than the length of the string.  If <i>end</i> is
+supplied, it must be an integer that is less than the length of the string, but
+greater than or equal to <i>start</i> .
+<p>
+Normally, glyphs are drawn from left to right no matter what transformation is
+in effect.  <i>toward-x</i> or <i>toward-y</i> (derived from <i>toward-point</i> in
+the case of <tt>draw-text</tt> ) can be used to change the direction from one glyph
+to the next one.  For example, if <i>toward-x</i> is less than the <tt>x</tt> position
+of <i>point</i> , then the glyphs will be drawn from right to left.  If
+<i>toward-y</i> is greater than the <tt>y</tt> position of <i>point</i> , then the glyphs'
+baselines will be positioned one above another.  More precisely, the reference
+point in each glyph lies on a line from <i>point</i> to <i>toward-point</i> , and
+the spacing of each glyph is determined by packing rectangles along that line,
+where each rectangle is ``char-width'' wide and ``char-height'' high.
+<p>
+If <i>transform-glyphs</i> is <a href="graphics.html#CONCEPT=true"><i>true</i></a> , then each glyph is transformed as an
+image before it is drawn.  That is, if a rotation transformation is in effect,
+then each glyph will be rotated individually.  If <i>transform-glyphs</i> is not
+supplied, then the individual glyphs are not subject to the current
+transformation.  It is permissible for CLIM implementations to ignore
+<i>transform-glyphs</i> if it is too expensive to implement.
+<p>
+
+<a name="12.5.2"><h3>12.5.2 Compound Drawing Functions</h3></a>
+CLIM also provides a few compound drawing functions.  The compound drawing
+functions could be composed by a programmer from the basic drawing functions,
+but are provided by CLIM because they are commonly used.
+<p>
+<a name="Function draw-arrow"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>draw-arrow</b></td><td valign="baseline" width="100%"><i>medium point-1 point-2 <tt>&amp;key</tt> ink clipping-region transformation line-style line-thickness line-unit line-dashes line-cap-shapeto-head from-head head-length head-width</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table><a name="Function draw-arrow*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>draw-arrow*</b></td><td valign="baseline" width="100%"><i>medium x1 y1 x2 y2 <tt>&amp;key</tt> ink clipping-region transformation line-style line-thickness line-unit line-dashes line-cap-shapefrom-head to-head head-length head-width</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>These functions (structured and spread arguments, respectively) draw a line
+segment on the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> from the <a href="regions.html#CONCEPT=point"><i>point</i></a> <i>point1</i> to
+<i>point2</i> (or from the position (<i>x1</i> ,<i>y1</i> ) to (<i>x2</i> ,<i>y2</i> )).
+If <i>to-head</i> is <a href="graphics.html#CONCEPT=true"><i>true</i></a> (the default), then the ``to'' end of the line
+is capped by an arrowhead.  If <i>from-head</i> is <a href="graphics.html#CONCEPT=true"><i>true</i></a> (the default is
+<a href="graphics.html#CONCEPT=false"><i>false</i></a> ), then the ``from'' end of the line is capped by an arrowhead.  The
+arrowhead has length <i>head-length</i> (default 10) and width <i>head-width</i> (default 5).
+<p>
+The current line style (see Chapter <a href="drawing-options.html#LABEL=drawing-options"><b><i>Drawing Options</i></b></i></a> ) affects the drawing
+of the line portion of the arrow in the obvious way, except that the joint shape
+has no effect.  Dashed arrows start dashing at <i>point1</i> .
+<p>
+
+<a name="Function draw-oval"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>draw-oval</b></td><td valign="baseline" width="100%"><i>medium center-pt x-radius y-radius <tt>&amp;key</tt> (filled <tt>t</tt> ) 
+                     ink clipping-region transformation line-style line-thickness line-unit line-dashes line-cap-shape</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table><a name="Function draw-oval*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>draw-oval*</b></td><td valign="baseline" width="100%"><i>medium center-x center-y x-radius y-radius <tt>&amp;key</tt> (filled <tt>t</tt> )
+                     ink clipping-region transformation line-style line-thickness line-unit line-dashes line-cap-shape</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>These functions (structured and spread arguments, respectively) draw a filled or
+unfilled oval (that is, a ``race-track'' shape) on the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> .
+The oval is centered on <i>center-pt</i> (or (<i>center-x</i> ,<i>center-y</i> )).
+If <i>x-radius</i> or <i>y-radius</i> is <tt>0</tt>, then a circle is drawn with the
+specified non-zero radius.  Other, a figure is drawn that results from drawing a
+rectangle with dimension x-radius by <i>y-radius</i> , and the replacing the two
+short sides with a semicircular arc of the appropriate size.
+<p>
+
+<a name="12.6"><h2>12.6 Pixmaps</h2></a>
+A <a name="CONCEPT=pixmap"><b><i>pixmap</i></b></a> can be thought of as an ``off-screen window'', that is, a
+medium that can be used for graphical output, but is not visible on any display
+device.   Pixmaps are provided to allow a programmer to generate a piece of
+output associated with some display device that can then be rapidly drawn on a
+real display device.  For example, an electrical CAD system might generate a
+pixmap that corresponds to a complex, frequently used part in a VLSI schematic,
+and then use <tt>copy-from-pixmap</tt> to draw the part as needed.
+<p>
+The exact representation of a pixmap is explicitly unspecified.  There
+is no interaction between the pixmap operations and output recording,
+that is, displaying a pixmap on a sheet or medium is a pure drawing
+operation that affects only the display, not the output history.  Some
+mediums may not support pixmaps; in this case, an error will be
+signalled.
+<p>
+
+<a name="Generic function allocate-pixmap"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>allocate-pixmap</b></td><td valign="baseline" width="100%"><i>medium width height</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Allocates and returns a pixmap object that can be used on any medium that shares
+the same characteristics as <i>medium</i> .  (The exact definition of ``shared
+characteristics'' will vary from host to host.)  <i>medium</i> can be a medium, a
+sheet, or a stream.
+<p>
+The resulting pixmap will be at least <i>width</i> units wide, <i>height</i> units
+high, and as deep as is necessary to store the information for the medium.  The
+exact representation of pixmaps is explicitly unspecified.
+<p>
+The returned value is the pixmap.
+<p>
+<a name="Generic function deallocate-pixmap"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>deallocate-pixmap</b></td><td valign="baseline" width="100%"><i>pixmap</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Deallocates the pixmap <i>pixmap</i> .
+<p>
+
+<a name="Generic function pixmap-width"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>pixmap-width</b></td><td valign="baseline" width="100%"><i>pixmap</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function pixmap-height"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>pixmap-height</b></td><td valign="baseline" width="100%"><i>pixmap</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><a name="Generic function pixmap-depth"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>pixmap-depth</b></td><td valign="baseline" width="100%"><i>pixmap</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>These functions return, respectively, the width, height, and depth of the pixmap
+<i>pixmap</i> .  These values may be different from the programmer-specified
+values, since some window systems need to allocate pixmaps only of particular
+sizes.
+<p>
+
+<a name="Function copy-to-pixmap"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>copy-to-pixmap</b></td><td valign="baseline" width="100%"><i>medium medium-x medium-y width height
+                         <tt>&amp;optional</tt> pixmap (pixmap-x <tt>0</tt> ) (pixmap-y <tt>0</tt> )</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Copies the pixels from the medium <i>medium</i> starting at the position specified
+by (<i>medium-x</i> ,<i>medium-y</i> ) into the pixmap <i>pixmap</i> at the position
+specified by (<i>pixmap-x</i> ,<i>pixmap-y</i> ).  A rectangle whose width and
+height is specified by <i>width</i> and <i>height</i> is copied.  <i>medium-x</i> and <i>medium-y</i> are specified in user coordinates.  (If <i>medium</i> is a
+medium or a stream, then <i>medium-x</i> and <i>medium-y</i> are transformed by the
+user transformation.)  The copying must be done by <tt>medium-copy-copy</tt> .
+<p>
+If <i>pixmap</i> is not supplied, a new pixmap will be allocated.  Otherwise,
+<i>pixmap</i> must be an object returned by <tt>allocate-pixmap</tt> that has the
+appropriate characteristics for <i>medium</i> . 
+<p>
+The returned value is the pixmap.
+<p>
+<a name="Function copy-from-pixmap"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>copy-from-pixmap</b></td><td valign="baseline" width="100%"><i>pixmap pixmap-x pixmap-y width height
+                           medium medium-x medium-y</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Copies the pixels from the pixmap <i>pixmap</i> starting at the position
+specified by (<i>pixmap-x</i> ,<i>pixmap-y</i> ) into the medium <i>medium</i> at the
+position (<i>medium-x</i> ,<i>medium-y</i> ).  A rectangle whose width and height is
+specified by <i>width</i> and <i>height</i> is copied.  <i>medium-x</i> and
+<i>medium-y</i> are specified in user coordinates.  (If <i>medium</i> is a medium or
+a stream, then <i>medium-x</i> and <i>medium-y</i> are transformed by the user
+transformation.)  The copying must be done by <tt>medium-copy-copy</tt> .
+<p>
+<i>pixmap</i> must be an object returned by <tt>allocate-pixmap</tt> that has the
+appropriate characteristics for <i>medium</i> .
+<p>
+The returned value is the pixmap.
+<p>
+<a name="Generic function copy-area"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>copy-area</b></td><td valign="baseline" width="100%"><i>medium from-x from-y width height to-x to-y</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Copies the pixels from the medium <i>medium</i> starting at the position
+specified by (<i>from-x</i> ,<i>from-y</i> ) to the position (<i>to-x</i> ,<i>to-y</i> )
+on the same medium.  A rectangle whose width and height is specified by
+<i>width</i> and <i>height</i> is copied.  <i>from-x</i> , <i>from-y</i> , <i>to-x</i> ,
+and <i>to-y</i> are specified in user coordinates.  (If <i>medium</i> is a medium
+or a stream, then the <tt>x</tt> and <tt>y</tt> values are transformed by the user
+transformation.)  The copying must be done by <tt>medium-copy-copy</tt> .
+<p>
+
+<a name="Generic function medium-copy-area"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>medium-copy-area</b></td><td valign="baseline" width="100%"><i>from-drawable from-x from-y width height
+                                to-drawable to-x to-y</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Copies the pixels from the source drawable <i>from-drawable</i> at the position
+(<i>from-x</i> ,<i>from-y</i> ) to the destination drawable <i>to-drawable</i> at the
+position (<i>to-x</i> ,<i>to-y</i> ).  A rectangle whose width and height is
+specified by <i>width</i> and <i>height</i> is copied.  <i>from-x</i> ,
+<i>from-y</i> , <i>to-x</i> , and <i>to-y</i> are specified in user coordinates.
+The <tt>x</tt> and <tt>y</tt> are transformed by the user transformation.
+<p>
+This is intended to specialize on both the <i>from-drawable</i> and
+<i>to-drawable</i> arguments.  <i>from-drawable</i> and <i>to-drawable</i> may be
+either mediums or pixmaps.
+<p>
+
+<a name="Macro with-output-to-pixmap"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>with-output-to-pixmap</b></td><td valign="baseline" width="100%"><i>(medium-var medium <tt>&amp;key</tt> width height) <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Binds <i>medium-var</i> to a ``pixmap medium'', that is, a medium that does
+output to a pixmap with the characteristics appropriate to the medium
+<i>medium</i> , and then evaluates <i>body</i> in that context.  All the output done
+to the medium designated by <i>medium-var</i> inside of <i>body</i> is drawn on
+the pixmap stream.  The pixmap medium must support the medium output protocol,
+including all of the graphics function.  CLIM implementations are permitted, but
+not required, to have pixmap mediums support the stream output protocol
+(<tt>write-char</tt> and <tt>write-string</tt> ).
+<p>
+<i>width</i> and <i>height</i> are integers that give the width and height of the
+pixmap.  If they are unsupplied, the result pixmap will be large enough to
+contain all of the output done by <i>body</i> .
+<p>
+<i>medium-var</i> must be a symbol; it is not evaluated.
+<p>
+The returned value is a pixmap that can be drawn onto <i>medium</i> using
+<tt>copy-from-pixmap</tt> .
+<p>
+
+<a name="LABEL=graphics-protocols"></a> 
+<a name="12.7"><h2>12.7 Graphics Protocols</h2></a>
+Every medium must implement methods for the various graphical drawing generic
+functions.  Furthermore, every sheet that supports the standard output protocol
+must implement these methods as well; often, the sheet methods will trampoline
+to the methods on the sheet's medium.  All of these generic functions take the
+same arguments as the non-generic spread function equivalents, except the
+arguments that are keyword arguments in the non-generic functions are positional
+arguments in the generic functions.
+<p>
+Every medium must implement methods for the various graphical drawing generic
+functions.  All of these generic functions take as (specialized) arguments the
+medium, followed by the drawing function-specific arguments, followed by the
+ink, line style (or text style), and clipping region.
+<p>
+The drawing function-specific arguments will either be <tt>x</tt> and <tt>y</tt> positions,
+or a sequence of <tt>x</tt> and <tt>y</tt> positions.  These positions will be in medium
+coordinates, and must be transformed by applying the medium's device
+transformation in order to produce device coordinates.  Note that the user
+transformation will have already been applied to the positions when the
+medium-specific drawing function is called.  However, the medium-specific
+drawing function will still need to apply the device transformation to the
+positions in order to draw the graphics in the appopriate place on the host
+window.
+<p>
+The ink, line style, text style, and clipping regions arguments are not part of
+the medium-specific drawing functions.  They must be extracted from the medium
+object.  Each medium-specific method will decode the ink, line (or text) style,
+and clipping region in a port-specific way and communicate it to the underlying
+port.
+<p>
+
+<a name="12.7.1"><h3>12.7.1 General Behavior of Drawing Functions</h3></a>
+Using <tt>draw-line*</tt> as an example, calling any of the drawing functions
+specified above results in the following series of function calls on a
+non-output recording sheet:
+<p>
+<ul> <li> A program calls <tt>draw-line*</tt> on either a sheet or a medium, <i>x1</i> ,
+<i>y1</i> , <i>x2</i> , and <i>y2</i> , and perhaps some drawing options.
+<p>
+<li> <tt>draw-line*</tt> merges the supplied drawing options into the medium, and
+then calls <tt>medium-draw-line*</tt> on the sheet or medium.  (Note that a compiler
+macro could detect the case where there are no drawing options or constant
+drawing options, and do this at compile time.)
+<p>
+<li> If <tt>draw-line*</tt> was called on a sheet, the <tt>medium-draw-line*</tt> on
+the sheet trampolines to the medium's <tt>medium-draw-line*</tt> method.
+<p>
+<li> An <tt>:around</tt> method for <tt>medium-draw-line*</tt> performs the necessary
+user transformations by applying the medium transformation to <i>x1</i> ,
+<i>y1</i> , <i>x2</i> , and <i>y2</i> , and to the clipping region, and then calls the
+medium-specific method.
+<p>
+<li> The ``real'' <tt>medium-draw-line*</tt> transforms the start and end
+coordinates of the line by the sheet's device transformation, decodes the ink
+and line style into port-specific objects, and finally invokes a port-specific
+function (such as <tt>xlib:draw-line</tt> ) to do the actual drawing.
+</ul> <a name="12.7.2"><h3>12.7.2 Medium-specific Drawing Functions</h3></a>
+All mediums and all sheets that support the standard output protocol must
+implement methods for the following generic functions.
+<p>
+The method for each of these drawing functions on the most specific,
+implementation-dependent medium class will transform the coordinates by the
+device transformation of the medium's sheet, extract the medium's port-specific
+``drawable'', and then invoke a port-specific drawing function (such as
+<tt>xlib:draw-line</tt> ) to do the actual drawing.
+<p>
+An <tt>:around</tt> on <tt>basic-medium</tt> for each of the drawing functions will have
+already transformed the user coordinates to medium coordinates before the most
+specific, implementation-dependent method is called.
+<p>
+<b>Implementation note:</b> CLIM implementations should provide ``trampoline''
+methods on sheets that support the standard output protocol that simply call the
+same generic function on the medium.  Sheets that support output recording will
+require extra mechanism before delegating to the medium in order to implement
+such functionality as creating output records and handling scrolling.
+<p>
+<a name="Generic function medium-draw-point*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>medium-draw-point*</b></td><td valign="baseline" width="100%"><i>medium x y</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Draws a point on the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> .  
+<p>
+<a name="Generic function medium-draw-points*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>medium-draw-points*</b></td><td valign="baseline" width="100%"><i>medium coord-seq</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Draws a set of points on the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> .  <i>coord-seq</i> is a
+sequence of coordinate pairs, which are real numbers.  It is an error if
+<i>coord-seq</i> does not contain an even number of elements.
+<p>
+<a name="Generic function medium-draw-line*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>medium-draw-line*</b></td><td valign="baseline" width="100%"><i>medium x1 y1 x2 y2</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Draws a line on the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> .  The line is drawn from
+<tt>(x1,y1)</tt> to <tt>(x2,y2)</tt>.
+<p>
+<a name="Generic function medium-draw-lines*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>medium-draw-lines*</b></td><td valign="baseline" width="100%"><i>stream position-seq</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Draws a set of disconnected lines on the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> .
+<i>coord-seq</i> is a sequence of coordinate pairs, which are real numbers.  Each
+successive pair of coordinate pairs is taken as the start and end position of
+each line.  It is an error if <i>coord-seq</i> does not contain an even number of
+elements.
+<p>
+<a name="Generic function medium-draw-polygon*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>medium-draw-polygon*</b></td><td valign="baseline" width="100%"><i>medium coord-seq closed</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Draws a polygon or polyline on the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> .  <i>coord-seq</i> is a sequence of coordinate pairs, which are real numbers.  It is an error if
+<i>coord-seq</i> does not contain an even number of elements.  Each successive
+coordinate pair is taken as the position of one vertex of the polygon.
+<p>
+<a name="Generic function medium-draw-rectangle*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>medium-draw-rectangle*</b></td><td valign="baseline" width="100%"><i>medium x1 y1 x2 y2</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Draws a rectangle on the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> .  The corners of the
+rectangle are at <tt>(x1,y1)</tt> and <tt>(x2,y2)</tt>.
+<p>
+<a name="Generic function medium-draw-rectangles*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>medium-draw-rectangles*</b></td><td valign="baseline" width="100%"><i>medium coord-seq</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Draws a set of rectangles on the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> .  <i>coord-seq</i> is
+a sequence of coordinate pairs, which are real numbers.  It is an error if
+<i>coord-seq</i> does not contain an even number of elements.  Each successive
+pair of coordinate pairs is taken as the upper-left and lower-right corner of
+the rectangle.
+<p>
+<a name="Generic function medium-draw-ellipse*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>medium-draw-ellipse*</b></td><td valign="baseline" width="100%"><i>medium center-x center-y 
+                                    radius-1-dx radius-1-dy radius-2-dx radius-2-dy  
+                                    start-angle end-angle</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Draws an ellipse or elliptical arc on the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> .  The
+center of the ellipse is at <tt>(x,y)</tt>, and the radii are specified by the two
+vectors (<i>radius-1-dx</i> ,<i>radius-1-dy</i> ) and
+(<i>radius-2-dx</i> ,<i>radius-2-dy</i> ).
+<p>
+<i>start-angle</i> and <i>end-angle</i> are real numbers that specify an arc
+rather than a complete ellipse.  Note that the medium and device transformations
+must be applied to the angles as well.
+<p>
+<a name="Generic function medium-draw-text*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>medium-draw-text*</b></td><td valign="baseline" width="100%"><i>medium text x y
+                                 (start <tt>0</tt> ) end
+                                 (align-x <tt>:left</tt> ) (align-y <tt>:baseline</tt> )
+                                 toward-x toward-y transform-glyphs</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Draws a character or a string on the <a href="silica.html#CONCEPT=medium"><i>medium</i></a> <i>medium</i> .  The text is
+drawn starting at <tt>(x,y)</tt>, and towards (<i>toward-x</i> ,<i>toward-y</i> ).  In Some
+implementations of CLIM, <tt>medium-draw-text*</tt> may call either
+<tt>medium-draw-string*</tt> or <tt>medium-draw-character*</tt> in order to draw the
+text.
+<p>
+<a name="12.7.3"><h3>12.7.3 Other Medium-specific Output Functions</h3></a>
+<a name="Generic function medium-finish-output"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>medium-finish-output</b></td><td valign="baseline" width="100%"><i>medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Ensures that all the output sent to <i>medium</i> has reached its destination,
+and only then return <a href="graphics.html#CONCEPT=false"><i>false</i></a> .  This is used by <tt>finish-output</tt> .
+<p>
+<a name="Generic function medium-force-output"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>medium-force-output</b></td><td valign="baseline" width="100%"><i>medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Like <tt>medium-finish-output</tt> , except that it may return <a href="graphics.html#CONCEPT=false"><i>false</i></a> without
+waiting for the output to complete.  This is used by <tt>force-output</tt> .
+<p>
+<a name="Generic function medium-clear-area"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>medium-clear-area</b></td><td valign="baseline" width="100%"><i>medium left top right bottom</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Clears an area on the medium <i>medium</i> by filling the rectangle whose edges
+are at <i>left</i> , <i>top</i> , <i>right</i> , and <i>bottom</i> with the medium's
+background ink.  <i>left</i> , <i>top</i> , <i>right</i> , and <i>bottom</i> are in
+thed medium's coordinate system.
+<p>
+The default method on <tt>basic-medium</tt> simply uses <tt>draw-rectangle*</tt> to
+clear the area.  Some host window systems has special functions that are faster
+than <tt>draw-rectangle*</tt> .
+<p>
+<a name="Generic function medium-beep"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>medium-beep</b></td><td valign="baseline" width="100%"><i>medium</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Causes an audible sound to be played on the medium.  The default method
+does nothing.
+<p>
+<br><hr><br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="text-styles.html">Text Styles</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="colors.html">Drawing in Color</a></td>
+</tr></table>
+</body></html>

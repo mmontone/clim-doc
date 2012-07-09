@@ -1,0 +1,433 @@
+<html><head><title>CLIM: 21 Incremental Redisplay</title></head><body>
+<br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="text-formatting.html">Text Formatting</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="extended-input.html">Extended Stream Input</a></td>
+</tr></table><br><hr><br>
+<p>
+<br><a name="21"><h1>21 Incremental Redisplay</h1></a>
+<a name="LABEL=incremental-redisplay"></a> <a name="21.1"><h2>21.1 Overview of Incremental Redisplay</h2></a>
+CLIM's incremental redisplay facility to allows the programmer to change the
+output in an output history (and hence, on the screen or other output device) in
+an incremental fashion.  It allows the programmer to redisplay individual pieces
+of the existing output differently, under program control.  It is
+``incremental'' in the sense that CLIM will try to minimize the changes to the
+existing output on a display device when displaying new output.
+<p>
+There are two different ways to do incremental redisplay.
+<p>
+The first is to call <tt>redisplay</tt> on an output record.  In essence, this tells
+CLIM to recompute the output of that output record over from scratch.  CLIM
+compares the new results with the existing output and tries to do minimal
+redisplay.  The <tt>updating-output</tt> form allows the programmer to assist CLIM
+by informing it that entire branches of the output history are known not to have
+changed.  <tt>updating-output</tt> also allows the programmer to communicate the
+fact that a piece of the output record hierarchy has moved, either by having an
+output record change its parent, or by having an output record change its
+position.
+<p>
+The second way to do incremental redisplay is for the programmer to manually do the
+updates to the output history, and then call <tt>note-output-record-child-changed</tt> on an output record.  This causes CLIM to propagate the changes up the output
+record tree and allows parent output records to readjust themselves to account for
+the changes.
+<p>
+Each style is appropriate under different circumstances.  <tt>redisplay</tt> is
+often easier to use, especially when there might are large numbers of changes
+between two passes, or when the programmer has only a poor idea as to what the
+changes might be.  <tt>note-output-record-child-changed</tt> can be more efficient
+for small changes at the bottom of the output record hierarchy, or in cases
+where the programmer is well informed as to the specific changes necessary and
+can help CLIM out.
+<p>
+
+<a name="21.1.1"><h3>21.1.1 Examples of Incremental Redisplay</h3></a>
+The usual technique of incremental redisplay is to use <tt>updating-output</tt> to
+inform CLIM what output has changed, and use <tt>redisplay</tt> to recompute and
+redisplay that output.
+<p>
+The outermost call to <tt>updating-output</tt> identifies a program fragment that
+produces incrementally redisplayable output.  A nested call to
+<tt>updating-output</tt> (that is, a call to <tt>updating-output</tt> that occurs during
+the execution of the body of the outermost <tt>updating-output</tt> and specifies
+the same stream) identifies an individually redisplayable piece of output, the
+program fragment that produces that output, and the circumstances under which
+that output needs to be redrawn.  This nested calls to <tt>updating-output</tt> are
+just hints to incremental redisplay that can reduce the amount of work done by
+CLIM.
+<p>
+The outermost call to <tt>updating-output</tt> executes its body, producing the
+initial version of the output, and returns an <tt>updating-output-record</tt> that
+captures the body in a closure.  Each nested call to <tt>updating-output</tt> stores
+its <tt>:unique-id</tt> and <tt>:cache-value</tt> arguments and the portion of the
+output produced by its body.
+<p>
+<tt>redisplay</tt> takes an <tt>updating-output-record</tt> and executes the captured
+body of <tt>updating-output</tt> over again.  When a nested call to
+<tt>updating-output</tt> is executed during redisplay, <tt>updating-output</tt> decides
+whether the cached output can be reused or the output needs to be redrawn.  This
+is controlled by the <tt>:cache-value</tt> argument to <tt>updating-output</tt> .  If its
+value matches its previous value, the body would produce output identical to the
+previous output and thus it is unnecessary for CLIM to execute the body again.
+In this case the cached output is reused and <tt>updating-output</tt> does not
+execute its body.  If the cache value does not match, the output needs to be
+recomputed, so <tt>updating-output</tt> executes its body and the new output drawn
+on the stream replaces the previous output.  The <tt>:cache-value</tt> argument is
+only meaningful for nested calls to <tt>updating-output</tt> .
+<p>
+In order to compare the cache to the output record, two pieces of information
+are necessary:
+<p>
+<ul> <li> An association between the output being done by the program and a
+particular cache.  This is supplied in the <tt>:unique-id</tt> option to
+<tt>updating-output</tt> .
+<p>
+<li> A means of determining whether this particular cache is valid.  This is
+the <tt>:cache-value</tt> option to <tt>updating-output</tt> .
+</ul> Normally, the programmer would supply both options. The unique-id would be some
+data structure associated with the corresponding part of output.  The cache
+value would be something in that data structure that changes whenever the output
+changes.
+<p>
+It is valid to give the <tt>:unique-id</tt> and not the <tt>:cache-value</tt> .  This is
+done to identify a parent in the hierarchy.  By this means, the children
+essentially get a more complex unique id when they are matched for output.  (In
+other words, it is like using a telephone area code.)  The cache without a cache
+value is never valid.  Its children always have to be checked.
+<p>
+It is also valid to give the <tt>:cache-value</tt> and not the <tt>:unique-id</tt> .  In
+this case, unique ids are just assigned sequentially.  So, if output associated
+with the same thing is done in the same order each time, it isn't necessary to
+invent new unique ids for each piece.  This is especially true in the case of
+children of a cache with a unique id and no cache value of its own.  In this
+case, the parent marks the particular data structure, whose components can
+change individually, and the children are always in the same order and properly
+identified by their parent and the order in which they are output.
+<p>
+A unique id need not be unique across the entire redisplay, only among the
+children of a given output cache; that is, among all possible (current and
+additional) uses made of <tt>updating-output</tt> that are dynamically (not
+lexically) within another.
+<p>
+To make incremental redisplay maximally efficient, the programmer should attempt
+to give as many caches with <tt>:cache-value</tt> as possible.  For instance, if the
+thing being redisplayed is a deeply nested tree, it is better to be able to know
+when whole branches have not changed than to have to recurse to every single
+leaf and check it.  So, if there is a modification tick in the leaves, it is
+better to also have one in their parent of the leaves and propagate the
+modification up when things change.  While the simpler approach works, it
+requires CLIM to do more work than is necessary.
+<p>
+The following function illustrates the standard use of incremental redisplay:
+<p>
+<pre>(defun test (stream)
+  (let* ((list (list 1 2 3 4 5))
+         (record
+           (updating-output (stream)
+             (do* ((elements list (cdr elements))
+                   (count 0 (1+ count)))
+                  ((null elements))
+               (let ((element (first elements)))
+                 (updating-output (stream :unique-id count
+                                          :cache-value element)
+                   (format stream "Element ~D" element)
+                   (terpri stream)))))))
+    (sleep 10)
+    (setf (nth 2 list) 17)
+    (redisplay record stream)))
+</pre> When this function is run on a window, the initial display will look like:
+<p>
+<pre>Element 1
+  Element 2
+  Element 3
+  Element 4
+  Element 5
+</pre> After the sleep has terminated, the display will look like:
+<p>
+<pre>Element 1
+  Element 2
+  Element 17
+  Element 4
+  Element 5
+</pre> CLIM takes care of ensuring that only the third line gets erased and
+redisplayed.  In the case where items moved around (try the example substituting
+<p>
+<pre>(setq list (sort list #'(lambda (x y)
+                          (declare (ignore x y))
+                          (zerop (random 2))))) 
+</pre> for the form after the call to <tt>sleep</tt> ), CLIM would ensure that the minimum
+amount of work would be done in updating the display, thereby minimizing
+``flashiness'' while providing a powerful user interface.
+<p>
+See Chapter <a href="frames.html#LABEL=application-frames"><b><i>Application Frames</i></b></i></a> for a discussion of how to use incremental
+redisplay automatically within the panes of an application frame.
+<p>
+
+<a name="21.2"><h2>21.2 Standard Programmer Interface</h2></a>
+<a name="Macro updating-output"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>updating-output</b></td><td valign="baseline" width="100%"><i>(stream
+                              <tt>&amp;rest</tt> args
+                              <tt>&amp;key</tt> unique-id (id-test #'<tt>eql</tt> )
+                                   cache-value (cache-test #'<tt>eql</tt> )
+                                   fixed-position all-new parent-cache
+                                   record-type)
+                             <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Introduces a caching point for incremental redisplay.  
+<p>
+The <i>stream</i> argument is not evaluated, and must be a symbol that is bound to
+an output recording stream.  If <i>stream</i> is <tt>t</tt> , <tt>*standard-output*</tt> is
+used.  <i>body</i> may have zero or more declarations as its first forms.
+<p>
+<i>record-type</i> specifies the class of output record to create.  The default
+is <tt>standard-updating-output-record</tt> .  This argument should only be supplied
+by a programmer if there is a new class of output record that supports the
+updating output record protocol.
+<p>
+<tt>updating-output</tt> must be implemented by expanding into a call to
+<tt>invoke-updating-output</tt> , supplying a function that executes <i>body</i> as
+the <i>continuation</i> argument to <tt>invoke-updating-output</tt> .  The exact
+behavior of this macro is described under <tt>invoke-updating-output</tt> .
+<p>
+<a name="Generic function invoke-updating-output"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>invoke-updating-output</b></td><td valign="baseline" width="100%"><i>stream continuation record-type
+                                      unique-id id-test
+                                      cache-value cache-test
+                                      <tt>&amp;key</tt> all-new parent-cache</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Introduces a caching point for incremental redisplay.  Calls the function
+<i>continuation</i> , which generates the output records to be redisplayed.
+<i>continuation</i> is a function of one argument, the stream; it has dynamic
+extent.
+<p>
+If this is used outside the dynamic scope of an incremental redisplay, it has no
+particular effect.  However, when incremental redisplay is occurring, the
+supplied <i>cache-value</i> is compared with the value stored in the cache
+identified by <i>unique-id</i> .  If the values differ or the code in <i>body</i> has not been run before, the code in <i>body</i> runs, and <i>cache-value</i> is
+saved for next time.  If the cache values are the same, the code in <i>body</i> is not run, because the current output is still valid.
+<p>
+<i>unique-id</i> provides a means to uniquely identify the output done by
+<i>body</i> .  If <i>unique-id</i> is not supplied, CLIM will generate one that is
+guaranteed to be unique.  <i>unique-id</i> may be any object as long as it is
+unique with respect to the <i>id-test</i> predicate among all such unique ids in
+the current incremental redisplay.  <i>id-test</i> is a function of two arguments
+that is used for comparing unique ids; it has indefinite extent.
+<p>
+<i>cache-value</i> is a value that remains constant if and only if the output
+produced by body does not need to be recomputed.  If the cache value is not
+supplied, CLIM will not use a cache for this piece of output.  <i>cache-test</i> is a function of two arguments that is used for comparing cache values; it has
+indefinite extent.
+<p>
+If <i>fixed-position</i> is <a href="redisplay.html#CONCEPT=true"><i>true</i></a> , then the location of this output is
+fixed relative to its parent output record.  When CLIM redisplays an output
+record that has a fixed position, then if the contents have not changed, the
+position of the output record will not change.  If the contents have changed,
+CLIM assumes that the code will take care to preserve its position.  The default
+for <i>fixed-position</i> is <a href="redisplay.html#CONCEPT=false"><i>false</i></a> .
+<p>
+If <i>all-new</i> is <a href="redisplay.html#CONCEPT=true"><i>true</i></a> , that indicates that all of the output done by
+<i>body</i> is new, and will never match output previously recorded.  In this
+case, CLIM will discard the old output and do the redisplay from scratch.  The
+default for <i>all-new</i> is <a href="redisplay.html#CONCEPT=false"><i>false</i></a> .
+<p>
+The output record tree created by <tt>updating-output</tt> defines a caching
+structure where mappings from a unique-id to an output record are maintained.
+If the programmer specifies an output record some output record <tt>P</tt> via the
+<i>parent-cache</i> argument, then CLIM will try to find a corresponding output
+record with the matching unique-id in the cache belonging to <tt>P</tt>.  If neither
+<i>parent-cache</i> is not provided, then CLIM looks for the unique-id in the
+output record created by immediate dynamically enclosing call to
+<tt>updating-output</tt> .  If that fails, CLIM use the unique-id to find an output
+record that is a child of the output history of <i>stream</i> .  Once CLIM has
+found an output record that matches the unique-id, it uses the cache value and
+cache test to determine whether the output record has changed.  If the output
+record has not changed, it may have moved, in which case CLIM will simply move
+the display of the output record on the display device.
+<p>
+
+<a name="Function redisplay"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>redisplay</b></td><td valign="baseline" width="100%"><i>record stream <tt>&amp;key</tt> (check-overlapping <tt>t</tt> )</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>This function simply calls <tt>redisplay-output-record</tt> on the arguments
+<i>record</i> and <i>stream</i> .
+<p>
+<a name="Generic function redisplay-output-record"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>redisplay-output-record</b></td><td valign="baseline" width="100%"><i>record stream
+                                       <tt>&amp;optional</tt> (check-overlapping <tt>t</tt> ) 
+                                                 x y parent-x parent-y</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><hr><b>Issue:</b> SWM<br><i>The coordinate system stuff affected by the x/y and parent-x/y
+arguments is entirely bogus.  The proposal to make ``stream relative''
+coordinates for output records instead of ``parent relative'' coordinates will
+eliminate this completely.</i><hr>
+<tt>(redisplay-output-record <i>record</i> <i>stream</i> )</tt> causes the output of
+<i>record</i> to be recomputed.
+CLIM redisplays the changes ``incrementally'', that is, it only displays those
+parts that have been changed. <i>record</i> must already be part of the output
+history of the <a href="redisplay.html#CONCEPT=output recording stream"><i>output recording stream</i></a> <i>stream</i> , although it can be
+anywhere inside the hierarchy.
+<p>
+When <i>check-overlapping</i> is <a href="redisplay.html#CONCEPT=false"><i>false</i></a> , this means that CLIM can assume
+that no sibling output records overlap each other at any level in the output
+record tree.  Supplying a <a href="redisplay.html#CONCEPT=false"><i>false</i></a> value for this argument can improve
+performance of redisplay.
+<p>
+<b>Implementation note:</b> <tt>redisplay-output-record</tt> is implemented by first
+binding <tt>stream-redisplaying-p</tt> of the stream to <a href="redisplay.html#CONCEPT=true"><i>true</i></a> , then creating
+the new output records by invoking <tt>compute-new-output-records</tt> .  Once the
+new output records have been computed, <tt>compute-difference-set</tt> is called to
+compute the difference set, which is then passed to
+<tt>note-child-output-record-changed</tt> .
+<p>
+The other optional arguments can be used to specify where on the <i>stream</i> the output record should be redisplayed.  <i>x</i> and <i>y</i> represent where
+the cursor should be, relative to (<tt>output-record-parent</tt> record), before we
+start redisplaying <i>record</i> .  <i>parent-x</i> and <i>parent-y</i> can be
+supplied to say: do the output as if the parent started at positions
+<i>parent-x</i> and <i>parent-y</i> (which are in absolute coordinates).  The
+default values for <i>x</i> and <i>y</i> are <tt>(output-record-start-position
+<i>record</i> )</tt> .  The default values for <i>parent-x</i> and <i>parent-y</i> are
+<p>
+<pre>(convert-from-relative-to-absolute-coordinates 
+  stream (output-record-parent record))
+</pre> <i>record</i> will usually be an output record created by <tt>updating-output</tt> .
+If it is not, then <tt>redisplay-output-record</tt> will be equivalent to
+<tt>replay-output-record</tt> .
+<p>
+
+<a name="21.3"><h2>21.3 Incremental Redisplay Protocol</h2></a>
+<hr><b>Issue:</b> SWM<br><i>While the description of the API here is accurate, the description
+of the protocol is a disaster.  This is no surprise, since the protocol for
+increment redisplay is itself a disaster.</i><hr>
+<a name="Protocol&nbsp;Class updating-output-record"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>updating-output-record</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Protocol&nbsp;Class]</b></td></tr></table>The protocol class corresponding to records that support incremental redisplay;
+a subclass of <tt>output-record</tt> .
+If you want to create a new class that behaves like an updating output record, it should be a subclass of <b>updating-output-record</b>. Subclasses of <b>updating-output-record</b> must obey the updating output record protocol.<a name="Predicate updating-output-record-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>updating-output-record-p</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Predicate]</b></td></tr></table>Returns <a href="redisplay.html#CONCEPT=true"><i>true</i></a> if <i>object</i> is an <a href="redisplay.html#CONCEPT=updating output record"><i>updating output record</i></a> ,
+otherwise returns <a href="redisplay.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Init&nbsp;arg :unique-id"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:unique-id</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table><a name="Init&nbsp;arg :id-test"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:id-test</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table><a name="Init&nbsp;arg :cache-value"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:cache-value</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table><a name="Init&nbsp;arg :cache-test"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:cache-test</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table><a name="Init&nbsp;arg :fixed-position"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:fixed-position</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table>All subclasses of <tt>updating-output-record</tt> must handle these four initargs,
+which are used to specify, respectively, the unique id and id test, cache value
+and cache test, and the ``fixed position'' component of the output record.
+<p>
+<a name="Class standard-updating-output-record"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>standard-updating-output-record</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>The instantiable class of output record that supports incremental redisplay.
+This is a subclass of <tt>updating-output-record</tt> .
+<p>
+
+<a name="Generic function output-record-unique-id"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>output-record-unique-id</b></td><td valign="baseline" width="100%"><i>record</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the unique id associated with the updating output record <i>record</i> .
+<p>
+<a name="Generic function output-record-cache-value"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>output-record-cache-value</b></td><td valign="baseline" width="100%"><i>record</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the cache value associated with the updating output record <i>record</i> .
+<p>
+<a name="Generic function output-record-fixed-position"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>output-record-fixed-position</b></td><td valign="baseline" width="100%"><i>record</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns <a href="redisplay.html#CONCEPT=true"><i>true</i></a> if the updating output record <i>record</i> is at a fixed
+location on the output stream, otherwise returns <a href="redisplay.html#CONCEPT=false"><i>false</i></a> .  Output records
+that are not at fixed location on the output stream will be moved by incremental
+redisplay when any of their siblings adjust their size or position.
+<p>
+<a name="Generic function output-record-displayer"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>output-record-displayer</b></td><td valign="baseline" width="100%"><i>record</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the function that produces the output for this output record.  This is
+the function that is called during redisplay to produce new output if the cache
+value mismatches.
+<p>
+
+<a name="Generic function compute-new-output-records"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>compute-new-output-records</b></td><td valign="baseline" width="100%"><i>record stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><tt>compute-new-output-records</tt> modifies an output record tree to reflect new
+output done by the application.  In addition to inserting the new output records
+into the output record tree, it must save enough information to be able to
+compute the difference set, such as the old bounding rectangle, old cursor
+positions, old children, and so forth.
+<p>
+<tt>compute-new-output-records</tt> recursively invokes itself on each child of
+<i>record</i> .
+<p>
+<tt>compute-new-output-records</tt> of an output record of type
+<tt>updating-output-record</tt> runs the displayer (<tt>output-record-displayer</tt> ),
+which gives the behavior of incremental redisplay.  That is, it reruns the code
+(getting hints from <tt>updating-output</tt> ) and figures out the changes from there
+by comparing it to the old output history.
+<p>
+
+<a name="Generic function compute-difference-set"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>compute-difference-set</b></td><td valign="baseline" width="100%"><i>record <tt>&amp;optional</tt> (check-overlapping <tt>t</tt> )
+                                      (offset-x <tt>0</tt> ) (offset-y <tt>0</tt> )
+                                      (old-offset-x <tt>0</tt> ) (old-offset-y <tt>0</tt> )</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><tt>compute-difference-set</tt> compares the current state of the <a href="redisplay.html#CONCEPT=output
+record"><i>output
+record</i></a> <i>record</i> with its previous state, and returns a ``difference set''
+as five values.  The difference set controls what needs to be done to the
+display device in order to accomplish the incremental redisplay.
+<p>
+The values returned are <i>erases</i> (what areas of the display device need to
+be erased), <i>moves</i> (what output records need to be moved), <i>draws</i> (what output records need to be freshly replayed), <i>erase-overlapping</i> , and
+<i>move-overlapping</i> .  Each is a list whose elements are lists of the form:
+<p>
+When <i>check-overlapping</i> is <a href="redisplay.html#CONCEPT=false"><i>false</i></a> , this means that CLIM can assume
+that no sibling output records overlap each other at any level.  Supplying a
+<a href="redisplay.html#CONCEPT=false"><i>false</i></a> value for this argument can improve performance of redisplay.
+<p>
+
+<ul> <li> <i>erases</i> are lists of <tt>(<i>record</i> <i>old-box</i> )</tt> <li> <i>moves</i> are lists of <tt>(<i>record</i> <i>old-box</i> <i>new-position</i> )</tt> <li> <i>draws</i> are lists of <tt>(<i>record</i> <i>old-box</i> )</tt> <li> <i>erase-overlapping</i> is a list of <tt>(<i>record</i> <i>old-box</i> )</tt> <li> <i>move-overlapping</i> is a list of <tt>(<i>record</i> <i>old-box</i> <i>new-position</i> )</tt> </ul> <a name="Generic function augment-draw-set"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>augment-draw-set</b></td><td valign="baseline" width="100%"><i>record erases moves draws erase-overlapping move-overlapping
+                                <tt>&amp;optional</tt> x-offset y-offset old-x-offset old-y-offset</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><hr><b>Issue:</b> SWM<br><i>To be supplied.</i><hr>
+<a name="Generic function note-output-record-child-changed"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>note-output-record-child-changed</b></td><td valign="baseline" width="100%"><i>record child mode old-position old-bounding-rectangle stream
+             <tt>&amp;optional</tt> erases moves draws erase-overlapping move-overlapping
+             <tt>&amp;key</tt> check-overlapping</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><tt>note-output-record-child-changed</tt> is called after an output history has had
+changes made to it, but before any of the new output has been displayed.  It
+will call <tt>propagate-output-record-changes-p</tt> to determine if the parent
+output record should be notified, and if so, will call
+<tt>propagate-output-record-changes</tt> to create an updated difference set.  If no
+changes need to be propagated to the parent output record, then
+<tt>note-output-record-child-changed</tt> will call <tt>incremental-redisplay</tt> in
+order display the difference set.
+<p>
+<i>mode</i> is one of <tt>:delete</tt> , <tt>:add</tt> , <tt>:change</tt> , <tt>:move</tt> , or
+<tt>:none</tt> <i>old-position</i> and <i>old-bounding-rectangle</i> describe where <i>child</i> was before it was moved.
+<p>
+<i>check-overlapping</i> is as for <tt>compute-difference-set</tt> .
+<p>
+
+<a name="Generic function propagate-output-record-changes-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>propagate-output-record-changes-p</b></td><td valign="baseline" width="100%"><i>record child mode 
+                                                 old-position old-bounding-rectangle</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><tt>propagate-output-record-changes-p</tt> is a predicate that returns <a href="redisplay.html#CONCEPT=true"><i>true</i></a> if the change made to the child will cause <i>record</i> to be redisplayed in any
+way.  Otherwise, it returns <a href="redisplay.html#CONCEPT=false"><i>false</i></a> .  <i>mode</i> is one of <tt>:delete</tt> ,
+<tt>:add</tt> , <tt>:change</tt> , <tt>:move</tt> , or <tt>:none</tt> .
+<p>
+<a name="Generic function propagate-output-record-changes"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>propagate-output-record-changes</b></td><td valign="baseline" width="100%"><i>record child mode 
+             <tt>&amp;optional</tt> old-position old-bounding-rectangle
+                       erases moves draws erase-overlapping move-overlapping check-overlapping</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Called when the changed <i>child</i> output record requires that its parent,
+<i>record</i> , be redisplayed as well.  <tt>propagate-output-record-changes</tt> will update the difference set to reflect the additional changes.
+<p>
+<i>check-overlapping</i> is as for <tt>compute-difference-set</tt> .
+<p>
+
+<a name="Generic function match-output-records"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>match-output-records</b></td><td valign="baseline" width="100%"><i>record <tt>&amp;rest</tt> initargs</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns <a href="redisplay.html#CONCEPT=true"><i>true</i></a> if record matches the supplied class initargs
+<i>initargs</i> , otherwise returns <a href="redisplay.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Generic function find-child-output-record"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>find-child-output-record</b></td><td valign="baseline" width="100%"><i>record use-old-elements record-type
+                                        <tt>&amp;rest</tt> initargs
+                                        <tt>&amp;key</tt> unique-id unique-id-test</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Finds a child of <i>record</i> matching the <i>record-type</i> and the supplied
+initargs <i>initargs</i> .  <i>unique-id</i> and <i>unique-id-test</i> are used to
+match against the children as well.  <i>use-old-elements</i> controls whether the
+desired record is to be found in the previous (before redisplay) contents of the
+record.
+<p>
+<a name="Generic function output-record-contents-ok"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>output-record-contents-ok</b></td><td valign="baseline" width="100%"><i>record</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns <a href="redisplay.html#CONCEPT=true"><i>true</i></a> if the current state of <i>record</i> are up to date,
+otherwise returns <a href="redisplay.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Generic function recompute-contents-ok"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>recompute-contents-ok</b></td><td valign="baseline" width="100%"><i>record</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Compares the old (before redisplay) and new contents of <i>record</i> to
+determine whether or not this record changed in such a way so that the display
+needs updating.
+<p>
+<a name="Generic function cache-output-record"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>cache-output-record</b></td><td valign="baseline" width="100%"><i>record child unique-id</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><i>record</i> stores <i>child</i> such that it can be located later using
+<i>unique-id</i> .
+<p>
+<a name="Generic function decache-child-output-record"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>decache-child-output-record</b></td><td valign="baseline" width="100%"><i>record child use-old-elements</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Invalidates the redisplay state of <i>record</i> .
+<p>
+<a name="Generic function find-cached-output-record"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>find-cached-output-record</b></td><td valign="baseline" width="100%"><i>record use-old-elements record-type
+                                         <tt>&amp;rest</tt> initargs
+                                         <tt>&amp;key</tt> unique-id unique-id-test <tt>&amp;allow-other-keys</tt> </i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Finds a previously cached child matching <i>record-type</i> , <i>initargs</i> ,
+<i>unique-id</i> , and <i>unique-id-test</i> .  <i>use-old-elements</i> controls
+whether the desired record is to be found in the previous (before redisplay)
+contents of the record.
+<p>
+
+<a name="21.4"><h2>21.4 Incremental Redisplay Stream Protocol</h2></a>
+<a name="Generic function redisplayable-stream-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>redisplayable-stream-p</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns <a href="redisplay.html#CONCEPT=true"><i>true</i></a> for any stream that maintains an output history and supports
+the incremental redisplay protocol, otherwise returns <a href="redisplay.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Generic function stream-redisplaying-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-redisplaying-p</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns <a href="redisplay.html#CONCEPT=true"><i>true</i></a> if the <i>stream</i> is currently doing redisplay (that is,
+is inside of a call to <tt>redisplay</tt> ), otherwise returns <a href="redisplay.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Generic function incremental-redisplay"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>incremental-redisplay</b></td><td valign="baseline" width="100%"><i>stream position
+                                     erases moves draws erase-overlapping move-overlapping</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Performs the incremental update on <i>stream</i> according to the difference set
+comprised by <i>erases</i> , <i>moves</i> , <i>draws</i> , <i>erase-overlapping</i> ,
+and <i>move-overlapping</i> , which are values returned by
+<tt>compute-difference-set</tt> .  <i>position</i> is a point object that represents
+the start position of the topmost output record that will be redisplayed.
+<p>
+<tt>incremental-redisplay</tt> can be called on any extended output stream.
+<br><hr><br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="text-formatting.html">Text Formatting</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="extended-input.html">Extended Stream Input</a></td>
+</tr></table>
+</body></html>

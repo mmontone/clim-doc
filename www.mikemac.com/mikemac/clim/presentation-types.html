@@ -1,0 +1,1888 @@
+<html><head><title>CLIM: 23 Presentation Types</title></head><body>
+<br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="extended-input.html">Extended Stream Input</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="input-editing.html">Input Editing and Completion Facilities</a></td>
+</tr></table><br><hr><br>
+<p>
+<br><a name="23"><h1>23 Presentation Types</h1></a>
+<a name="LABEL=presentation-types"></a> <a name="23.1"><h2>23.1 Overview of Presentation Types</h2></a>
+The core around which the CLIM application user interface model is built is the
+concept of the application-defined user interface data type.  Each application
+has its own set of semantically significant user interface entities; a CAD
+program for designing circuits has its various kinds of components (gates,
+resistors, and so on), while a database manager has its relations and field
+types.  These entities have to be displayed to the user (possibly in more than
+one displayed representation) and the user has to be able to interact with and
+specify the entities via pointer gestures and keyboard input.  Frequently each
+user interface entity has a corresponding Lisp data type (such as an
+application-specific structure or CLOS class definition), but this is not always
+the case.  The data representation for an interaction entity may be a primitive
+Lisp data type.  In fact, it is possible for several different user interface
+entities to use the same Lisp data type for their internal representation, for
+example, building floor numbers and employee vacation day totals could both be
+represented internally as integers.
+<p>
+CLIM provides a framework for defining the appearance and behavior of these user
+interface entities via the <a name="CONCEPT=presentation type"><b><i>presentation type</i></b></a> mechanism.  A
+presentation type can be thought of as a CLOS class that has some additional
+functionality pertaining to its roles in the user interface of an application.
+By defining a presentation type the application programmer defines all of the
+user interface components of the entity:
+<p>
+<ul> <li> Its displayed representation, textual or graphical
+<p>
+<li> Textual representation, for user input via the keyboard
+<p>
+<li> Pointer sensitivity, for user input via the pointer
+</ul> In other words, by defining a presentation type, the application programmer
+describes in one place all the information about an object necessary to display
+it to the user and interact with the user for object input.
+<p>
+The set of presentation types forms a type lattice, an extension of the Common
+Lisp CLOS type lattice.  When a new presentation type is defined as a subtype of
+another presentation type it inherits all the attributes of the supertype except
+those explicitly overridden in the definition.
+<p>
+<hr><b>Issue:</b> SWM<br><i>Describe what a presentation type is more exactly.  What is a
+parameterized presentation type?  Why do we want them?  Why are they in a
+lattice?  How do they relate to CL types and CLOS classes?  What exactly gets
+inherited?</i><hr>
+<a name="23.2"><h2>23.2 Presentations</h2></a>
+A <a name="CONCEPT=presentation"><b><i>presentation</i></b></a> is a special kind of output record that remembers not
+only output, but the object associated with the output and the semantic type
+associated with that object.
+<p>
+<hr><b>Issue:</b> SWM<br><i>Describe exactly what a presentation is.  What does it mean for
+presentations to be nested?</i><hr>
+<a name="Protocol&nbsp;Class presentation"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>presentation</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Protocol&nbsp;Class]</b></td></tr></table>The protocol class that corresponds to a presentation.
+If you want to create a new class that behaves like a presentation, it should be a subclass of <b>presentation</b>. Subclasses of <b>presentation</b> must obey the presentation protocol.<a name="Predicate presentationp"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>presentationp</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Predicate]</b></td></tr></table>Returns <a href="presentation-types.html#CONCEPT=true"><i>true</i></a> if <i>object</i> is a <a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlcommands.html#CONCEPT=presentation"><i>presentation</i></a> , otherwise returns
+<a href="presentation-types.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Class standard-presentation"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>standard-presentation</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>The instantiable output record class that represents presentations.
+<tt>present</tt> normally creates output records of this class.
+<i>Members of this class are mutable. </i><a name="Init&nbsp;arg :object"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:object</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table><a name="Init&nbsp;arg :type"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:type</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table><a name="Init&nbsp;arg :view"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:view</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table><a name="Init&nbsp;arg :single-box"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:single-box</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table><a name="Init&nbsp;arg :modifier"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>:modifier</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Init&nbsp;arg]</b></td></tr></table>All presentation classes must handle these five initargs, which are used to
+specify, respectively, the object, type, view, single-box, and modifier
+components of a presentation.
+<p>
+
+<a name="23.2.1"><h3>23.2.1 The Presentation Protocol</h3></a>
+The following functions comprise the presentation protocol.  All classes that
+inherit from <tt>presentation</tt> must implement methods for these generic
+functions.
+<p>
+<a name="Generic function presentation-object"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>presentation-object</b></td><td valign="baseline" width="100%"><i>presentation</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the object associated with the <a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlcommands.html#CONCEPT=presentation"><i>presentation</i></a> <i>presentation</i> .
+<p>
+<a name="Generic function (setf presentation-object)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf presentation-object)</b></td><td valign="baseline" width="100%"><i>object presentation</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Changes the object associated with the <a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlcommands.html#CONCEPT=presentation"><i>presentation</i></a> <i>presentation</i> to
+<i>object</i> .
+<p>
+<a name="Generic function presentation-type"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>presentation-type</b></td><td valign="baseline" width="100%"><i>presentation</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the presentation type associated with the <a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlcommands.html#CONCEPT=presentation"><i>presentation</i></a> <i>presentation</i> .
+<p>
+<a name="Generic function (setf presentation-type)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf presentation-type)</b></td><td valign="baseline" width="100%"><i>type presentation</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Changes the object associated with the <a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlcommands.html#CONCEPT=presentation"><i>presentation</i></a> <i>presentation</i> to
+<i>object</i> .
+<p>
+<a name="Generic function presentation-single-box"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>presentation-single-box</b></td><td valign="baseline" width="100%"><i>presentation</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the ``single box'' attribute of the <a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlcommands.html#CONCEPT=presentation"><i>presentation</i></a> <i>presentation</i> , which controls how the presentation is highlighted and when
+it is sensitive.  This will be one of four values:
+<p>
+<ul> <li> <tt>nil</tt> (the default)---if the pointer is pointing at a visible piece of
+the output that was drawn as part of the presentation, then it is considered to
+be pointing at the presentation.  The presentation is highlighted by
+highlighting each visible part of the output that was drawn as part of the
+presentation.
+<p>
+<li> <tt>t</tt> ---if the pointer is inside the bounding rectangle of the
+presentation, it is considered to be pointing at the presentation.  The
+presentation is highlighted by drawing a thin border around the bounding
+rectangle.
+<p>
+<li> <tt>:position</tt> ---like <tt>t</tt> for determining whether the pointer is
+pointing at the presentation, but like <tt>nil</tt> for highlighting.
+<p>
+<li> <tt>:highlighting</tt> ---like <tt>nil</tt> for determining whether the pointer is
+pointing at the presentation, but like <tt>t</tt> for highlighting.
+</ul> <a name="Generic function (setf presentation-single-box)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf presentation-single-box)</b></td><td valign="baseline" width="100%"><i>single-box presentation</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Changes the ``single box'' attribute of the <a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlcommands.html#CONCEPT=presentation"><i>presentation</i></a> <i>presentation</i> to <i>single-box</i> .
+<p>
+<a name="Generic function presentation-modifier"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>presentation-modifier</b></td><td valign="baseline" width="100%"><i>presentation</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the ``modifier'' associated with the <a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlcommands.html#CONCEPT=presentation"><i>presentation</i></a> <i>presentation</i> .  The modifier is some sort of object that describes how the
+presentation object might be modified.  For example, it might be a function of
+one argument (the new value) that can be called in order to store a new value
+for <i>object</i> after a user somehow ``edits'' the presentation.
+<p>
+
+<a name="23.3"><h2>23.3 Presentation Types</h2></a>
+The type associated with a presentation is specified with a
+<a name="CONCEPT=presentation type specifier"><b><i>presentation type specifier</i></b></a> , an object matching one of the following
+three patterns: <br>
+<center><table>
+<tr valign="baseline"><td align=left colspan=1><i>name</i> </td><td> </td></tr>
+<tr valign="baseline"><td align=left colspan=1>  <tt>(<i>name</i> <i>parameters...</i> )</tt> </td><td> </td></tr>
+<tr valign="baseline"><td colspan=1>  <tt>((<i>name</i> <i>parameters...</i> ) <i>options...</i> )</tt> </td><td> </td></tr>
+<tr valign="baseline"></tr>
+</table></center>
+
+Note that <i>name</i> can be either a symbol that names a presentation type or a
+CLOS class object (but not a <tt>built-in-class</tt> object), in order to support
+anonymous CLOS classes.
+<p>
+The <i>parameters</i> ``parameterize'' the type, just as in a Common Lisp type
+specifier.  The function <tt>presentation-typep</tt> uses the parameters to check
+object membership in a type.  Adding parameters to a presentation type specifier
+produces a subtype, which contains some, but not necessarily all, of the objects
+that are members of the unparameterized type.  Thus the parameters can turn off
+the sensitivity of some presentations that would otherwise be sensitive.
+<p>
+<p>
+The <i>options</i> are alternating keywords and values that affect the use or
+appearance of the presentation, but not its semantic meaning.  The <i>options</i> have no effect on presentation sensitivity.  (A programmer could choose to make
+a tester in a translator examine options, but this is not standard practice.)
+The standard option <tt>:description</tt> is accepted by all types; if it is a
+non-<tt>nil</tt> value, then the value must be a string that describes the type and
+overrides the description supplied by the type's definition.
+<p>
+Every presentation type is associated with a CLOS class.  If <i>name</i> is a
+class object or the name of a class, and that class is not a
+<tt>built-in-class</tt> , that class is the associated class.  Otherwise,
+<tt>define-presentation-type</tt> defines a class with metaclass
+<tt>presentation-type-class</tt> and superclasses determined by the presentation
+type definition.  This class is not named <i>name</i> , since that could interfere
+with built-in Common Lisp types such as <tt>and</tt> , <tt>member</tt> , and <tt>integer</tt> .
+<tt>class-name</tt> of this class returns a list <tt>(presentation-type <i>name</i> )</tt> .
+<tt>presentation-type-class</tt> is a subclass of <tt>standard-class</tt> .
+<p>
+Implementations are permitted to require programmers to evaluate the
+<tt>defclass</tt> form first in the case when the same name is used in both a
+<tt>defclass</tt> and a <tt>define-presentation-type</tt> .
+<p>
+Every CLOS class (except for built-in classes) is a presentation type, as is its
+name.  If it has not been defined with <tt>define-presentation-type</tt> , it allows
+no parameters and no options.
+<p>
+<a name="CONCEPT=Presentation type inheritance"><b><i>Presentation type inheritance</i></b></a> is used both to inherit methods (``what
+parser should be used for this type?''), and to establish the semantics for the
+type (``what objects are sensitive in this input context?'').  Inheritance of
+methods is the same as in CLOS and thus depends only on the type name, not on
+the parameters and options.
+<p>
+During presentation method combination, presentation type inheritance arranges
+to translate the parameters of a subtype into a new set of parameters for its
+supertype, and translates the options of the subtype into a new set of options
+for the supertype.
+<p>
+
+<a name="23.3.1"><h3>23.3.1 Defining Presentation Types</h3></a>
+<a name="Macro define-presentation-type"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>define-presentation-type</b></td><td valign="baseline" width="100%"><i>name parameters
+                                      <tt>&amp;key</tt> options inherit-from description history
+                                           parameters-are-types</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Defines a presentation type whose name is the symbol or class <i>name</i> and
+whose parameters are specified by the lambda-list <i>parameters</i> .  These
+parameters are visible within <i>inherit-from</i> and within the methods created
+with <tt>define-presentation-method</tt> .  For example, the parameters are used by
+<tt>presentation-typep</tt> and <tt>presentation-subtypep</tt> methods to refine their
+tests for type inclusion.
+<p>
+<i>options</i> is a list of option specifiers.  It defaults to <tt>nil</tt> .  An
+option specifier is either a symbol or a list (<i>symbol</i> <tt>&amp;optional</tt> <i>default</i> <i>supplied-p</i> <i>presentation-type</i> <i>accept-options</i> ),
+where <i>symbol</i> , <i>default</i> , and <i>supplied-p</i> are as in a normal
+lambda-list.  If <i>presentation-type</i> and <i>accept-options</i> are present,
+they specify how to accept a new value for this option from the user.
+<i>symbol</i> can also be specified in the (<i>keyword</i> <i>variable</i> ) form
+allowed for Common Lisp lambda lists.  <i>symbol</i> is a variable that is
+visible within <i>inherit-from</i> and within most of the methods created with
+<tt>define-presentation-method</tt> .  The keyword corresponding to <i>symbol</i> can
+be used as an option in the third form of a presentation type specifier.  An
+option specifier for the standard option <tt>:description</tt> is automatically
+added to <i>options</i> if an option with that keyword is not present, however it
+does not produce a visible variable binding.
+<p>
+Unsupplied optional or keyword parameters default to <tt>*</tt> (as in <tt>deftype</tt> )
+if no default is specified in <i>parameters</i> .  Unsupplied options default to
+<tt>nil</tt> if no default is specified in <i>options</i> .
+<p>
+<i>inherit-from</i> is a form that evaluates to a presentation type specifier for
+another type from which the new type inherits.  <i>inherit-from</i> can access
+the parameter variables bound by the <i>parameters</i> lambda list and the option
+variables specified by <i>options</i> .  If <i>name</i> is or names a CLOS class
+(other than a <tt>built-in-class</tt> ), then <i>inherit-from</i> must specify the
+class's direct superclasses (using <tt>and</tt> to specify multiple inheritance).
+It is useful to do this when you want to parameterize previously defined CLOS
+classes.
+<p>
+If <i>inherit-from</i> is unsupplied, it defaults as follows:  If <i>name</i> is
+or names a CLOS class, then the type inherits from the presentation type
+corresponding to the direct superclasses of that CLOS class (using <tt>and</tt> to
+specify multiple inheritance).  Otherwise, the type named by <i>name</i> inherits
+from <tt>standard-object</tt> .
+<p>
+<i>description</i> is a string or <tt>nil</tt> .  This should be the term for an
+instance for the type being defined.  If it is <tt>nil</tt> or unsupplied, a
+description is automatically generated; it will be a ``prettied up'' version of
+the type name, for example, <tt>small-integer</tt> would become <tt>"small
+integer"</tt> .  You can also write a <tt>describe-presentation-type</tt> presentation
+method.  <i>description</i> is implemented by the default
+<tt>describe-presentation-type</tt> method, so <i>description</i> only works in
+presentation types where that default method is not shadowed.
+<p>
+<i>history</i> can be <tt>t</tt> (the default), which means this type has its own
+history of previous inputs, <tt>nil</tt> , which means this type keeps no history,
+or the name of another presentation type, whose history is shared by this
+type.  More complex histories can be specified by writing a
+<tt>presentation-type-history</tt> presentation method.
+<p>
+<hr><b>Issue:</b> SWM<br><i>What is a presentation type history?  Should they be exposed?</i><hr>
+If the boolean <i>parameters-are-types</i> is <a href="presentation-types.html#CONCEPT=true"><i>true</i></a> , this means that the
+parameters to the presentation type are themselves presentation types.  If they
+are not presentation types, <i>parameters-are-types</i> should be supplied as
+<a href="presentation-types.html#CONCEPT=false"><i>false</i></a> .  Types such as <tt>and</tt> , <tt>or</tt> , and <tt>sequence</tt> will specify
+this as <a href="presentation-types.html#CONCEPT=true"><i>true</i></a> .
+<p>
+Every presentation type must define or inherit presentation methods for
+<tt>accept</tt> and <tt>present</tt> if the type is going to be used for input and
+output.  For presentation types that are only going to be used for input via the
+pointer, the <tt>accept</tt> need not be defined.
+<p>
+If a presentation type has <i>parameters</i> , it must define presentation methods
+for <tt>presentation-typep</tt> and <tt>presentation-subtypep</tt> that handle the
+parameters, or inherit appropriate presentation methods.  In many cases it
+should also define presentation methods for <tt>describe-presentation-type</tt> and
+<tt>presentation-type-specifier-p</tt> .
+<p>
+There are certain restrictions on the <i>inherit-from</i> form, to allow it to be
+analyzed at compile time.  The form must be a simple substitution of parameters
+and options into positions in a fixed framework.  It cannot involve conditionals
+or computations that depend on valid values for the parameters or options; for
+example, it cannot require parameter values to be numbers.  It cannot depend on
+the dynamic or lexical environment.  The form will be evaluated at compile time
+with uninterned symbols used as dummy values for the parameters and options.  In
+the type specifier produced by evaluating the form, the type name must be a
+constant that names a type, the type parameters cannot derive from options of
+the type being defined, and the type options cannot derive from parameters of
+the type being defined.  All presentation types mentioned must be already
+defined.  <tt>and</tt> can be used for multiple inheritance, but <tt>or</tt> , <tt>not</tt> ,
+and <tt>satisfies</tt> cannot be used.
+<p>
+None of the arguments, except <i>inherit-from</i> , is evaluated.
+<p>
+
+<a name="23.3.2"><h3>23.3.2 Presentation Type Abbreviations</h3></a>
+<a name="Macro define-presentation-type-abbreviation"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>define-presentation-type-abbreviation</b></td><td valign="baseline" width="100%"><i>name parameters equivalent-type 
+                                                   <tt>&amp;key</tt> options</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table><i>name</i> , <i>parameters</i> , and <i>options</i> are as in
+<tt>define-presentation-type</tt> .  This defines a presentation type that is an
+<a name="CONCEPT=abbreviation"><b><i>abbreviation</i></b></a> for the presentation type <i>equivalent-type</i> .
+Presentation type abbreviations can only be used in places where this
+specification explicitly permits them.  In such places, <i>equivalent-type</i> and <a href="presentation-types.html#CONCEPT=abbreviation"><i>abbreviation</i></a> are exactly equivalent and can be used interchangeably.
+<p>
+<i>name</i> must be a symbol and must not be the name of a CLOS class.
+<p>
+The <i>equivalent-type</i> form might be evaluated at compile time if
+presentation type abbreviations are expanded by compiler optimizers.  Unlike
+<i>inherit-from</i> , <i>equivalent-type</i> can perform arbitrary computations and
+is not called with dummy parameter and option values.  The type specifier
+produced by evaluating <i>equivalent-type</i> can be a real presentation type or
+another abbreviation.  If the type specifier doesn't include the standard option
+<tt>:description</tt> , the option is automatically copied from the abbreviation to
+its expansion.
+<p>
+Note that you cannot define any presentation methods on a presentation type
+abbreviation.  If you need methods, use <tt>define-presentation-type</tt> instead.
+<p>
+<tt>define-presentation-type-abbreviation</tt> is used to name a commonly used
+cliche.  For example, a presentation type to read an octal integer might be
+defined as
+<pre>(define-presentation-type-abbreviation octal-integer (&optional low high) 
+    `((integer ,low ,high) :base 8 :description "octal integer"))
+</pre> None of the arguments, except <i>equivalent-type</i> , is evaluated.
+<p>
+
+<a name="Function expand-presentation-type-abbreviation-1"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>expand-presentation-type-abbreviation-1</b></td><td valign="baseline" width="100%"><i>type <tt>&amp;optional</tt> env</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>If the <a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlpresentation-types.htmlpresentation-types.htmlcommands.html#CONCEPT=presentation type specifier"><i>presentation type specifier</i></a> <i>type</i> is a presentation type
+abbreviation, or is an <tt>and</tt> , <tt>or</tt> , <tt>sequence</tt> , or
+<tt>sequence-enumerated</tt> that contains a presentation type abbreviation, then
+this expands the type abbreviation once, and returns two values, the expansion
+and <tt>t</tt> .  If <i>type</i> is not a presentation type abbreviation, then the
+values <i>type</i> and <tt>nil</tt> are returned.
+<p>
+<i>env</i> is a macro-expansion environment, as for <tt>macroexpand</tt> .
+<p>
+<a name="Function expand-presentation-type-abbreviation"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>expand-presentation-type-abbreviation</b></td><td valign="baseline" width="100%"><i>type <tt>&amp;optional</tt> env</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table><tt>expand-presentation-type-abbreviation</tt> is like
+<tt>expand-presentation-type-abbreviation-1</tt> , except that <i>type</i> is
+repeatedly expanded until all presentation type abbreviations have been removed.
+<p>
+
+<a name="23.3.3"><h3>23.3.3 Presentation Methods</h3></a>
+Presentation methods inherit and combine in the same way as ordinary CLOS
+methods.  The reason presentation methods are not exactly the same as ordinary
+CLOS methods revolves around the <i>type</i> argument.  The parameter specializer
+for <i>type</i> is handled in a special way, and presentation method inheritance
+``massages'' the type parameters and options seen by each method.  For example,
+consider three types <tt>int</tt> , <tt>rrat</tt> , and <tt>num</tt> defined as follows:
+<p>
+<hr><b>Issue:</b> SWM<br><i>How are massaged arguments passed along?  Right now, we pass along
+those parameters of the same name, and no others.</i><hr>
+<pre>(define-presentation-type int (low high)
+  :inherit-from `(rrat ,high ,low))
+<p>
+(define-presentation-method presentation-typep :around (object (type int))
+  (and (call-next-method)
+       (integerp object)
+       (<= low object high)))
+<p>
+(define-presentation-type rrat (high low)
+  :inherit-from `num)
+<p>
+(define-presentation-method presentation-typep :around (object (type rrat))
+  (and (call-next-method)
+       (rationalp object)
+       (<= low object high)))
+<p>
+(define-presentation-type num ())
+<p>
+(define-presentation-method presentation-typep (object (type num))
+  (numberp object))
+</pre> If the user were to evaluate the form <tt>(presentation-typep X '(int 1 5))</tt> ,
+then the type parameters will be <tt>(1 5)</tt> in the <tt>presentation-typep</tt> method for <tt>int</tt> , <tt>(5 1)</tt> in the method for <tt>rrat</tt> , and <tt>nil</tt> in the
+method for <tt>num</tt> .  The value for <i>type</i> will be or <tt>((int 1 5))</tt> in
+each of the methods.
+<p>
+
+<a name="Macro define-presentation-generic-function"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>define-presentation-generic-function</b></td><td valign="baseline" width="100%"><i>generic-function-name 
+                                                  presentation-function-name
+                                                  lambda-list <tt>&amp;rest</tt> options</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Defines a generic function that will be used for presentation methods.
+<i>generic-function-name</i> is a symbol that names the generic function that
+will be used internally by CLIM for the individual methods,
+<i>presentation-function-name</i> is a symbol that names the function that
+programmers will call to invoke the method, and <i>lambda-list</i> and
+<i>options</i> are as for <tt>defgeneric</tt> .
+<p>
+There are some ``special'' arguments in <i>lambda-list</i> that are known about
+by the presentation type system.  The first argument in <i>lambda-list</i> must
+be either <tt>type-key</tt> or <tt>type-class</tt> ; this argument is used by CLIM to
+implement method dispatching.  The second argument may be <tt>parameters</tt> ,
+meaning that, when the method is invoked, the type parameters will be passed to
+it.  The third argument may be <tt>options</tt> , meaning that, when the method is
+invoked, the type options will be passed to it.  Finally, an argument named
+<tt>type</tt> must be included in <i>lambda-list</i> ; when the method is called,
+<i>type</i> argument will be bound to the presentation type specifier.
+<p>
+For example, the <tt>accept</tt> presentation generic function might be defined as
+follows:
+<pre>(define-presentation-generic-function present-method present
+  (type-key parameters options object type stream view
+   &key acceptably for-context-type))
+</pre> None of the arguments is evaluated.
+<p>
+
+<a name="Macro define-presentation-method"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>define-presentation-method</b></td><td valign="baseline" width="100%"><i>name qualifiers* specialized-lambda-list <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Defines a presentation method for the function named <i>name</i> on the
+presentation type named in <i>specialized-lambda-list</i> .
+<i>specialized-lambda-list</i> is a CLOS specialized lambda list for the method,
+and its contents varies depending on what <i>name</i> is.  <i>qualifiers*</i> is
+zero or more of the usual CLOS method qualifier symbols.
+<tt>define-presentation-method</tt> must support at least <tt>standard</tt> method
+combination (and therefore the <tt>:before</tt> , <tt>:after</tt> , and <tt>:around</tt> method qualifiers).  Some CLIM implementations may support other method
+combination types, but this is not required.
+<p>
+<i>body</i> defines the body of the method.  <i>body</i> may have zero or more
+declarations as its first forms.
+<p>
+All presentation methods have an argument named <i>type</i> that must be
+specialized with the name of a presentation type.  The value of <i>type</i> is a
+presentation type specifier, which can be for a subtype that inherited the
+method.
+<p>
+All presentation methods except <tt>presentation-subtypep</tt> have lexical access
+to the parameters from the presentation type specifier.  Presentation methods
+for the functions <tt>accept</tt> , <tt>present</tt> , <tt>describe-presentation-type</tt> ,
+<tt>presentation-type-specifier-p</tt> , and <tt>accept-present-default</tt> also have
+lexical access to the options from the presentation type specifier.
+<p>
+
+<a name="Macro define-default-presentation-method"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>define-default-presentation-method</b></td><td valign="baseline" width="100%"><i>name qualifiers* specialized-lambda-list
+                                                <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Like <tt>define-presentation-method</tt> , except that it is used to define a default
+method that will be used only if there are no more specific methods.
+<p>
+<a name="Macro funcall-presentation-generic-function"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>funcall-presentation-generic-function</b></td><td valign="baseline" width="100%"><i>presentation-function-name <tt>&amp;rest</tt> arguments</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Calls the presentation generic function named by <i>presentation-function-name</i> on the arguments <i>arguments</i> .  <i>arguments</i> must match the arguments
+specified by the <tt>define-presentation-generic-function</tt> that was used to define
+the presentation generic function, excluding the <tt>type-key</tt> , <tt>type-class</tt> ,
+<tt>parameters</tt> , and <tt>options</tt> arguments, which are filled in by CLIM.
+<p>
+<tt>funcall-presentation-generic-function</tt> is analogous to <tt>funcall</tt> .
+<p>
+The <i>presentation-function-name</i> argument is not evaluated.
+<p>
+For example, to call the <tt>present</tt> presentation generic function, one might
+use the following:
+<pre>(funcall-presentation-generic-function present
+  object presentation-type stream view)
+</pre> <a name="Macro apply-presentation-generic-function"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>apply-presentation-generic-function</b></td><td valign="baseline" width="100%"><i>presentation-function-name <tt>&amp;rest</tt> arguments</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Like <tt>funcall-presentation-generic-function</tt> , except that
+<tt>apply-presentation-generic-function</tt> is analogous to <tt>apply</tt> .
+<p>
+The <i>presentation-function-name</i> argument is not evaluated.
+<p>
+
+Here is a list of all of the standard presentation methods and their specialized
+lambda lists.  For the meaning of the arguments to each presentation method,
+refer to the description of the function that calls that method.
+<p>
+For all of the presentation methods, the <i>type</i> will always be specialized.
+For those methods that take a <i>view</i> argument, implementors and programmers
+may specialize it as well.  The other arguments are not typically specialized.
+<p>
+
+<p>
+<a name="Presentation Method present"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>present</b></td><td valign="baseline" width="100%"><i>object type stream view <tt>&amp;key</tt> acceptably for-context-type</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Presentation Method]</b></td></tr></table>The <tt>present</tt> presentation method is responsible for displaying the
+representation of <i>object</i> having <a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlpresentation-types.htmlcommands.html#CONCEPT=presentation type"><i>presentation type</i></a> <i>type</i> for a
+particular <a href="presentation-types.html#CONCEPT=view"><i>view</i></a> <i>view</i> .  The method's caller takes care of creating
+the presentation, the method simply displays the content of the presentation.
+<p>
+The <tt>present</tt> method can specialize on the <i>view</i> argument in order to
+define more than one view of the data.  For example, a spreadsheet program might
+define a presentation type for revenue, which can be displayed either as a
+number or a bar of a certain length in a bar graph.  Typically, at least one
+canonical view should be defined for a presentation type, for example, the
+<tt>present</tt> method for the <tt>textual-view</tt> view must be defined if the
+programmer wants to allow objects of that type to be displayed textually.
+<p>
+<b>Implementation note:</b> the actual argument list to the <tt>present</tt> method is
+<br>
+<i>(type-key parameters options object type stream view <tt>&amp;key</tt> acceptably for-context-type)</i> <br>
+<i>type-key</i> is the object that is used to cause the appropriate methods to be
+selected (an instance of the class that corresponds to the presentation type
+<i>type</i> .).
+<i>parameters</i> and <i>options</i> are the parameters and
+options for the type on which the current method is specialized.  
+The other arguments are gotten from the arguments of the same name in <tt>present</tt> .
+<p>
+
+<b>Implementation note:</b> the actual generic function of the <tt>present</tt> method is an internal generic function, not the function whose name is
+<tt>present</tt> .  Similar internal generic functions are used for all presentation
+methods.
+<p>
+
+<a name="Presentation Method accept"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>accept</b></td><td valign="baseline" width="100%"><i>type stream view <tt>&amp;key</tt> default default-type</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Presentation Method]</b></td></tr></table>The <tt>accept</tt> method is responsible for ``parsing'' the representation of the
+<a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlpresentation-types.htmlcommands.html#CONCEPT=presentation type"><i>presentation type</i></a> <i>type</i> for a particular <a href="presentation-types.html#CONCEPT=view"><i>view</i></a> <i>view</i> .
+The <tt>accept</tt> method must return a single value, the object that was
+``parsed'', or two values, the object and its type (a presentation type
+specifier).  The method's caller takes care of establishing the input context,
+defaulting, prompting, and input editing.
+<p>
+The <tt>accept</tt> method can specialize on the <i>view</i> argument in order to
+define more than one input view for the data.  The <tt>accept</tt> method for the
+<tt>textual-view</tt> view must be defined if the programmer wants to allow objects
+of that type to entered via the keyboard.
+<p>
+Note that <tt>accept</tt> presentation methods can call <tt>accept</tt> recursively.  In
+this case, the programmer should be careful to specify <tt>nil</tt> for <tt>:prompt</tt> and <tt>:display-default</tt> unless recursive prompting is really desired.
+<p>
+<b>Implementation note:</b> the actual argument list to the <tt>accept</tt> method is
+<br>
+<i>(type-key parameters options type stream view <tt>&amp;key</tt> default default-type)</i> <a name="Presentation Method describe-presentation-type"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>describe-presentation-type</b></td><td valign="baseline" width="100%"><i>type stream plural-count</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Presentation Method]</b></td></tr></table>The <tt>describe-presentation-type</tt> method is responsible for textually
+describing the <a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlpresentation-types.htmlcommands.html#CONCEPT=presentation type"><i>presentation type</i></a> <i>type</i> .  <i>stream</i> is a stream,
+and will not be <tt>nil</tt> as it can be for the <tt>describe-presentation-type</tt> function.
+<p>
+<b>Implementation note:</b> the actual argument list to the 
+<tt>describe-presentation-type</tt> method is
+<br>
+<i>(type-key parameters options type stream plural-count)</i> <a name="Presentation Method presentation-type-specifier-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>presentation-type-specifier-p</b></td><td valign="baseline" width="100%"><i>type</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Presentation Method]</b></td></tr></table>The <tt>presentation-type-specifier-p</tt> method is responsible for checking the
+validity of the parameters and options for the <a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlpresentation-types.htmlcommands.html#CONCEPT=presentation type"><i>presentation type</i></a> <i>type</i> .  The default method returns <tt>t</tt> .
+<p>
+<b>Implementation note:</b> the actual argument list to the
+<tt>presentation-type-specifier-p</tt> method is
+<br>
+<i>(type-key parameters options type)</i> <a name="Presentation Method presentation-typep"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>presentation-typep</b></td><td valign="baseline" width="100%"><i>object type</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Presentation Method]</b></td></tr></table>The <tt>presentation-typep</tt> method is called when the <tt>presentation-typep</tt> function requires type-specific knowledge.  If the type name in the
+<a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlpresentation-types.htmlcommands.html#CONCEPT=presentation type"><i>presentation type</i></a> <i>type</i> is a CLOS class or names a CLOS class, the
+method is called only if <i>object</i> is a member of the class and <i>type</i> contains parameters, and the method simply tests whether <i>object</i> is a
+member of the subtype specified by the parameters.  For non-class types, the
+method is always called.
+<p>
+<b>Implementation note:</b> the actual argument list to the <tt>presentation-typep</tt> method is
+<br>
+<i>(type-key parameters object type)</i> <a name="Presentation Method presentation-subtypep"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>presentation-subtypep</b></td><td valign="baseline" width="100%"><i>type putative-supertype</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Presentation Method]</b></td></tr></table><tt>presentation-subtypep</tt> walks the type lattice (using
+<tt>map-over-presentation-supertypes</tt> ) to determine whethe or not the
+<a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlpresentation-types.htmlcommands.html#CONCEPT=presentation type"><i>presentation type</i></a> <i>type</i> is a subtype of the<a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlpresentation-types.htmlcommands.html#CONCEPT=presentation type"><i>presentation type</i></a> <i>putative-supertype</i> , without looking at the type parameters.  When a
+supertype of <i>type</i> has been found whose name is the same as the name of
+<i>putative-supertype</i> , then the <tt>subtypep</tt> method for that type is called
+in order to resolve the question by looking at the type parameters (that is, if
+the <tt>subtypep</tt> method is called, <i>type</i> and <i>putative-supertype</i> are
+guaranteed to be the same type, differing only in their parameters).  If
+<i>putative-supertype</i> is never found during the type walk, then
+<tt>presentation-subtypep</tt> will never call the <tt>presentation-subtypep</tt> presentation method for <i>putative-supertype</i> .
+<p>
+Unlike all other presentation methods, <tt>presentation-subtypep</tt> receives a
+<i>type</i> argument that has been translated to the presentation type for which
+the method is specialized; <i>type</i> is never a subtype.  The method is only
+called if <i>putative-supertype</i> has parameters and the two presentation type
+specifiers do not have equal parameters.  The method must return the two values
+that <tt>presentation-subtypep</tt> returns.
+<p>
+Since <tt>presentation-subtypep</tt> takes two type arguments, the parameters are
+not lexically available as variables in the body of a presentation method.
+<p>
+<b>Implementation note:</b> the actual argument list to the
+<tt>presentation-subtypep</tt> method is
+<br>
+<i>(type-key type putative-supertype)</i> <a name="Presentation Method map-over-presentation-type-supertypes"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>map-over-presentation-type-supertypes</b></td><td valign="baseline" width="100%"><i>function type</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Presentation Method]</b></td></tr></table>This method is called in order to apply <i>function</i> to the superclasses of
+the <a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlpresentation-types.htmlcommands.html#CONCEPT=presentation type"><i>presentation type</i></a> <i>type</i> .
+<p>
+<b>Implementation note:</b> the actual argument list to the
+<tt>map-over-presentation-type-supertypes</tt> method is
+<br>
+<i>(type-class function type)</i> <a name="Presentation Method accept-present-default"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>accept-present-default</b></td><td valign="baseline" width="100%"><i>type stream view default default-supplied-p
+                                       present-p query-identifier</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Presentation Method]</b></td></tr></table>The <tt>accept-present-default</tt> method is called when <tt>accept</tt> turns into
+<tt>present</tt> inside of <tt>accepting-values</tt> .  The default method calls
+<tt>present</tt> or <tt>describe-presentation-type</tt> depending on whether
+<i>default-supplied-p</i> is <a href="presentation-types.html#CONCEPT=true"><i>true</i></a> or <a href="presentation-types.html#CONCEPT=false"><i>false</i></a> , respectively.
+<p>
+The boolean <i>default-supplied-p</i> will be <a href="presentation-types.html#CONCEPT=true"><i>true</i></a> only in the case when
+the <tt>:default</tt> option was explicitly supplied in the call to <tt>accept</tt> that
+invoked <tt>accept-present-default</tt> .
+<p>
+<b>Implementation note:</b> the actual argument list to the
+<tt>accept-present-default</tt> method is
+<br>
+<i>(type-key parameters options type stream view default default-supplied-p present-p query-identifier)</i> <a name="Presentation Method presentation-type-history"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>presentation-type-history</b></td><td valign="baseline" width="100%"><i>type</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Presentation Method]</b></td></tr></table>This method is responsible for returning a history object for the
+<a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlpresentation-types.htmlcommands.html#CONCEPT=presentation type"><i>presentation type</i></a> <i>type</i> .
+<p>
+<b>Implementation note:</b> the actual argument list to the
+<tt>presentation-type-history</tt> method is
+<br>
+<i>(type-key parameters type)</i> <a name="Presentation Method presentation-default-preprocessor"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>presentation-default-preprocessor</b></td><td valign="baseline" width="100%"><i>default type <tt>&amp;key</tt> default-type</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Presentation Method]</b></td></tr></table>This method is responsible for taking the object <i>default</i> , and coercing it
+to match the <a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlpresentation-types.htmlcommands.html#CONCEPT=presentation type"><i>presentation type</i></a> <i>type</i> (which is the type being
+accepted) and <i>default-type</i> (which is the presentation type of
+<i>default</i> ).  This is useful when you want to change the default gotten from
+the presentation type's history so that it conforms to parameters or options in
+<i>type</i> and <i>default-type</i> .)  The method must return two values, the new
+object to be used as the default, and a new presentation type, which should be
+at least as specific as <i>type</i> .
+<p>
+<b>Implementation note:</b> the actual argument list to the
+<tt>presentation-default-preprocessor</tt> method is
+<br>
+<i>(type-key parameters default type <tt>&amp;key</tt> default-type)</i> <a name="Presentation Method presentation-refined-position-test"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>presentation-refined-position-test</b></td><td valign="baseline" width="100%"><i>type record x y</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Presentation Method]</b></td></tr></table>This method used to definitively answer hit detection queries for a
+presentation, that is, determining that the point <tt>(x,y)</tt> is contained within
+the output record <i>record</i> .  Its contract is exactly the same as for
+<tt>output-record-refined-position-test</tt> , except that it is intended to
+specialize on the presentation type <i>type</i> .
+<p>
+<b>Implementation note:</b> the actual argument list to the
+<tt>presentation-refined-position-test</tt> method is
+<br>
+<i>(type-key parameters options type record x y)</i> <a name="Presentation Method highlight-presentation"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>highlight-presentation</b></td><td valign="baseline" width="100%"><i>type record stream state</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Presentation Method]</b></td></tr></table>This method is responsible for drawing a highlighting box around the
+<a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlcommands.html#CONCEPT=presentation"><i>presentation</i></a> <i>record</i> on the <a href="presentation-types.html#CONCEPT=output recording stream"><i>output recording stream</i></a> <i>stream</i> .  <i>state</i> will be either <tt>:highlight</tt> or <tt>:unhighlight</tt> .
+<p>
+<b>Implementation note:</b> the actual argument list to the
+<tt>highlight-presentation</tt> method is
+<br>
+<i>(type-key parameters options type record stream state)</i> <a name="23.3.4"><h3>23.3.4 Presentation Type Functions</h3></a>
+<a name="Function describe-presentation-type"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>describe-presentation-type</b></td><td valign="baseline" width="100%"><i>type <tt>&amp;optional</tt> stream plural-count</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Describes the <a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlpresentation-types.htmlpresentation-types.htmlcommands.html#CONCEPT=presentation type specifier"><i>presentation type specifier</i></a> <i>type</i> on the <a href="presentation-types.html#CONCEPT=stream"><i>stream</i></a> <i>stream</i> , which defaults to <tt>*standard-output*</tt> .  If <i>stream</i> is
+<tt>nil</tt> , a string containing the description is returned.  <i>plural-count</i> is either <tt>nil</tt> (meaning that the description should be the singular form of
+the name), <tt>t</tt> (meaning that the description should the plural form of the
+name), or an integer greater than zero (the number of items to be described).
+The default is <tt>1</tt> .
+<p>
+<i>type</i> can be a presentation type abbreviation.
+<p>
+
+<a name="Function presentation-type-parameters"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>presentation-type-parameters</b></td><td valign="baseline" width="100%"><i>type-name <tt>&amp;optional</tt> env</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Returns a lambda-list, the parameters specified when the presentation type or
+presentation type abbreviation whose name is <i>type-name</i> was defined.
+<i>type-name</i> is a symbol or a class.  <i>env</i> is a macro-expansion
+environment, as in <tt>find-class</tt> .
+<p>
+
+<a name="Function presentation-type-options"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>presentation-type-options</b></td><td valign="baseline" width="100%"><i>type-name <tt>&amp;optional</tt> env</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Returns the list of options specified when the presentation type or presentation
+type abbreviation whose name is <i>type-name</i> was defined.  This does not
+include the standard options unless the presentation-type definition mentioned
+them explicitly.  <i>type-name</i> is a symbol or a class.  <i>env</i> is a
+macro-expansion environment, as in <tt>find-class</tt> .
+<p>
+
+<a name="Macro with-presentation-type-decoded"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>with-presentation-type-decoded</b></td><td valign="baseline" width="100%"><i>(name-var <tt>&amp;optional</tt> parameters-var options-var) 
+                                            type
+                                            <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>The specified variables are bound to the components of the presentation type
+specifier produced by evaluating <i>type</i> , the forms in <i>body</i> are
+executed, and the values of the last form are returned.  <i>name-var</i> , if
+non-<tt>nil</tt> , is bound to the presentation type name.  <i>parameters-var</i> , if
+non-<tt>nil</tt> , is bound to a list of the parameters.  <i>options-var</i> , if
+non-<tt>nil</tt> , is bound to a list of the options.  When supplied, <i>name-var</i> ,
+<i>parameters-var</i> , and <i>options-var</i> must be symbols.
+<p>
+The <i>name-var</i> , <i>parameters-var</i> , and <i>options-var</i> arguments are
+not evaluated.  <i>body</i> may have zero or more declarations as its first
+forms. 
+<p>
+<a name="Function presentation-type-name"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>presentation-type-name</b></td><td valign="baseline" width="100%"><i>type</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Returns the presentation type name of the presentation type specifier <i>type</i> .
+This function is provided as a convenience.  It could be implemented with the
+following code:
+<p>
+<pre>(defun presentation-type-name (type)
+  (with-presentation-type-decoded (name) type
+    name))
+</pre> <a name="Macro with-presentation-type-parameters"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>with-presentation-type-parameters</b></td><td valign="baseline" width="100%"><i>(type-name type) <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Variables with the same name as each parameter in the definition of the
+presentation type are bound to the parameter values in <i>type</i> , if present,
+or else to the defaults specified in the definition of the presentation type.
+The forms in <i>body</i> are executed in the scope of these variables and the
+values of the last form are returned.
+<p>
+The value of the form <i>type</i> must be a presentation type specifier whose
+name is <i>type-name</i> .  The <i>type-name</i> and <i>type</i> arguments are not
+evaluated.  <i>body</i> may have zero or more declarations as its first forms.
+<p>
+<a name="Macro with-presentation-type-options"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>with-presentation-type-options</b></td><td valign="baseline" width="100%"><i>(type-name type) <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Variables with the same name as each option in the definition of the
+presentation type are bound to the option values in <i>type</i> , if present, or
+else to the defaults specified in the definition of the presentation type.  The
+forms in <i>body</i> are executed in the scope of these variables and the values
+of the last form are returned.
+<p>
+The value of the form <i>type</i> must be a presentation type specifier whose
+name is <i>type-name</i> .  The <i>type-name</i> and <i>type</i> arguments are not
+evaluated.  <i>body</i> may have zero or more declarations as its first forms.
+<p>
+
+<a name="Function presentation-type-specifier-p"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>presentation-type-specifier-p</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Returns <a href="presentation-types.html#CONCEPT=true"><i>true</i></a> if <i>object</i> is a valid <a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlpresentation-types.htmlcommands.html#CONCEPT=presentation type
+specifier"><i>presentation type
+specifier</i></a> , otherwise returns <a href="presentation-types.html#CONCEPT=false"><i>false</i></a> .
+<p>
+
+<a name="Function presentation-typep"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>presentation-typep</b></td><td valign="baseline" width="100%"><i>object type</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Returns <a href="presentation-types.html#CONCEPT=true"><i>true</i></a> if <i>object</i> is of the presentation type specified by the
+<a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlpresentation-types.htmlpresentation-types.htmlcommands.html#CONCEPT=presentation type specifier"><i>presentation type specifier</i></a> <i>type</i> , otherwise returns <a href="presentation-types.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<i>type</i> may not be a presentation type abbreviation.
+<p>
+This is analogous to the Common Lisp <tt>typep</tt> function.
+<p>
+
+<a name="Function presentation-type-of"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>presentation-type-of</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Returns a presentation type of which <i>object</i> is a member.
+<tt>presentation-type-of</tt> returns the most specific presentation type that can
+be conveniently computed and is likely to be useful to the programmer.  This is
+often the class name of the class of the object.
+<p>
+If <tt>presentation-type-of</tt> cannot determine the presentation type of the
+object, it may return either <tt>expression</tt> or <tt>t</tt> .
+<p>
+This is analogous to the Common Lisp <tt>typep</tt> function.
+<p>
+
+<a name="Function presentation-subtypep"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>presentation-subtypep</b></td><td valign="baseline" width="100%"><i>type putative-supertype</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Answers the question ``is the type specified by the <a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlpresentation-types.htmlcommands.html#CONCEPT=presentation type
+specifier"><i>presentation type
+specifier</i></a> <i>type</i> a subtype of the type specified by the <a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlcommands.html#CONCEPT=presentation
+type specifier"><i>presentation
+type specifier</i></a> <i>putative-supertype</i> ?''.  <tt>presentation-subtypep</tt> returns
+two values, <i>subtypep</i> and <i>known-p</i> .  When <i>known-p</i> is
+<a href="presentation-types.html#CONCEPT=true"><i>true</i></a> , <i>subtypep</i> can be either <a href="presentation-types.html#CONCEPT=true"><i>true</i></a> (meaning that <i>type</i> is definitely a subtype of <i>putative-supertype</i> ) or <a href="presentation-types.html#CONCEPT=false"><i>false</i></a> (meaning
+that <i>type</i> is definitely not a subtype of <i>putative-supertype</i> ).  When
+<i>known-p</i> is <a href="presentation-types.html#CONCEPT=false"><i>false</i></a> , then <i>subtypep</i> must also be <a href="presentation-types.html#CONCEPT=false"><i>false</i></a> ;
+this means that the answer cannot reliably be determined.
+<p>
+<i>type</i> may not be a presentation type abbreviation.
+<p>
+This is analogous to the Common Lisp <tt>subtypep</tt> function.
+<p>
+
+<a name="Function map-over-presentation-type-supertypes"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>map-over-presentation-type-supertypes</b></td><td valign="baseline" width="100%"><i>function type</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Calls the function <i>function</i> on the <a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlpresentation-types.htmlpresentation-types.htmlcommands.html#CONCEPT=presentation type specifier"><i>presentation type specifier</i></a> <i>type</i> and each of its supertypes.  <i>function</i> is called with two
+arguments, the name of a type and a presentation type specifier for that type
+with the parameters and options filled in.  <i>function</i> has dynamic extent;
+its two arguments are permitted to have dynamic extent.  The traversal of the
+type lattice is done in the order specified by the CLOS class precedence rules,
+and visits each type in the lattice exactly once.
+<p>
+
+<a name="Function presentation-type-direct-supertypes"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>presentation-type-direct-supertypes</b></td><td valign="baseline" width="100%"><i>type</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Returns a sequence consisting of the names of all of the presentation types that
+are direct supertypes of the <a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlpresentation-types.htmlpresentation-types.htmlcommands.html#CONCEPT=presentation type specifier"><i>presentation type specifier</i></a> <i>type</i> , or
+<tt>nil</tt> if <i>type</i> has no supertypes.  The consequences of modifying the
+returned sequence are unspecified.
+<p>
+
+<a name="Function find-presentation-type-class"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>find-presentation-type-class</b></td><td valign="baseline" width="100%"><i>name <tt>&amp;optional</tt> (errorp <tt>t</tt> ) environment</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Returns the class corresponding to the presentation type named <i>name</i> , which
+must be a symbol or a class object.  <i>errorp</i> and <i>environment</i> are as
+for <tt>find-class</tt> .
+<p>
+
+<a name="Function class-presentation-type-name"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>class-presentation-type-name</b></td><td valign="baseline" width="100%"><i>class <tt>&amp;optional</tt> environment</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Returns the presentation type name corresponding to the class <i>class</i> .  This
+is essentially the inverse of <tt>find-presentation-type-class</tt> .
+<i>environment</i> is as for <tt>find-class</tt> .
+<p>
+
+<a name="Function default-describe-presentation-type"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>default-describe-presentation-type</b></td><td valign="baseline" width="100%"><i>description stream plural-count</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Performs the default actions for <tt>describe-presentation-type</tt> , notably
+pluralization and prepending an indefinite article if appropriate.
+<i>description</i> is a string or a symbol, typically the <tt>:description</tt> presentation type option or the <tt>:description</tt> option to
+<tt>define-presentation-type</tt> .  <i>plural-count</i> is as for
+<tt>describe-presentation-type</tt> .
+<p>
+
+<a name="Function make-presentation-type-specifier"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>make-presentation-type-specifier</b></td><td valign="baseline" width="100%"><i>type-name-and-parameters <tt>&amp;rest</tt> options</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>A convenient way to assemble a presentation type specifier with only non-default
+options included.  This is only useful for abbreviation expanders, not for
+<tt>:inherit-from</tt> .  <i>type-name-and-parameters</i> is a presentation type
+specifier, which must be in the <tt>(<i>type-name</i> <i>parameters...</i> )</tt> form.
+<i>options</i> are alternating keywords and values that are added as options to
+the presentation type specifier, except that if a value is equal to
+<i>type-name</i> 's default, that option is omitted, producing a more concise
+presentation type specifier.
+<p>
+
+<a name="23.4"><h2>23.4 Typed Output</h2></a>
+An application can specify that all output done within a certain dynamic extent
+should be associated with a given Lisp object and be declared to be of a
+specified presentation type.  The resulting output is saved in the window's
+output history as a presentation.  Specifically, the presentation remembers the
+output that was performed (by saving the associated output record), the Lisp
+object associated with the output, and the presentation type specified at output
+time.  The object can be any Lisp object.
+<p>
+
+<a name="Macro with-output-as-presentation"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>with-output-as-presentation</b></td><td valign="baseline" width="100%"><i>(stream object type
+                                          <tt>&amp;key</tt> modifier single-box allow-sensitive-inferiors
+                                               parent record-type <tt>&amp;allow-other-keys</tt> )
+                                         <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>The output of <i>body</i> to the <a href="presentation-types.html#CONCEPT=extended output recording"><i>extended output recording</i></a> <i>stream</i> is
+used to generate a presentation whose underlying object is <i>object</i> and
+whose presentation type is <i>type</i> .  Each invocation of this macro results in
+the creation of a presentation object in the stream's output history unless
+output recording has been disabled or <tt>:allow-sensitive-inferiors nil</tt> was
+specified at a higher level, in which case the presentation object is not
+inserted into the history.  <tt>with-output-as-presentation</tt> returns the
+presentation corresponding to the output.
+<p>
+The <i>stream</i> argument is not evaluated, and must be a symbol that is bound
+to an extended output stream or output recording stream.  If <i>stream</i> is
+<tt>t</tt> , <tt>*standard-output*</tt> is used. <i>body</i> may have zero or more
+declarations as its first forms.
+<p>
+<i>type</i> may be a presentation type abbreviation.
+<p>
+<i>modifier</i> , which defaults to <tt>nil</tt> , is some sort of object that
+describes how the presentation object might be modified.  For example, it might
+be a function of one argument (the new value) that can be called in order to
+store a new value for <i>object</i> after a user somehow ``edits'' the
+presentation.  <i>modifier</i> must have indefinite extent.
+<p>
+<i>single-box</i> is used to specify the <tt>presentation-single-box</tt> component
+of the resulting presentation.  It can take on the values described under
+<tt>presentation-single-box</tt> .
+<p>
+When the boolean <i>allow-sensitive-inferiors</i> is <a href="presentation-types.html#CONCEPT=false"><i>false</i></a> , nested calls
+to <tt>present</tt> or <tt>with-output-as-presentation</tt> inside this one will not
+generate presentations.  The default is <a href="presentation-types.html#CONCEPT=true"><i>true</i></a> .
+<p>
+<i>parent</i> specifies what output record should serve as the parent for the
+newly created presentation.  If unspecified, <tt>stream-current-output-record</tt> of <i>stream</i> will be used as the parent.
+<p>
+<i>record-type</i> specifies the class of the presentation output record to be
+created.  It defaults to <tt>standard-presentation</tt> .  This argument should only
+be supplied by a programmer if there is a new class of output record that
+supports the updating output record protocol.
+<p>
+All arguments of this macro are evaluated.
+<p>
+For example,
+<pre>(with-output-as-presentation (stream #p"foo" 'pathname)
+  (princ "FOO" stream))
+</pre> <a name="Function present"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>present</b></td><td valign="baseline" width="100%"><i>object <tt>&amp;optional</tt> type
+                  <tt>&amp;key</tt> stream view modifier acceptably for-context-type
+                       single-box allow-sensitive-inferiors sensitive record-type</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>The <i>object</i> of <a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlpresentation-types.htmlcommands.html#CONCEPT=presentation type"><i>presentation type</i></a> <i>type</i> is presented to the
+<a href="presentation-types.html#CONCEPT=extended output stream"><i>extended output stream</i></a> <i>stream</i> (which defaults to
+<tt>*standard-output*</tt> ), using the type's <tt>present</tt> method for the supplied
+<a href="presentation-types.html#CONCEPT=view"><i>view</i></a> <i>view</i> .  <i>type</i> is a presentation type specifier, and can be
+an abbreviation.  It defaults to <tt>(presentation-type-of <i>object</i> )</tt> .  The
+other arguments and overall behavior of <tt>present</tt> are as for
+<tt>stream-present</tt> .
+<p>
+The returned value of <tt>present</tt> is the presentation object that contains the
+output corresponding to the object.
+<p>
+<tt>present</tt> must be implemented by first expanding any presentation type
+abbreviations (<i>type</i> and <i>for-context-type</i> ), and then calling
+<tt>stream-present</tt> on <i>stream</i> , <i>object</i> , <i>type</i> , and the remaining
+keyword arguments, which are described below.
+<p>
+<a name="Generic function stream-present"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-present</b></td><td valign="baseline" width="100%"><i>stream object type
+                              <tt>&amp;key</tt> view modifier acceptably for-context-type
+                                   single-box allow-sensitive-inferiors sensitive 
+                                   record-type</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><tt>stream-present</tt> is the per-stream implementation of <tt>present</tt> , analogous
+to the relationship between <tt>write-char</tt> and <tt>stream-write-char</tt> .  All
+extended output streams and output recording streams must implement a method for
+<tt>stream-present</tt> .  The default method (on
+<tt>standard-extended-output-stream</tt> ) implements the following behavior.
+<p>
+The object <i>object</i> of type <i>type</i> is presented to the <a href="presentation-types.html#CONCEPT=stream"><i>stream</i></a> <i>stream</i> by calling the type's <tt>present</tt> method for the supplied
+<a href="presentation-types.html#CONCEPT=view"><i>view</i></a> <i>view</i> .  The returned value is the presentation containing the
+output corresponding to the object.
+<p>
+<i>type</i> is a presentation type specifier.  <i>view</i> is a view object that
+defaults to <tt>stream-default-view</tt> of <i>stream</i> .
+<p>
+<i>for-context-type</i> is a presentation type specifier that is passed to the
+<tt>present</tt> method for <i>type</i> , which can use it to tailor how the object
+will be presented.  <i>for-context-type</i> defaults to <i>type</i> .
+<p>
+<i>modifier</i> , <i>single-box</i> , <i>allow-sensitive-inferiors</i> , and
+<i>record-type</i> are the same as for <tt>with-output-as-presentation</tt> .
+<p>
+<i>acceptably</i> defaults to <tt>nil</tt> , which requests the <tt>present</tt> method to
+produce text designed to be read by human beings.  If <i>acceptably</i> is
+<tt>t</tt> , it requests the <tt>present</tt> method to produce text that is recognized
+by the <tt>accept</tt> method for <i>for-context-type</i> .  This makes no difference
+to most presentation types.
+<p>
+The boolean <i>sensitive</i> defaults to <a href="presentation-types.html#CONCEPT=true"><i>true</i></a> .  If it is <a href="presentation-types.html#CONCEPT=false"><i>false</i></a> , no
+presentation is produced.
+<p>
+
+<a name="Function present-to-string"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>present-to-string</b></td><td valign="baseline" width="100%"><i>object <tt>&amp;optional</tt> type
+                            <tt>&amp;key</tt> view acceptably for-context-type string index</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Same as <tt>present</tt> inside <tt>with-output-to-string</tt> .  If <i>string</i> is
+supplied, it must be a string with a fill pointer.  When <i>index</i> is
+supplied, it is used as an index into <i>string</i> .  <i>view</i> ,
+<i>acceptably</i> , and <i>for-context-type</i> are as for <tt>present</tt> .
+<p>
+The first returned value is the string.  When <i>string</i> is supplied, a second
+value is returned, the updated <i>index</i> .
+<p>
+
+<a name="23.5"><h2>23.5 Context-dependent (Typed) Input</h2></a>
+Associating semantics with output is only half of the user interface equation.
+The presentation type system also supports the input side of the user
+interaction.  When an application wishes to solicit from the user input of a
+particular presentation type, it establishes an <a name="CONCEPT=input context"><b><i>input context</i></b></a> for that
+type.  CLIM will then automatically allow the user to satisfy the input request
+by pointing at a visible presentation of the requested type (or a valid subtype)
+and pressing a pointer button.  Only the presentations that ``match'' the input
+context will be ``sensitive'' (that is, highlighted when the pointer is moved
+over them) and accepted as input, thus the presentation-based input mechanism
+supports <a name="CONCEPT=context-dependent input"><b><i>context-dependent input</i></b></a> .
+<p>
+<hr><b>Issue:</b> SWM<br><i>What exactly is an input context?  What does it mean for them to
+be nested?</i><hr>
+<a name="Variable *input-context*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>*input-context*</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Variable]</b></td></tr></table>The current input context.  This will be a list, each element of which
+corresponds to a single call to <tt>with-input-context</tt> .  The first element of
+the list represents the context established by the most recent call to
+<tt>with-input-context</tt> , and the last element represents the context established
+by the least recent call to <tt>with-input-context</tt> .
+<p>
+The exact format of the elements in the list is unspecified, but will typically
+be a list of a presentation type and a tag that corresponds to the point in the
+control structure of CLIM at which the input context was establish.
+<tt>*input-context*</tt> and the elements in it may have dynamic extent.
+<p>
+<a name="Function input-context-type"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>input-context-type</b></td><td valign="baseline" width="100%"><i>context-entry</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Given one element from <tt>*input-context*</tt> , <i>context-entry</i> , returns the
+presentation type of the context entry.
+<p>
+<a name="Macro with-input-context"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>with-input-context</b></td><td valign="baseline" width="100%"><i>(type <tt>&amp;key</tt> override)
+                                (<tt>&amp;optional</tt> object-var type-var event-var options-var)
+                                form
+                                <tt>&amp;body</tt> pointer-cases</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Establishes an input context of <a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlpresentation-types.htmlcommands.html#CONCEPT=presentation type"><i>presentation type</i></a> <i>type</i> ; this must
+be done by binding <tt>*input-context*</tt> to reflect the new input context.  When
+the boolean <i>override</i> is <a href="presentation-types.html#CONCEPT=false"><i>false</i></a> (the default), this invocation of
+<tt>with-input-context</tt> adds its context presentation type to the current
+context.  In this way an application can solicit more than one type of input at
+the same time.  When <i>override</i> is <a href="presentation-types.html#CONCEPT=true"><i>true</i></a> , it overrides the current
+input context rather than nesting inside the current input context.
+<p>
+<i>type</i> can be a presentation type abbreviation.
+<p>
+After establishing the new input context, <i>form</i> is evaluated.  If no
+pointer gestures are made by the user during the evaluation of <i>form</i> , the
+values of <i>form</i> are returned.  Otherwise, one of the <i>pointer-cases</i> is
+executed (based on the presentation type of the object that was clicked on) and
+the value of that is returned.  (See the descriptions of
+<tt>call-presentation-menu</tt> and <tt>throw-highlighted-presentation</tt> .)
+<i>pointer-cases</i> is constructed like a <tt>typecase</tt> statement clause list whose
+keys are presentation types; the first clause whose key satisfies the condition
+<tt>(presentation-subtypep <i>type</i> <i>key</i> )</tt> is the one that is chosen.
+<p>
+During the execution of one of the <i>pointer-cases</i> , <i>object-var</i> is
+bound to the object that was clicked on (the first returned value from the
+presentation translator that was invoked), <i>type-var</i> is bound to its
+presentation type (the second returned value from the translator), and
+<i>event-var</i> is bound to the pointer button event that was used.
+<i>options-var</i> is bound to any options that a presentation translator might
+have returned (the third value from the translator), and will be either <tt>nil</tt> or a list of keyword-value pairs.  <i>object-var</i> , <i>type-var</i> ,
+<i>event-var</i> , and <i>options-var</i> must all be symbols.
+<p>
+<i>type</i> , <i>stream</i> , and <i>override</i> are evaluated, the others are not.
+<p>
+For example,
+<pre>(with-input-context ('pathname)
+                    (path)
+     (read)
+   (pathname
+     (format t "~&The pathname ~A was clicked on." path)))
+</pre> <a name="Function accept"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>accept</b></td><td valign="baseline" width="100%"><i>type
+                 <tt>&amp;key</tt> stream view
+                      default default-type provide-default 
+                      insert-default replace-input history active-p
+                      prompt prompt-mode display-default query-identifier
+                      activation-gestures additional-activation-gestures
+                      delimiter-gestures additional-delimiter-gestures</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Requests input of type <i>type</i> from the <a href="presentation-types.html#CONCEPT=stream"><i>stream</i></a> <i>stream</i> , which
+defaults to <tt>*standard-input*</tt> .  <tt>accept</tt> returns two values, the object
+representing the input and its presentation type.  <i>type</i> is a presentation
+type specifier, and can be an abbreviation.  The other arguments and overall
+behavior of <tt>accept</tt> are as for <tt>accept-1</tt> .
+<p>
+<tt>accept</tt> must be implemented by first expanding any presentation type
+abbreviations (<i>type</i> , <i>default-type</i> , and <i>history</i> ), handling the
+interactions between the default, default type, and presentation history,
+prompting the user by calling <tt>prompt-for-accept</tt> , and then calling
+<tt>stream-accept</tt> on <i>stream</i> , <i>type</i> , and the remaining keyword
+arguments.
+<p>
+<a name="Generic function stream-accept"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-accept</b></td><td valign="baseline" width="100%"><i>stream type
+                             <tt>&amp;key</tt> view 
+                                  default default-type provide-default 
+                                  insert-default replace-input history active-p
+                                  prompt prompt-mode display-default query-identifier
+                                  activation-gestures additional-activation-gestures
+                                  delimiter-gestures additional-delimiter-gestures</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table><tt>stream-accept</tt> is the per-stream implementation of <tt>accept</tt> , analogous to
+the relationship between <tt>read-char</tt> and <tt>stream-read-char</tt> .  All extended
+input streams must implement a method for <tt>stream-accept</tt> .  The default
+method (on <tt>standard-extended-input-stream</tt> ) simply calls <tt>accept-1</tt> .
+<p>
+The arguments and overall behavior of <tt>stream-accept</tt> are as for <tt>accept-1</tt> .
+<p>
+<b>Rationale:</b> the reason <tt>accept</tt> is specified as a three-function
+``trampoline'' is to allow close tailoring of the behavior of <tt>accept</tt> .
+<tt>accept</tt> itself is the function that should be called by application
+programmers.  CLIM implementors will specialize <tt>stream-accept</tt> on a
+per-stream basis.  (For example, the behavior of <tt>accepting-values</tt> can be
+implemented by creating a special class of stream that turns calls to
+<tt>accept</tt> into fields of a dialog.)  <tt>accept-1</tt> is provided as a
+convenient function for the <tt>stream-accept</tt> methods to call when they require
+the default behavior.
+<p>
+<a name="Function accept-1"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>accept-1</b></td><td valign="baseline" width="100%"><i>stream type
+                   <tt>&amp;key</tt> view 
+                        default default-type provide-default 
+                        insert-default replace-input history active-p
+                        prompt prompt-mode display-default query-identifier
+                        activation-gestures additional-activation-gestures
+                        delimiter-gestures additional-delimiter-gestures</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Requests input of type <i>type</i> from the <a href="presentation-types.html#CONCEPT=stream"><i>stream</i></a> <i>stream</i> .
+<i>type</i> must be a presentation type specifier.  <i>view</i> is a view object
+that defaults to <tt>stream-default-view</tt> of <i>stream</i> .  <tt>accept-1</tt> returns two values, the object representing the input and its presentation type.
+(If <tt>frame-maintain-presentation-histories</tt> is <a href="presentation-types.html#CONCEPT=true"><i>true</i></a> for the current
+frame, then the returned object is also pushed on to the presentation history
+for that object.)
+<p>
+<tt>accept-1</tt> establishes an input context via <tt>with-input-context</tt> , and then
+calls the <tt>accept</tt> presentation method for <i>type</i> and <i>view</i> .  When
+called on an interactive stream, <tt>accept</tt> must allow input editing; see
+Chapter <a href="input-editing.html#LABEL=input-editing"><b><i>Input Editing and Completion Facilities</i></b></i></a> for a discussion of input editing.  The call to
+<tt>accept</tt> will be terminated when the <tt>accept</tt> method returns, or the user
+clicks on a sensitive presentation.  The typing of an activation and delimiter
+character is typically one way in which a call to an <tt>accept</tt> method is
+terminated.
+<p>
+A top-level <tt>accept</tt> satisfied by keyboard input discards the terminating
+keyboard gesture (which will be either a delimiter or an activation gesture).
+A nested call to <tt>accept</tt> leaves the terminating gesture unread.
+<p>
+If the user clicked on a matching presentation, <tt>accept-1</tt> will insert
+the object into the input buffer by calling <tt>presentation-replace-input</tt> on
+the object and type returned by the presentation translator, unless either the
+boolean <i>replace-input</i> is <a href="presentation-types.html#CONCEPT=false"><i>false</i></a> or the presentation translator
+returned an <tt>:echo</tt> option of <a href="presentation-types.html#CONCEPT=false"><i>false</i></a> .  <i>replace-input</i> defaults to
+<a href="presentation-types.html#CONCEPT=true"><i>true</i></a> , but this default is overridden by the translator explicitly
+returning an <tt>:echo</tt> option of <a href="presentation-types.html#CONCEPT=false"><i>false</i></a> .
+<p>
+If <i>default</i> is supplied, then it and <i>default-type</i> are returned as
+values from <tt>accept-1</tt> when the input is empty.  <i>default-type</i> must be a presentation type specifier.  If <i>default</i> is not supplied and
+<i>provide-default</i> is <a href="presentation-types.html#CONCEPT=true"><i>true</i></a> (the default is <a href="presentation-types.html#CONCEPT=false"><i>false</i></a> ), then the
+default is determined by taking the most recent item from the presentation type
+history specified by <i>history</i> .  If <i>insert-default</i> is <a href="presentation-types.html#CONCEPT=true"><i>true</i></a> and
+there is a default, the default will be inserted into the input stream by
+calling <tt>presentation-replace-input</tt> .
+<p>
+<i>history</i> must be either <tt>nil</tt> , meaning that no presentation type history
+will be used, or a presentation type (or abbreviation) that names a history to
+be used for the call to <tt>accept</tt> .  <i>history</i> defaults to <i>type</i> .
+<p>
+<i>prompt</i> can be <tt>t</tt> , which prompts by describing the type, <tt>nil</tt> ,
+which suppresses prompting, or a string, which is displayed as a prompt (via
+<tt>write-string</tt> ).  The default is <tt>t</tt> , which produces ``Enter a
+<i>type</i> :'' in a top-level call to <tt>accept</tt> or ``(<i>type</i> )'' in a nested
+call to <tt>accept</tt> .
+<p>
+If the boolean <i>display-default</i> is <a href="presentation-types.html#CONCEPT=true"><i>true</i></a> , the default is displayed
+(if one was supplied).  If <i>display-default</i> is <a href="presentation-types.html#CONCEPT=false"><i>false</i></a> , the default is
+not displayed.  <i>display-default</i> defaults to <a href="presentation-types.html#CONCEPT=true"><i>true</i></a> if <i>prompt</i> was provided, otherwise it defaults to <a href="presentation-types.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<i>prompt-mode</i> can be <tt>:normal</tt> (the default) or <tt>:raw</tt> , which
+suppresses putting a colon after the prompt and/or default in a top-level
+<tt>accept</tt> and suppresses putting parentheses around the prompt and/or default
+in a nested <tt>accept</tt> .
+<p>
+<i>query-identifier</i> is used within <tt>accepting-values</tt> to identify the
+field within the dialog.  The <tt>active-p</tt> argument (which defaults to <tt>t</tt> )
+can be used to control whether a field within an <tt>accepting-values</tt> is
+active; when <a href="presentation-types.html#CONCEPT=false"><i>false</i></a> , the field will not be active, that is, it will not be
+available for input.  Some CLIM implementations will provide a visual cue that
+the field is inactive, for instance, by ``graying out'' the field.
+<p>
+<i>activation-gestures</i> is a list of gesture names that will override the
+current activation gestures (which are stored in <tt>*activation-gestures*</tt> ).
+Alternatively, <i>additional-activation-gestures</i> can be supplied to add
+activation gestures without overriding the current ones.  See
+Chapter <a href="input-editing.html#LABEL=input-editing"><b><i>Input Editing and Completion Facilities</i></b></i></a> for a discussion of activation gestures.
+<p>
+<i>delimiter-gestures</i> is a list of gesture names that will override the
+current delimiter gestures (which are stored in <tt>*delimiter-gestures*</tt> ).
+Alternatively, <i>additional-delimiter-gestures</i> can be supplied to add
+delimiter gestures without overriding the current ones.  See
+Chapter <a href="input-editing.html#LABEL=input-editing"><b><i>Input Editing and Completion Facilities</i></b></i></a> for a discussion of delimiter gestures.
+<p>
+
+<a name="Function accept-from-string"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>accept-from-string</b></td><td valign="baseline" width="100%"><i>type string <tt>&amp;key</tt> view default default-type start end</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Like <tt>accept</tt> , except that the input is taken from <i>string</i> , starting at
+the position specified by <i>start</i> and ending at <i>end</i> .  <i>view</i> ,
+<i>default</i> , and <i>default-type</i> are as for <tt>accept</tt> .
+<p>
+<tt>accept-from-string</tt> returns an object and a presentation type (as in
+<tt>accept</tt> ), but also returns a third value, the index at which input
+terminated.
+<p>
+
+<a name="Generic function prompt-for-accept"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>prompt-for-accept</b></td><td valign="baseline" width="100%"><i>stream type view <tt>&amp;rest</tt> accept-args <tt>&amp;key</tt> </i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Called by <tt>accept</tt> to prompt the user for input of <a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlpresentation-types.htmlcommands.html#CONCEPT=presentation type"><i>presentation type</i></a> <i>type</i> on the <a href="presentation-types.html#CONCEPT=stream"><i>stream</i></a> <i>stream</i> for the <a href="presentation-types.html#CONCEPT=view"><i>view</i></a> <i>view</i> .
+<i>accept-args</i> are all of the keyword arguments supplied to <tt>accept</tt> .  The
+default method (on <tt>standard-extended-input-stream</tt> ) simply calls
+<tt>prompt-for-accept-1</tt> .
+<p>
+<a name="Function prompt-for-accept-1"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>prompt-for-accept-1</b></td><td valign="baseline" width="100%"><i>stream type
+                              <tt>&amp;key</tt> default default-type display-default
+                                   prompt prompt-mode
+                              <tt>&amp;allow-other-keys</tt> </i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Prompts the user for input of <a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlpresentation-types.htmlcommands.html#CONCEPT=presentation type"><i>presentation type</i></a> <i>type</i> on the
+<a href="presentation-types.html#CONCEPT=stream"><i>stream</i></a> <i>stream</i> .
+<p>
+If the boolean <i>display-default</i> is <a href="presentation-types.html#CONCEPT=true"><i>true</i></a> , then the default is
+displayed; otherwise, the default is not displayed.  When the default is being
+displayed, <i>default</i> and <i>default-type</i> are the taken as the object and
+presentation type of the default to display. <i>display-default</i> defaults to
+<a href="presentation-types.html#CONCEPT=true"><i>true</i></a> if <i>prompt</i> is non-<tt>nil</tt> , otherwise it defaults to
+<a href="presentation-types.html#CONCEPT=false"><i>false</i></a> .
+<p>
+If <i>prompt</i> is <tt>nil</tt> , no prompt is displayed.  If it is a string, that
+string is displayed as the prompt.  If <i>prompt</i> is <tt>t</tt> (the default), the
+prompt is generated by calling <tt>describe-presentation-type</tt> to produce a
+prompt of the form ``Enter a <i>type</i> :'' in a top-level call to <tt>accept</tt> ,
+or ``(<i>type</i> )'' in a nested call to <tt>accept</tt> .
+<p>
+<i>prompt-mode</i> can be <tt>:normal</tt> (the default) or <tt>:raw</tt> , which
+suppresses putting a colon after the prompt and/or default in a top-level
+<tt>accept</tt> and suppresses putting parentheses around the prompt and/or default
+in a nested <tt>accept</tt> .
+<p>
+
+<a name="23.6"><h2>23.6 Views</h2></a>
+<tt>accept</tt> and <tt>present</tt> methods can specialize on the <i>view</i> argument
+in order to define more than one view of the data.  For example, a spreadsheet
+program might define a presentation type for quarterly earnings, which can be
+displayed as a floating point number or as a bar of some length in a bar graph.
+These two views might be implemented by specializing the view arguments for the
+<tt>textual-view</tt> class and the user-defined <tt>bar-graph-view</tt> class.
+<p>
+<a name="Protocol&nbsp;Class view"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>view</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Protocol&nbsp;Class]</b></td></tr></table>The protocol class for view objects.
+If you want to create a new class that behaves like a view, it should be a subclass of <b>view</b>. Subclasses of <b>view</b> must obey the view protocol.All of the view classes are immutable.
+<p>
+<a name="Predicate viewp"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>viewp</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Predicate]</b></td></tr></table>Returns <a href="presentation-types.html#CONCEPT=true"><i>true</i></a> if <i>object</i> is a <a href="presentation-types.html#CONCEPT=view"><i>view</i></a> , otherwise returns
+<a href="presentation-types.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<a name="Class textual-view"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>textual-view</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>The instantiable class representing all textual views, a subclass of <tt>view</tt> .
+Presentation methods that apply to a textual view must only do textual input and
+output (such as <tt>read-char</tt> and <tt>write-string</tt> ).
+<p>
+<a name="Class textual-menu-view"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>textual-menu-view</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>The instantiable class that represents the default view that is used inside
+<tt>menu-choose</tt> for frame managers that are not using a gadget-oriented look
+and feel.  It is a subclass of <tt>textual-view</tt> .
+<p>
+<a name="Class textual-dialog-view"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>textual-dialog-view</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>The instantiable class that represents the default view that is used inside
+<tt>accepting-values</tt> dialogs for frame managers that are not using a
+gadget-oriented look and feel.  It is a subclass of <tt>textual-view</tt> .
+<p>
+<a name="Class gadget-view"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>gadget-view</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>The instantiable class representing all gadget views, a subclass of <tt>view</tt> .
+<p>
+<a name="Class gadget-menu-view"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>gadget-menu-view</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>The instantiable class that represents the default view that is used inside
+<tt>menu-choose</tt> for frame managers that are using a gadget-oriented look and
+feel.  It is a subclass of <tt>gadget-view</tt> .
+<p>
+<a name="Class gadget-dialog-view"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>gadget-dialog-view</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>The instantiable class that represents the default view that is used inside
+<tt>accepting-values</tt> dialogs for frame managers that are using a
+gadget-oriented look and feel.  It is a subclass of <tt>gadget-view</tt> .
+<p>
+<a name="Class pointer-documentation-view"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>pointer-documentation-view</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Class]</b></td></tr></table>The instantiable class that represents the default view that is used when
+computing pointer documentation.  It is a subclass of <tt>textual-view</tt> .
+<p>
+<a name="Constant +textual-view+"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>+textual-view+</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Constant]</b></td></tr></table><a name="Constant +textual-menu-view+"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>+textual-menu-view+</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Constant]</b></td></tr></table><a name="Constant +textual-dialog-view+"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>+textual-dialog-view+</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Constant]</b></td></tr></table><a name="Constant +gadget-view+"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>+gadget-view+</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Constant]</b></td></tr></table><a name="Constant +gadget-menu-view+"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>+gadget-menu-view+</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Constant]</b></td></tr></table><a name="Constant +gadget-dialog-view+"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>+gadget-dialog-view+</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Constant]</b></td></tr></table><a name="Constant +pointer-documentation-view+"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>+pointer-documentation-view+</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Constant]</b></td></tr></table>These are objects of class <tt>textual-view</tt> , <tt>textual-menu-view</tt> ,
+<tt>textual-dialog-view</tt> , <tt>gadget-view</tt> , <tt>gadget-menu-view</tt> ,
+<tt>gadget-dialog-view</tt> , and <tt>pointer-documentation-view</tt> , respectively.
+<p>
+<a name="Generic function stream-default-view"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>stream-default-view</b></td><td valign="baseline" width="100%"><i>stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Returns the default view for the extended stream <i>stream</i> .  <tt>accept</tt> and
+<tt>present</tt> get the default value for the <i>view</i> argument from this.  All
+extended input and output streams must implement a method for this generic
+function.
+<p>
+<a name="Generic function (setf stream-default-view)"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>(setf stream-default-view)</b></td><td valign="baseline" width="100%"><i>view stream</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Generic function]</b></td></tr></table>Changes the default view for <i>stream</i> to the <a href="presentation-types.html#CONCEPT=view"><i>view</i></a> <i>view</i> .  All
+extended input and output streams must implement a method for this generic
+function.
+<p>
+
+<a name="23.7"><h2>23.7 Presentation Translators</h2></a>
+CLIM provides a mechanism for <a name="CONCEPT=translating"><b><i>translating</i></b></a> between types.  In other
+words, within an input context for presentation type <i>A</i> the translator
+mechanism allows a programmer to define a translation from presentations of some
+other type <i>B</i> to objects that are of type <i>A</i>.
+<p>
+Note that the exact representation of a presentation translator has been left
+explicitly unspecified.
+<p>
+
+<a name="23.7.1"><h3>23.7.1 Defining Presentation Translators</h3></a>
+<a name="Macro define-presentation-translator"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>define-presentation-translator</b></td><td valign="baseline" width="100%"><i>name 
+                                            (from-type to-type command-table
+                                             <tt>&amp;key</tt> gesture
+                                                  tester tester-definitive
+                                                  documentation pointer-documentation 
+                                                  menu priority)
+                                            arglist
+                                            <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Defines a presentation translator named <i>name</i> that translates from objects
+of type <i>from-type</i> to objects of type <i>to-type</i> .  <i>from-type</i> and
+<i>to-type</i> are presentation type specifiers, but must not include any
+presentation type options.  <i>from-type</i> and <i>to-type</i> may be
+presentation type abbreviations.
+<p>
+<i>command-table</i> is a <a href="http://www.mikemac.com/mikemac/clim/commands.htmlcommands.html#CONCEPT=command table designator"><i>command table designator</i></a> .  The translator created
+by this invocation of <tt>define-presentation-translator</tt> will be stored in the
+command table <i>command-table</i> .
+<p>
+<i>gesture</i> is a gesture name that names a pointer gesture (described in
+Section <a href="extended-input.html#LABEL=gesture-names"><b><i>Gestures and Gesture Names</i></b></i></a> ).  The body of the translator will be run only if
+the translator is applicable and gesture used by the user matches the gesture
+name in the translator.  (We will explain <a name="CONCEPT=applicability"><b><i>applicability</i></b></a> , or
+<a name="CONCEPT=matching"><b><i>matching</i></b></a> , in detail below.)  <i>gesture</i> defaults to <tt>:select</tt> .
+<p>
+<i>tester</i> is either a function or a list of the form
+<br>
+<i>(tester-arglist . tester-body)</i> <br>
+where <i>tester-arglist</i> takes the same form as <i>arglist</i> (see below), and
+<i>tester-body</i> is the body of the tester.  The tester must return either
+<a href="presentation-types.html#CONCEPT=true"><i>true</i></a> or <a href="presentation-types.html#CONCEPT=false"><i>false</i></a> .  If it returns <a href="presentation-types.html#CONCEPT=false"><i>false</i></a> , then the translator is
+definitely not applicable.  If it returns <a href="presentation-types.html#CONCEPT=true"><i>true</i></a> , then the translator might
+be applicable, and the body of the translator might be run (if
+<i>tester-definitive</i> is <a href="presentation-types.html#CONCEPT=false"><i>false</i></a> ) in order to definitively decide if the
+translator is applicable (this is described in more detail below).  If no tester
+is supplied, CLIM supplies a tester that always returns <a href="presentation-types.html#CONCEPT=true"><i>true</i></a> .
+<p>
+When the boolean <i>tester-definitive</i> is <a href="presentation-types.html#CONCEPT=true"><i>true</i></a> , the body of the
+translator will never be run in order to decide if the translator is applicable,
+that is, the tester is assumed to definitively decide whether the translator
+applies.  The default for <i>tester-definitive</i> is <a href="presentation-types.html#CONCEPT=false"><i>false</i></a> .  When there
+is no explicitly supplied tester, the tester supplied by CLIM is assumed to be
+definitive.
+<p>
+Both <i>documentation</i> and <i>pointer-documentation</i> are objects that will
+be used for documenting the translator.  <i>pointer-documentation</i> will be
+used to generate documentation for the pointer documentation window; the
+documentation generated by <i>pointer-documentation</i> should be very brief and
+computing it should be very fast and preferably not cons.  <i>documentation</i> is used to generate such things as items in the <tt>:menu</tt> -gesture menu.  If the
+object is a string, the string itself will be used as the documentation.
+Otherwise, the object must be the name of a function or a list of the form
+<br>
+<i>(doc-arglist . doc-body)</i> <br>
+where <i>doc-arglist</i> takes the same form as <i>arglist</i> , but includes a
+named (keyword) <i>stream</i> argument as well (see below), and <i>doc-body</i> is the body of the documentation function.  The body of the documentation
+function should write the documentation to <i>stream</i> .  The default for
+<i>documentation</i> is <tt>nil</tt> , meaning that there is no explicitly supplied
+documentation; in this case, CLIM is free to generate the documentation in
+other ways.  The default for <i>pointer-documentation</i> is <i>documentation</i> .
+<p>
+<i>menu</i> must be <tt>t</tt> or <tt>nil</tt> .  When it is <tt>t</tt> , the translator will
+be included in the <tt>:menu</tt> -gesture menu if it matches.  When it is <tt>nil</tt> ,
+the translator will not be included in the <tt>:menu</tt> -gesture menu.  Other
+non-<tt>nil</tt> values are reserved for future extensions to allow multiple
+presentation translator menus.
+<p>
+<i>priority</i> is either <tt>nil</tt> (the default, which corresponds to 0) or an
+integer that represents the priority of the translator.  When there are several
+translators that match for the same gesture, the one with the highest priority
+is chosen.
+<p>
+<i>arglist</i> , <i>tester-arglist</i> , and <i>doc-arglist</i> are each an argument
+list that must ``match'' the following ``canonical'' argument list.
+<br>
+<i>(object <tt>&amp;key</tt> presentation context-type frame event window x y)</i> <br>
+In order to ``match'' the canonical argument list, there must be a single
+positional argument that corresponds to the presentation's object, and
+several named arguments that must match the canonical names above (using
+<tt>string-equal</tt> to do the comparison).
+<p>
+In the body of the translator (or the tester), the positional <i>object</i> argument will be bound to the presentation's object.  The named arguments
+<i>presentation</i> will be bound to the presentation that was clicked on,
+<i>context-type</i> will be bound to the presentation type of the context that
+actually matched, <i>frame</i> will be bound to the application frame that is
+currently active (usually <tt>*application-frame*</tt> ), <i>event</i> will be bound
+to the pointer button event that the user used, <i>window</i> will be bound to
+the window stream from which the event came, and <i>x</i> and <i>y</i> will be
+bound to the <tt>x</tt> and <tt>y</tt> positions within <i>window</i> that the pointer was at
+when the event occurred.  The special variable <tt>*input-context*</tt> will be
+bound to the current input context.  Note that, in many implementations
+<i>context-type</i> and <tt>*input-context*</tt> will have dynamic extent, so
+programmers should not store without first copying them.
+<p>
+<i>body</i> is the body of the translator, and is run in the context of the
+application.  <i>body</i> may have zero or more declarations as its first forms.
+It should return either one, two, or three values.  The first value is an object
+which must be <tt>presentation-typep</tt> of <i>to-type</i> , and the second value is
+a presentation type that must be <tt>presentation-subtypep</tt> of <i>to-type</i> .
+The consequences are unspecified if the object is not <tt>presentation-typep</tt> of
+<i>to-type</i> or the type is not <tt>presentation-subtypep</tt> of <i>to-type</i> .
+The first two returned values of <i>body</i> are used, in effect, as the returned
+values for the call to <tt>accept</tt> that established the matching input context.
+<p>
+The third value returned by <i>body</i> must either be <tt>nil</tt> or a list of
+options (as keyword-value pairs) that will be interpreted by <tt>accept</tt> .  The
+only option defined so far is <tt>:echo</tt> , whose value must be either <a href="presentation-types.html#CONCEPT=true"><i>true</i></a> (the default) or <a href="presentation-types.html#CONCEPT=false"><i>false</i></a> .  If it is <a href="presentation-types.html#CONCEPT=true"><i>true</i></a> , the object returned by the
+translator will be ``echoed'' by <tt>accept</tt> , which will use
+<tt>presentation-replace-input</tt> to insert the textual representation of the
+object into the input buffer.  If it is <a href="presentation-types.html#CONCEPT=false"><i>false</i></a> , the object will not be
+echoed.
+<p>
+None of <tt>define-presentation-translator</tt> 's arguments is evaluated.
+<p>
+
+<a name="Macro define-presentation-to-command-translator"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>define-presentation-to-command-translator</b></td><td valign="baseline" width="100%"><i>name 
+                                                       (from-type command-name command-table
+                                                        <tt>&amp;key</tt> gesture tester
+                                                             documentation pointer-documentation 
+                                                             menu priority echo)
+                                                       arglist
+                                                       <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>This is similar to <tt>define-presentation-translator</tt> , except that the
+<i>to-type</i> will be derived to be the command named by <i>command-name</i> in
+the command table <i>command-table</i> .  <i>command-name</i> is the name of the
+command that this translator will translate to.
+<p>
+The <i>echo</i> option is a boolean value (the default is <a href="presentation-types.html#CONCEPT=true"><i>true</i></a> ) that
+indicates whether the command line should be echoed when a user invokes the
+translator.
+<p>
+The other arguments to <tt>define-presentation-to-command-translator</tt> are the
+same as for <tt>define-presentation-translator</tt> .  Note that the tester for
+command translators is always assumed to be definitive, so there is no
+<tt>:tester-definitive</tt> option. The default for <i>pointer-documentation</i> is
+the string <i>command-name</i> with dash characters replaced by spaces, and each
+word capitalized (as in <tt>add-command-to-command-table</tt> ).
+<p>
+The body of the translator must return a list of the arguments to the command
+named by <i>command-name</i> .  <i>body</i> is run in the context of the
+application.  The returned value of the body, appended to the command name, are
+eventually passed to <tt>execute-frame-command</tt> .  <i>body</i> may have zero or
+more declarations as its first forms.
+<p>
+None of <tt>define-presentation-to-command-translator</tt> 's arguments is evaluated.
+<p>
+
+<a name="Macro define-presentation-action"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>define-presentation-action</b></td><td valign="baseline" width="100%"><i>name 
+                                        (from-type to-type command-table 
+                                         <tt>&amp;key</tt> gesture tester
+                                              documentation pointer-documentation
+                                              menu priority)
+                                        arglist
+                                        <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table><tt>define-presentation-action</tt> is similar to <tt>define-presentation-translator</tt> ,
+except that the body of the action is not intended to return a value, but should
+instead side-effect some sort of application state.
+<p>
+A presentation action does not satisfy a request for input the way an ordinary
+translator does.  Instead, an action is something that happens while waiting for
+input.  After the action has been executed, the program continues to wait for
+the same input that it was waiting for prior to executing the action.
+<p>
+The other arguments to <tt>define-presentation-action</tt> are the same as for
+<tt>define-presentation-translator</tt> .  Note that the tester for presentation
+actions is always assumed to be definitive.
+<p>
+None of <tt>define-presentation-action</tt> 's arguments is evaluated.
+<p>
+
+<a name="Macro define-drag-and-drop-translator"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>define-drag-and-drop-translator</b></td><td valign="baseline" width="100%"><i>name
+                                             (from-type to-type destination-type command-table 
+                                              <tt>&amp;key</tt> gesture tester
+                                                   documentation pointer-documentation
+                                                   menu priority
+                                                   feedback highlighting)
+                                             arglist
+                                             <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Defines a ``drag and drop'' (or ``direct manipulation'') translator named
+<i>name</i> that translates from objects of type <i>from-type</i> to objects of
+type <i>to-type</i> when a ``from presentation'' is ``picked up'', ``dragged''
+over, and ``dropped'' on to a ``to presentation'' having type
+<i>destination-type</i> .  <i>from-type</i> , <i>to-type</i> , and
+<i>destination-type</i> are presentation type specifiers, but must not include
+any presentation type options.  <i>from-type</i> , <i>to-type</i> and
+<i>destination-type</i> may be presentation type abbreviations.
+<p>
+The interaction style used by these translators is that a user points to a
+``from presentation'' with the pointer, picks it up by pressing a pointer button
+matching <i>gesture</i> , drags the ``from presentation'' to a ``to presentation''
+by moving the pointer, and then drops the ``from presentation'' onto the ``to
+presentation''.  The dropping might be accomplished by either releasing the
+pointer button or clicking again, depending on the frame manager.  When the
+pointer button is released, the translator whose <i>destination-type</i> matches
+the presentation type of the ``to presentation'' is chosen.  For example,
+dragging a file to the TrashCan on a Macintosh could be implemented by a drag
+and drop translator.
+<p>
+While the pointer is being dragged, the function specified by <i>feedback</i> is
+invoked to provide feedback to the user.  The function is called with eight
+arguments: the application frame object, the ``from presentation'', the stream,
+the initial <tt>x</tt> and <tt>y</tt> positions of the pointer, the current <tt>x</tt> and <tt>y</tt>
+positions of the pointer, and a feedback state (either <tt>:highlight</tt> to draw
+feedback, or <tt>:unhighlight</tt> to erase it).  The feedback function is called to
+draw some feedback the first time pointer moves, and is then called twice each
+time the pointer moves thereafter (once to erase the previous feedback, and then
+to draw the new feedback).  It is called a final time to erase the last feedback
+when the pointer button is released.  <i>feedback</i> defaults to
+<tt>frame-drag-and-drop-feedback</tt> .
+<p>
+When the ``from presentation'' is dragged over any other presentation that has a
+direct manipulation translator, the function specified by <i>highlighting</i> is
+invoked to highlight that object.  The function is called with four arguments:
+the application frame object, the ``to presentation'' to be highlighted or
+unhighlighted, the stream, and a highlighting state (either <tt>:highlight</tt> or
+<tt>:unhighlight</tt> ).  <i>highlighting</i> defaults to
+<tt>frame-drag-and-drop-highlighting</tt> .
+<p>
+Note that it is possible for there to be more than one drag and drop translator
+that applies to the same from-type, to-type, and gesture.  In this case, the
+exact translator that is chosen for use during the dragging phase is
+unspecified.  If these translators have different feedback, highlighting,
+documentation, or pointer documentation, the exact behavior is unspecified.
+<p>
+The other arguments to <tt>define-drag-and-drop-translator</tt> are the same as for
+<tt>define-presentation-translator</tt> .
+<p>
+
+<a name="23.7.2"><h3>23.7.2 Presentation Translator Functions</h3></a>
+<a name="Function find-presentation-translators"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>find-presentation-translators</b></td><td valign="baseline" width="100%"><i>from-type to-type command-table</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Returns a list of all of the translators in the <a href="http://www.mikemac.com/mikemac/clim/commands.htmlcommands.html#CONCEPT=command table"><i>command table</i></a> <i>command-table</i> that translate from <i>from-type</i> to <i>to-type</i> ,
+without taking into account any type parameters or testers.  <i>from-type</i> and
+<i>to-type</i> are presentation type specifiers, and must not be abbreviations.
+<i>frame</i> must be an application frame.
+<p>
+<b>Implementation note:</b> Because <tt>find-presentation-translators</tt> is called
+during pointer sensitivity computations (that is, whenever the user mouses the
+pointer around in any CLIM pane), it should cache its result in order to avoid
+consing.  Therefore, the resulting list of translators should not be modified;
+the consequences of doing so are unspecified.
+<p>
+<b>Implementation note:</b> The ordering of the list of translators is left
+unspecified, but implementations may find it convenient to return the list using
+the ordering specified for <tt>find-applicable-translators</tt> .
+<p>
+
+<a name="Function test-presentation-translator"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>test-presentation-translator</b></td><td valign="baseline" width="100%"><i>translator presentation context-type frame window x y
+                                       <tt>&amp;key</tt> event modifier-state for-menu</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Returns <a href="presentation-types.html#CONCEPT=true"><i>true</i></a> if the translator <i>translator</i> applies to the
+presentation <i>presentation</i> in input context type <i>context-type</i> ,
+otherwise returns <a href="presentation-types.html#CONCEPT=false"><i>false</i></a> .  (There is no <i>from-type</i> argument because
+it is derived from <i>presentation</i> .)  <i>x</i> and <i>y</i> are the <tt>x</tt> and <tt>y</tt>
+positions of the pointer within the window stream <i>window</i> .
+<p>
+<i>event</i> and <i>modifier-state</i> are a pointer button event and modifier
+state (see <tt>event-modifier-key-state</tt> ), and are compared against the
+translator's gesture.  <i>event</i> defaults to <tt>nil</tt> , and
+<i>modifier-state</i> defaults to 0, meaning that no modifier keys are held down.
+Only one of <i>event</i> or <i>modifier-state</i> may be supplied; it is
+unspecified what will happen if both are supplied.
+<p>
+If <i>for-menu</i> is <a href="presentation-types.html#CONCEPT=true"><i>true</i></a> , the comparison against <i>event</i> and
+<i>modifier-state</i> is not done.
+<p>
+<i>presentation</i> , <i>context-type</i> , <i>frame</i> , <i>window</i> , <i>x</i> ,
+<i>y</i> , and <i>event</i> are passed along to the translator's tester if and
+when the tester is called.
+<p>
+<tt>test-presentation-translator</tt> is responsible for matching type parameters
+and calling the translator's tester.  Under some circumstances,
+<tt>test-presentation-translator</tt> may also call the body of the translator to
+ensure that its value matches <i>to-type</i> .
+<p>
+
+<a name="Function find-applicable-translators"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>find-applicable-translators</b></td><td valign="baseline" width="100%"><i>presentation input-context frame window x y
+                                      <tt>&amp;key</tt> event modifier-state for-menu fastp</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Returns a list that describes the translators that definitely apply to the
+<a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlcommands.html#CONCEPT=presentation"><i>presentation</i></a> <i>presentation</i> in the input context <i>input-context</i> .
+Each element in the returned list is of the form
+<br>
+<i>(translator the-presentation context-type . rest)</i> <br>
+where <i>translator</i> is a presentation translator, <i>the-presentation</i> is
+the presentation that the translator applies to (and can be different from
+<i>presentation</i> due to nesting of presentations), <i>context-type</i> is the
+context type in which the translator applies, and <i>rest</i> is other
+unspecified data reserved for internal use by CLIM.  <i>translator</i> ,
+<i>the-presentation</i> , and <i>context-type</i> can be passed to such functions
+as <tt>call-presentation-translator</tt> and <tt>document-presentation-translator</tt> .
+<p>
+Since input contexts can be nested, <tt>find-applicable-translators</tt> must
+iterate over all the contexts in <i>input-context</i> .  <i>window</i> , <i>x</i> ,
+and <i>y</i> are as for <tt>test-presentation-translator</tt> .  <i>event</i> and
+<i>modifier-state</i> (which default to <tt>nil</tt> and the current modifier state
+for <i>window</i> , respectively) are used to further restrict the set of
+applicable translators.  (Only one of <i>event</i> or <i>modifier-state</i> may be
+supplied; it is unspecified what will happen if both are supplied.)
+<p>
+Presentations can also be nested.  The ordering of the translators returned by
+<tt>find-applicable-translators</tt> is that translators matching inner contexts
+should precede translators matching outer contexts, and, in the same input
+context, inner presentations precede outer presentations.
+<p>
+When <i>for-menu</i> is non-<tt>nil</tt> , this matches the value of <i>for-menu</i> against the presentation's menu specification, and returns only those
+translators that match.  <i>event</i> and <i>modifier-state</i> are disregarded in
+this case.  <i>for-menu</i> defaults to <tt>nil</tt> .
+<p>
+When the boolean <i>fastp</i> is <a href="presentation-types.html#CONCEPT=true"><i>true</i></a> , <tt>find-applicable-translators</tt> will simply return <a href="presentation-types.html#CONCEPT=true"><i>true</i></a> if there are any translators.  <i>fastp</i> defaults to <a href="presentation-types.html#CONCEPT=false"><i>false</i></a> .
+<p>
+When <i>fastp</i> is <a href="presentation-types.html#CONCEPT=false"><i>false</i></a> , the list of translators returned by
+<tt>find-applicable-translators</tt> must be in order of their ``desirability'',
+that is, translators having more specific from-types and/or higher priorities
+must precede translators having less specific from-types and lower priorities.
+<p>
+The rules used for ordering the translators returned by
+<tt>find-applicable-translators</tt> are as follows (in order):
+<p>
+<ol> Translators with a higher ``high order'' priority precede translators with
+a lower ``high order'' priority.  This allows programmers to set the priority of
+a translator in such a way that it always precedes all other translators.
+<p>
+Translators with a more specific ``from type'' precede translators with a
+less specific ``from type''.
+<p>
+Translators with a higher ``low order'' priority precede translators with
+a lower ``low order'' priority.  This allows programmers to break ties between
+translators that translate from the same type.
+<p>
+Translators from the current command table precede translators inherited
+from superior command tables.
+</ol> <tt>find-applicable-translators</tt> could be implemented
+by looping over <i>input-context</i> , calling <tt>find-presentation-translators</tt> to generate all the translators, and then calling <tt>test-presentation-translator</tt> to filter out the ones that do not apply.  The consequences of modifying the
+returned value are unspecified.  Note that the ordering of translators can be
+done by <tt>find-presentation-translators</tt> , provided that
+<tt>find-applicable-translators</tt> takes care to preserve this ordering.
+<p>
+<hr><b>Issue:</b> SWM<br><i>Describe and implement the <tt>class-nondisjoint-classes</tt> idea.
+Be very clear and precise about when the translator body gets run.</i><hr>
+<a name="Function presentation-matches-context-type"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>presentation-matches-context-type</b></td><td valign="baseline" width="100%"><i>presentation context-type frame window x y
+                                            <tt>&amp;key</tt> event modifier-state</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Returns <a href="presentation-types.html#CONCEPT=true"><i>true</i></a> if there are any translators that translate from the
+<a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlcommands.html#CONCEPT=presentation"><i>presentation</i></a> <i>presentation</i> 's type to the input context type
+<i>context-type</i> , otherwise returns <a href="presentation-types.html#CONCEPT=false"><i>false</i></a> .  (There is no
+<i>from-type</i> argument because it is derived from <i>presentation</i> .)
+<i>frame</i> , <i>window</i> , <i>x</i> , <i>y</i> , <i>event</i> , and
+<i>modifier-state</i> are as for <tt>test-presentation-translator</tt> .
+<p>
+If there are no applicable translators, <tt>presentation-matches-context-type</tt> will return <a href="presentation-types.html#CONCEPT=false"><i>false</i></a> .
+<p>
+
+<a name="Function call-presentation-translator"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>call-presentation-translator</b></td><td valign="baseline" width="100%"><i>translator presentation context-type
+                                       frame event window x y</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Calls the function that implements the body of the translator <i>translator</i> on the <a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlcommands.html#CONCEPT=presentation"><i>presentation</i></a> <i>presentation</i> 's object, and passes
+<i>presentation</i> , <i>context-type</i> , <i>frame</i> , <i>event</i> , <i>window</i> ,
+<i>x</i> , and <i>y</i> to the body of the translator as well.
+<p>
+The returned values are the same as the values returned by the body of the
+translator, namely, the translated object and the translated type.
+<p>
+
+<a name="Function document-presentation-translator"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>document-presentation-translator</b></td><td valign="baseline" width="100%"><i>translator presentation context-type
+                                           frame event window x y
+                                           <tt>&amp;key</tt> (stream <tt>*standard-output*</tt> ) documentation-type</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Computes the documentation string for the translator <i>translator</i> and
+outputs it to the stream <i>stream</i> .  <i>presentation</i> , <i>context-type</i> ,
+<i>frame</i> , <i>event</i> , <i>window</i> , <i>x</i> , and <i>y</i> are as for
+<tt>test-presentation-translator</tt> .
+<p>
+<tt>documentation-type</tt> must be either <tt>:normal</tt> or <tt>:pointer</tt> .  If it is
+<tt>:normal</tt> , the usual translator documentation function is called.  If it is
+<tt>:pointer</tt> , the translator's pointer documentation is called.
+<p>
+
+<a name="Function call-presentation-menu"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>call-presentation-menu</b></td><td valign="baseline" width="100%"><i>presentation input-context frame window x y
+                                 <tt>&amp;key</tt> for-menu label</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Finds all the applicable translators for the <a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlcommands.html#CONCEPT=presentation"><i>presentation</i></a> <i>presentation</i> in the input context <i>input-context</i> , creates a menu that
+contains all of the translators, and pops up the menu from which the user can
+choose a translator.  After the translator is chosen, it is called with the
+arguments supplied to <tt>call-presentation-menu</tt> and the matching input context
+that was established by <tt>with-input-context</tt> is terminated.
+<p>
+<i>window</i> , <i>x</i> , <i>y</i> , and <i>event</i> are as for
+<tt>find-applicable-translators</tt> .  <i>for-menu</i> , which defaults to <tt>t</tt> , is
+used to decide which of the applicable translators will go into the menu; only
+those translators whose <tt>:menu</tt> option matches <i>menu</i> will be included.
+<p>
+<i>label</i> is either a string to use as a label for the menu, or is <tt>nil</tt> (the default), meaning the menu will not be labelled.
+<p>
+
+<a name="23.7.3"><h3>23.7.3 Finding Applicable Presentations</h3></a>
+<a name="Function find-innermost-applicable-presentation"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>find-innermost-applicable-presentation</b></td><td valign="baseline" width="100%"><i>input-context window x y 
+                                                 <tt>&amp;key</tt> frame modifier-state event</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Given an input context <i>input-context</i> , an output recording window stream
+<i>window</i> , <tt>x</tt> and <tt>y</tt> positions <i>x</i> and <i>y</i> , returns the innermost
+presentation whose sensitivity region contains <i>x</i> and <i>y</i> that matches
+the innermost input context, using the translator matching algorithm described
+below.  If there is no such presentation, this function will return <tt>nil</tt> .
+<p>
+<i>event</i> and <i>modifier-state</i> are a pointer button event and modifier
+state (see <tt>event-modifier-key-state</tt> ).  <i>event</i> defaults to <tt>nil</tt> ,
+and <i>modifier-state</i> defaults to the current modifier state for
+<i>window</i> .  Only one of <i>event</i> or <i>modifier-state</i> may be supplied;
+it is unspecified what will happen if both are supplied.
+<p>
+<i>frame</i> defaults to the current frame, <tt>*application-frame*</tt> .
+<p>
+The default method for <tt>frame-find-innermost-applicable-presentation</tt> will
+call this function.
+<p>
+
+<a name="Function throw-highlighted-presentation"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>throw-highlighted-presentation</b></td><td valign="baseline" width="100%"><i>presentation input-context button-press-event</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Given a <a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlcommands.html#CONCEPT=presentation"><i>presentation</i></a> <i>presentation</i> , input context
+<i>input-context</i> , and a button press event (which contains the window,
+pointer, <tt>x</tt> and <tt>y</tt> position of the pointer within the window, the button
+pressed, and the modifier state), find the translator that matches the innermost
+presentation in the innermost input context, then call the translator to produce
+an object and a presentation type.  Finally, the matching input context that was
+established by <tt>with-input-context</tt> will be terminated.
+<p>
+Note that it is possible that more than one translator having the same gesture
+may be applicable to <i>presentation</i> in the specified input context.  In this
+case, the translator having the highest priority will be chosen.  If there is
+more than one having the same priority, it is unspecified what translator will
+be chosen.
+<p>
+
+<a name="Function highlight-applicable-presentation"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>highlight-applicable-presentation</b></td><td valign="baseline" width="100%"><i>frame stream input-context
+                                            <tt>&amp;optional</tt> prefer-pointer-window</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>This is the core of the ``input wait'' handler used by <tt>with-input-context</tt> on behalf of the <a href="presentation-types.html#CONCEPT=application frame"><i>application frame</i></a> <i>frame</i> .  It is responsible for
+locating the innermost applicable presentation on <i>stream</i> in the input
+context <i>input-context</i> , unhighlighting presentations that are not
+applicable, and highlighting the presentation that is applicable.  Typically on
+entry to <tt>highlight-applicable-presentation</tt> , <i>input-context</i> will be the
+value of <tt>*input-context*</tt> and <i>frame</i> will be the value of
+<tt>*application-frame*</tt> .
+<p>
+If <i>prefer-pointer-window</i> is <a href="presentation-types.html#CONCEPT=true"><i>true</i></a> (the default), CLIM will highlight
+the applicable presentation on the same window that the pointer is located over.
+Otherwise, CLIM will highlight an applicable presentation on <i>stream</i> .
+<p>
+<b>Implementation note:</b> This will probably use
+<tt>frame-find-innermost-applicable-presentation-at-position</tt> to locate the
+innermost presentation, and <tt>unhighlight-highlighted-presentation</tt> and
+<tt>set-highlighted-presentation</tt> to unhighlight and highlight presentations.
+<p>
+
+<a name="Function set-highlighted-presentation"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>set-highlighted-presentation</b></td><td valign="baseline" width="100%"><i>stream presentation <tt>&amp;optional</tt> prefer-pointer-window</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Highlights the <a href="http://www.mikemac.com/mikemac/clim/presentation-types.htmlcommands.html#CONCEPT=presentation"><i>presentation</i></a> <i>presentation</i> on <i>stream</i> .  This
+must call <tt>highlight-presentation</tt> methods if that is appropriate.
+<p>
+<i>prefer-pointer-window</i> is as for <tt>highlight-applicable-presentation</tt> .
+<p>
+
+<a name="Function unhighlight-highlighted-presentation"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>unhighlight-highlighted-presentation</b></td><td valign="baseline" width="100%"><i>stream <tt>&amp;optional</tt> prefer-pointer-window</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Unhighlights any highlighted presentations on <i>stream</i> .
+<p>
+<i>prefer-pointer-window</i> is as for <tt>highlight-applicable-presentation</tt> .
+<p>
+
+<a name="23.7.4"><h3>23.7.4 Translator Applicability</h3></a>
+The top-level ``input wait'', which is what you are in when inside of a
+<tt>with-input-context</tt> , is responsible for determining what translators are
+applicable to which presentations in a given input context.  This loop both
+provides feedback in the form of highlighting sensitive presentation, and is
+responsible for calling the applicable translator when the user presses a
+pointer button.
+<p>
+<b>Implementation note:</b> <tt>with-input-context</tt> uses
+<tt>frame-find-innermost-applicable-presentation-at-position</tt> (via
+<tt>highlight-applicable-presentation</tt> ) as its ``input wait'' handler, and
+<tt>frame-input-context-button-press-handler</tt> as its button press ``event
+handler''.
+<p>
+Given a presentation, an input context established by <tt>with-input-context</tt> ,
+and an event corresponding to a user gesture, translator matching proceeds as
+follows. 
+<p>
+The set of candidate translators is initially those translators accessible in
+the command table in use by the current application.  A translator is said to
+``match'' if all of the following are true (in this order):
+<p>
+<ol> The presentation's type is <tt>presentation-subtypep</tt> of the translator's
+<i>from-type</i> , ignoring type parameters.
+<p>
+The translator's <i>to-type</i> is <tt>presentation-subtypep</tt> of the input
+context type, ignoring type parameters.
+<p>
+The translator's gesture is either <tt>t</tt> , or matches the event
+corresponding to the user's gesture.
+<p>
+If there are parameters in the <i>from-type</i> , the presentation's object
+must be <tt>presentation-typep</tt> of the <i>from-type</i> .
+<p>
+The translator's tester returned <a href="presentation-types.html#CONCEPT=true"><i>true</i></a> .  If there is no tester, the
+translator behaves as though there is a tester that always returns <a href="presentation-types.html#CONCEPT=true"><i>true</i></a> .
+<p>
+If there are parameters in the input context type and the tester is not
+declared to be definitive, the value returned by body of the translator must be
+<tt>presentation-typep</tt> of the context type.
+</ol> Note that the type parameters from the presentation's type have no effect on
+translator lookup.
+<p>
+<tt>find-presentation-translator</tt> is responsible for the first two steps of the
+matching algorithm, and <tt>test-presentation-translator</tt> is responsible for the
+remaining steps.
+<p>
+When a single translator is being chosen (such as is done by
+<tt>throw-highlighted-presentation</tt> ), it is possible that more than one
+translator having the same gesture may be applicable to the presentation in the
+specified input context.  In this case, the translator having the highest
+priority will be chosen.  If there is more than one having the same priority, it
+is unspecified what translator will be chosen.
+<p>
+The matching algorithm is somewhat more complicated in face of nested
+presentations and nested input contexts.  In this case, the applicable
+presentation is the <b><i>smallest</i></b> presentation that matches the <b><i>innermost</i></b>
+input context.
+<p>
+Sometimes there may be nested presentations that have exactly the same bounding
+rectangle.  In this case, it is not possible for a user to unambiguously point
+to just one of the nested presentations.  Therefore, when CLIM has located the
+innermost applicable presentation in the innermost input context, it must then
+search for outer presentations having exactly the same bounding rectangle,
+checking to see if there are any applicable translators for those presentations.
+If there are multiple applicable translators, the one having the highest
+priority is chosen.  <tt>find-applicable-translators</tt> ,
+<tt>call-presentation-menu</tt> , <tt>throw-highlighted-presentation</tt> , and the
+computation of pointer documentation must all take this situation into account.
+<p>
+The translators are searched in the order that they are returned by
+<tt>find-presentation-translators</tt> .  The rules for the ordering of the
+translators are described under that function.
+<p>
+
+<a name="23.8"><h2>23.8 Standard Presentation Types</h2></a>
+The following sections document the presentation types supplied by CLIM.  Any
+presentation type with the same name as a Common Lisp type accepts the same
+parameters as the Common Lisp type (and additional parameters in a few cases).
+<p>
+
+<a name="23.8.1"><h3>23.8.1 Basic Presentation Types</h3></a>
+<a name="Presentation Type t"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>t</b></td><td valign="baseline" width="100%"><i></i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Presentation Type]</b></td></tr></table>The supertype of all other presentation types.
+<p>
+<a name="Presentation Type nil"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>nil</b></td><td valign="baseline" width="100%"><i></i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Presentation Type]</b></td></tr></table>The subtype of all other presentation types.  This has no printed
+representation, and it useful only in writing ``context independent''
+translators, that is, translators whose <i>to-type</i> is <tt>nil</tt> .
+<p>
+<a name="Presentation Type null"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>null</b></td><td valign="baseline" width="100%"><i></i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Presentation Type]</b></td></tr></table>The type that represents ``nothing''.  The single object associated with this
+type is <tt>nil</tt> , and its printed representation is ``None''.
+<p>
+<a name="Presentation Type boolean"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>boolean</b></td><td valign="baseline" width="100%"><i></i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Presentation Type]</b></td></tr></table>The type that represents <a href="presentation-types.html#CONCEPT=true"><i>true</i></a> or <a href="presentation-types.html#CONCEPT=false"><i>false</i></a> .  The printed
+representation is ``Yes'' or ``No'', respectively.
+<p>
+<a name="Presentation Type symbol"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>symbol</b></td><td valign="baseline" width="100%"><i></i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Presentation Type]</b></td></tr></table>The type that represents a symbol.
+<p>
+<a name="Presentation Type keyword"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>keyword</b></td><td valign="baseline" width="100%"><i></i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Presentation Type]</b></td></tr></table>The type that represents a symbol in the keyword package.  It is a subtype of
+<tt>symbol</tt> .
+<p>
+<a name="Presentation Type blank-area"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>blank-area</b></td><td valign="baseline" width="100%"><i></i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Presentation Type]</b></td></tr></table>The type that represents all the places in a window where there is no
+presentation that is applicable in the current input context.  CLIM provides a
+single ``null presentation'' as the object associated with this type.
+<p>
+<a name="Constant *null-presentation*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>*null-presentation*</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Constant]</b></td></tr></table>The null presentation, which occupies all parts of a window in which there are
+no applicable presentations.  This will have a presentation type of <tt>blank-area</tt> .
+<p>
+
+<a name="23.8.2"><h3>23.8.2 Numeric Presentation Types</h3></a>
+<a name="Presentation Type number"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>number</b></td><td valign="baseline" width="100%"><i></i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Presentation Type]</b></td></tr></table>The type that represents a general number.  It is the supertype of all the
+number types.
+<p>
+<a name="Presentation Type complex"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>complex</b></td><td valign="baseline" width="100%"><i><tt>&amp;optional</tt> type</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Presentation Type]</b></td></tr></table>The type that represents a complex number.  It is a subtype of <tt>number</tt> .
+<p>
+The components of the complex number are of type <i>type</i> , which must be
+<tt>real</tt> or a subtype of <tt>real</tt> .
+<p>
+<a name="Presentation Type real"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>real</b></td><td valign="baseline" width="100%"><i><tt>&amp;optional</tt> low high</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Presentation Type]</b></td></tr></table>The type that represents either a ratio, an integer, or a floating point number
+between <i>low</i> and <i>high</i> .  <i>low</i> and <i>high</i> can be inclusive or
+exclusive, as in Common Lisp type specifiers.  Options to this type are
+<i>base</i> (default 10) and <i>radix</i> (default <tt>nil</tt> ).  <tt>real</tt> is a
+subtype of <tt>number</tt> .
+<p>
+<a name="Presentation Type rational"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>rational</b></td><td valign="baseline" width="100%"><i><tt>&amp;optional</tt> low high</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Presentation Type]</b></td></tr></table>The type that represents either a ratio or an integer between <i>low</i> and
+<i>high</i> .  Options to this type are <i>base</i> and <i>radix</i> .  <tt>rational</tt> is a subtype of <tt>real</tt> .
+<p>
+<a name="Presentation Type integer"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>integer</b></td><td valign="baseline" width="100%"><i><tt>&amp;optional</tt> low high</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Presentation Type]</b></td></tr></table>The type that represents an integer between <i>low</i> and <i>high</i> .  Options
+to this type are <i>base</i> and <i>radix</i> .  <tt>integer</tt> is a subtype of
+<tt>rational</tt> .
+<p>
+<a name="Presentation Type ratio"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>ratio</b></td><td valign="baseline" width="100%"><i><tt>&amp;optional</tt> low high</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Presentation Type]</b></td></tr></table>The type that represents a ratio between <i>low</i> and <i>high</i> .  Options to
+this type are <i>base</i> and <i>radix</i> .  <tt>ratio</tt> is a subtype of
+<tt>rational</tt> .
+<p>
+<a name="Presentation Type float"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>float</b></td><td valign="baseline" width="100%"><i><tt>&amp;optional</tt> low high</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Presentation Type]</b></td></tr></table>The type that represents a floating point number between <i>low</i> and
+<i>high</i> .  <tt>float</tt> is a subtype of <tt>number</tt> .
+<p>
+
+<a name="23.8.3"><h3>23.8.3 Character and String Presentation Types</h3></a>
+<a name="Presentation Type character"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>character</b></td><td valign="baseline" width="100%"><i></i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Presentation Type]</b></td></tr></table>The type that represents a character object.
+<p>
+<a name="Presentation Type string"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>string</b></td><td valign="baseline" width="100%"><i><tt>&amp;optional</tt> length</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Presentation Type]</b></td></tr></table>The type that represents a string.  If <i>length</i> is supplied, the string
+must contain exactly that many characters.
+<p>
+
+<a name="23.8.4"><h3>23.8.4 Pathname Presentation Type</h3></a>
+<a name="Presentation Type pathname"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>pathname</b></td><td valign="baseline" width="100%"><i> </i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Presentation Type]</b></td></tr></table>The type that represents a pathname.  The options are <i>default-version</i> ,
+which defaults to <tt>:newest</tt> , <i>default-type</i> , which defaults to <tt>nil</tt> ,
+and <i>merge-default</i> , which defaults to <a href="presentation-types.html#CONCEPT=true"><i>true</i></a> .  If <i>merge-default</i> is <a href="presentation-types.html#CONCEPT=false"><i>false</i></a> , <tt>accept</tt> returns the exact pathname that was entered,
+otherwise <tt>accept</tt> merges against the default and <i>default-version</i> .  If
+no default is supplied, it defaults to <tt>*default-pathname-defaults*</tt> .  The
+<tt>pathname</tt> type should have a default preprocessor that merges the options
+into the default.
+<p>
+
+<a name="23.8.5"><h3>23.8.5 ``One-of'' and ``Some-of'' Presentation Types</h3></a>
+<a name="Presentation Type completion"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>completion</b></td><td valign="baseline" width="100%"><i>sequence <tt>&amp;key</tt> test value-key</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Presentation Type]</b></td></tr></table>The type that selects one from a finite set of possibilities, with
+``completion'' of partial inputs.  The member types below, <tt>token-or-type</tt> ,
+and <tt>null-or-type</tt> are implemented in terms of the <tt>completion</tt> type.
+<p>
+<i>sequence</i> is a list or vector whose elements are the possibilities.  Each
+possibility has a printed representation, called its name, and an internal
+representation, called its value.  <tt>accept</tt> reads a name and returns a value.
+<tt>present</tt> is given a value and outputs a name.
+<p>
+<i>test</i> is a function that compares two values for equality.  The default is
+<tt>eql</tt> .
+<p>
+<i>value-key</i> is a function that returns a value given an element of
+<i>sequence</i> .  The default is <tt>identity</tt> .
+<p>
+The following presentation type options are available:
+<p>
+<i>name-key</i> is a function that returns a name, as a string, given an element
+of <i>sequence</i> .  The default is a function that behaves as follows: <br>
+<center><table>
+<tr valign="baseline"><td align=right colspan=1>string </td><td> </td><td align=center colspan=1> <tt> <b><i>=&gt;</i></b></tt> </td><td> </td><td align=left colspan=1> the string</td><td> </td></tr>
+<tr valign="baseline"><td align=right colspan=1>null </td><td> </td><td align=center colspan=1> <tt> <b><i>=&gt;</i></b></tt> </td><td> </td><td align=left colspan=1> <tt>"NIL"</tt> </td><td> </td></tr>
+<tr valign="baseline"><td align=right colspan=1>cons </td><td> </td><td align=center colspan=1> <tt> <b><i>=&gt;</i></b></tt> </td><td> </td><td align=left colspan=1> <tt>string</tt> of the <tt>car</tt> </td><td> </td></tr>
+<tr valign="baseline"><td align=right colspan=1>symbol </td><td> </td><td align=center colspan=1> <tt> <b><i>=&gt;</i></b></tt> </td><td> </td><td align=left colspan=1> <tt>string-capitalize</tt> of its name</td><td> </td></tr>
+<tr valign="baseline"><td align=right colspan=1>otherwise </td><td> </td><td align=center colspan=1> <tt> <b><i>=&gt;</i></b></tt> </td><td> </td><td colspan=1> <tt>princ-to-string</tt> of it</td><td> </td></tr>
+<tr valign="baseline"></tr>
+</table></center>
+
+<i>documentation-key</i> is a function that returns either <tt>nil</tt> or a
+descriptive string, given an element of <i>sequence</i> .  The default always
+returns <tt>nil</tt> .
+<p>
+<i>test</i> , <i>value-key</i> , <i>name-key</i> , and <i>documentation-key</i> must
+have indefinite extent.
+<p>
+<i>partial-completers</i> is a possibly-empty list of characters that delimit
+portions of a name that can be completed separately.  The default is a list of
+one character, <tt><huge>#\Space</huge></tt>.
+<p>
+
+<a name="Presentation Type Abbreveation member"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>member</b></td><td valign="baseline" width="100%"><i><tt>&amp;rest</tt> elements</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Presentation Type Abbreveation]</b></td></tr></table>The type that specifies one of <i>elements</i> .  The options are the same as for
+<tt>completion</tt> .
+<p>
+
+<a name="Presentation Type Abbreveation member-sequence"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>member-sequence</b></td><td valign="baseline" width="100%"><i>sequence <tt>&amp;key</tt> test</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Presentation Type Abbreveation]</b></td></tr></table>Like <tt>member</tt> , except that the set of possibilities is the sequence
+<i>sequence</i> .  The parameter <i>test</i> and the options are the same as for
+<tt>completion</tt> .
+<p>
+
+<a name="Presentation Type Abbreveation member-alist"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>member-alist</b></td><td valign="baseline" width="100%"><i>alist <tt>&amp;key</tt> test</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Presentation Type Abbreveation]</b></td></tr></table>Like <tt>member</tt> , except that the set of possibilities is the alist <i>alist</i> .
+Each element of <i>alist</i> is either an atom as in <tt>member-sequence</tt> or a
+list whose <tt>car</tt> is the name of that possibility and whose <tt>cdr</tt> is one of
+the following:
+<p>
+<ul> <li> The value (which must not be a cons)
+<p>
+<li> A list of one element, the value
+<p>
+<li> A property list that can contain the following properties:
+  <ul> <li> <tt>:value</tt> ---the value
+  <li> <tt>:documentation</tt> ---a descriptive string
+  </ul> </ul> The <i>test</i> parameter and the options are the same as for <tt>completion</tt> except that <i>value-key</i> and <i>documentation-key</i> default to functions
+that support the specified alist format.
+<p>
+
+<a name="Presentation Type subset-completion"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>subset-completion</b></td><td valign="baseline" width="100%"><i>sequence <tt>&amp;key</tt> test value-key</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Presentation Type]</b></td></tr></table>The type that selects one or more from a finite set of possibilities, with
+``completion'' of partial inputs.  The parameters and options are the same as
+for <tt>completion</tt> , plus the additional options <i>separator</i> and
+<i>echo-space</i> , which are as for the <tt>sequence</tt> type.  The subset types
+below are implemented in terms of the <tt>subset-completion</tt> type.
+<p>
+
+<a name="Presentation Type Abbreveation subset"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>subset</b></td><td valign="baseline" width="100%"><i><tt>&amp;rest</tt> elements</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Presentation Type Abbreveation]</b></td></tr></table>The type that specifies a subset of <i>elements</i> .  Values of this type are
+lists of zero or more values chosen from the possibilities in <i>elements</i> .
+The printed representation is the names of the elements separated by commas.
+The options are the same as for <tt>completion</tt> .
+<p>
+
+<a name="Presentation Type Abbreveation subset-sequence"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>subset-sequence</b></td><td valign="baseline" width="100%"><i>sequence <tt>&amp;key</tt> test</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Presentation Type Abbreveation]</b></td></tr></table>Like <tt>subset</tt> , except that the set of possibilities is the sequence
+<i>sequence</i> .  The parameter <i>test</i> and the options are the same as for
+<tt>completion</tt> .
+<p>
+
+<a name="Presentation Type Abbreveation subset-alist"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>subset-alist</b></td><td valign="baseline" width="100%"><i>alist <tt>&amp;key</tt> test</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Presentation Type Abbreveation]</b></td></tr></table>Like <tt>subset</tt> , except that the set of possibilities, the parameters, and the
+options are as for <tt>member-alist</tt> .
+<p>
+
+<a name="23.8.6"><h3>23.8.6 Sequence Presentation Types</h3></a>
+<a name="Presentation Type sequence"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>sequence</b></td><td valign="baseline" width="100%"><i>type</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Presentation Type]</b></td></tr></table>The type that represents a sequence of elements of type <i>type</i> .  <i>type</i> can be a presentation type abbreviation.  The printed representation of a
+<tt>sequence</tt> type is the elements separated by commas.  It is unspecified
+whether <tt>accept</tt> returns a list or a vector.
+<p>
+The options to this type are <i>separator</i> and <i>echo-space</i> .
+<i>separator</i> is used to specify a character that will act as the separator
+between elements of the sequence; the default is the comma character <tt><huge>#\,</huge></tt>.
+<i>echo-space</i> must be <a href="presentation-types.html#CONCEPT=true"><i>true</i></a> or <a href="presentation-types.html#CONCEPT=false"><i>false</i></a> ; when it is <a href="presentation-types.html#CONCEPT=true"><i>true</i></a> (the default) a space will be automatically inserted into the input buffer when
+the user types a separator character.
+<p>
+
+<a name="Presentation Type sequence-enumerated"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>sequence-enumerated</b></td><td valign="baseline" width="100%"><i><tt>&amp;rest</tt> types</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Presentation Type]</b></td></tr></table><tt>sequence-enumerated</tt> is like <tt>sequence</tt> , except that the type of each
+element in the sequence is individually specified.  The elements of <i>types</i> can be presentation type abbreviations.  It is unspecified whether <tt>accept</tt> returns a list or a vector.
+<p>
+The options to this type are <i>separator</i> and <i>echo-space</i> , which are as
+for the <tt>sequence</tt> type.
+<p>
+
+<a name="23.8.7"><h3>23.8.7 ``Meta'' Presentation Types</h3></a>
+<a name="Presentation Type or"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>or</b></td><td valign="baseline" width="100%"><i><tt>&amp;rest</tt> types</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Presentation Type]</b></td></tr></table>The type that is used to specify one of several types, for example, <tt>(or
+(member :all :none) integer)</tt> .  The elements of <i>types</i> can be presentation
+type abbreviations.  <tt>accept</tt> returns one of the possible types as its second
+value, not the original <tt>or</tt> presentation type specifier.
+<p>
+The <tt>accept</tt> method for <tt>or</tt> could be implemented by iteratively calling
+<tt>accept</tt> on each of the presentation types in <i>types</i> .  It would
+establish a condition handler for <tt>parse-error</tt> , call <tt>accept</tt> on one of
+the types and return the result if no condition was signalled.  If a
+<tt>parse-error</tt> is signalled, the <tt>accept</tt> method for <tt>or</tt> would call
+<tt>accept</tt> on the next type.  When there are no more types, the <tt>accept</tt> method for <tt>or</tt> would itself signal a <tt>parse-error</tt> .
+<p>
+
+<a name="Presentation Type and"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>and</b></td><td valign="baseline" width="100%"><i><tt>&amp;rest</tt> types</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Presentation Type]</b></td></tr></table>The type that is used for ``multiple inheritance''.  <tt>and</tt> is frequently used
+in conjunction with <tt>satisfies</tt> , for example, <tt>(and integer (satisfies
+oddp))</tt> .  The elements of <i>types</i> can be presentation type abbreviations.
+<p>
+The <tt>and</tt> type has special syntax that supports the two ``predicates'',
+<tt>satisfies</tt> and <tt>not</tt> .  <tt>satisfies</tt> and <tt>not</tt> cannot stand alone as
+presentation types and cannot be first in <i>types</i> .  <tt>not</tt> can surround
+either <tt>satisfies</tt> or a presentation type.
+<p>
+The first type in <i>types</i> is the type whose methods will be used during
+calls to <tt>accept</tt> and <tt>present</tt> .
+<p>
+
+<a name="23.8.8"><h3>23.8.8 Compound Presentation Types</h3></a>
+<a name="Presentation Type Abbreveation token-or-type"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>token-or-type</b></td><td valign="baseline" width="100%"><i>tokens type</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Presentation Type Abbreveation]</b></td></tr></table>A compound type that is used to select one of a set of special tokens, or an
+object of type <i>type</i> .  <i>tokens</i> is anything that can be used as the
+<i>sequence</i> parameter to <tt>member-alist</tt> ; typically it is a list of
+symbols.
+<p>
+
+<a name="Presentation Type Abbreveation null-or-type"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>null-or-type</b></td><td valign="baseline" width="100%"><i>type</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Presentation Type Abbreveation]</b></td></tr></table>A compound type that is used to select <tt>nil</tt> , whose printed representation is
+the special token ``None'', or an object of type <i>type</i> .
+<p>
+
+<a name="Presentation Type Abbreveation type-or-string"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>type-or-string</b></td><td valign="baseline" width="100%"><i>type</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Presentation Type Abbreveation]</b></td></tr></table>A compound type that is used to select an object of type <i>type</i> or an
+arbitrary string, for example, <tt>(type-or-string integer)</tt> .  Any input that
+<tt>accept</tt> cannot parse as the representation of an object of type <i>type</i> is returned as a string.
+<p>
+
+<a name="23.8.9"><h3>23.8.9 Lisp Expression Presentation Types</h3></a>
+<a name="Presentation Type expression"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>expression</b></td><td valign="baseline" width="100%"><i></i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Presentation Type]</b></td></tr></table>The type used to represent any Lisp object.  The standard <tt>print</tt> and
+<tt>read</tt> functions produce and accept the textual view of this type.
+<p>
+If a presentation history is maintained for the <tt>expression</tt> presentation
+type, it should be maintained separately for each instance of an application
+frame.
+<p>
+<a name="Presentation Type form"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>form</b></td><td valign="baseline" width="100%"><i></i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Presentation Type]</b></td></tr></table>The type used to represent a Lisp form.  This is a subtype of <tt>expression</tt> and is equivalent except that some presentation translators produce <tt>quote</tt> forms.
+<br><hr><br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="extended-input.html">Extended Stream Input</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="input-editing.html">Input Editing and Completion Facilities</a></td>
+</tr></table>
+</body></html>

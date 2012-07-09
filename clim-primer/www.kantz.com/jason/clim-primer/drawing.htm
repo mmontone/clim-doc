@@ -1,0 +1,162 @@
+<html><head><title>Common Lisp Interface Manager (CLIM) -- Drawing Text and Graphics</title>
+<LINK REL=STYLESHEET HREF="clim-primer.css" TYPE="text/css"></head><body>
+
+<h1>Drawing Text and Graphics</h1>
+
+part of <a href="index.htm">Common Lisp Interface Manager (CLIM)</a>
+by <a href="http://jason.kantz.com">Jason Kantz</a>
+
+<hr>
+<!--"Art, like morality, consists in drawing the line somewhere."
+<br>--Gilbert K. Chesterton -->
+
+<h2>Questions</h2>
+<li>How is output displayed on a pane?
+<li>What are some of the basic CLIM drawing functions?
+
+
+ 
+<h2>Reading</h2>
+
+<li><a href="http://www.lispworks.com/reference/lw44/CLIM/html/climguide-33.htm#12578">Mediums, Sheets, and Streams</a>
+
+<li><a href="http://www.lispworks.com/reference/lw44/CLIM/html/climguide-35.htm#pgfId-838328">CLIM Drawing Functions</a>
+
+<h2>Mediums</h2>
+
+<p>
+A medium is the destination for graphic output in CLIM.  Different
+medium classes correspond to different devices, such as displays and
+printers, allowing graphics to be rendered in a variety of ways
+depending on the medium and its drawing options.
+
+<p>
+An application pane (AKA an extended-stream-pane) is a kind of medium
+that can be supplied to drawing functions.  For example we can make
+the <a href="application-frames.htm#wordmin">word application
+frame</a>, access it's pane, and then access drawing options that are
+part of the pane because it is a medium.
+
+<pre>
+CLIM-USER(8): (setq *word* (make-application-frame 'word))
+#&lt;WORD @ #x4b2478a&gt;
+
+CLIM-USER(9): (setq pane (get-frame-pane *word* 'document))
+#&lt;APPLICATION-PANE @ #x4b24af2&gt;
+
+CLIM-USER(10): (medium-foreground pane)
+#&lt;CLIM-UTILS:GRAY-COLOR Black @ #x41432ca&gt;
+
+CLIM-USER(11): (medium-background pane)
+#&lt;CLIM-UTILS:GRAY-COLOR White @ #x4142792&gt;
+</pre>
+
+
+<h2>Drawing on Panes</h2>
+
+<p>
+Within a pane description, the pane option
+<code>:display-function</code> specifies the function that will draw
+the output for that pane.
+
+<p>Below we have modified the word application frame.
+ Notice the slot <code>doc-title</code> was added to store the title
+ of the current document.  Also notice a display function for the pane
+ called <code>title</code> was added.  The supplied function,
+ <code>display-doc-title</code>, takes two arguments: an application
+ frame and a medium.
+
+<pre><code>
+(define-application-frame word		;name
+     ()					;superclasses
+  ((doc-title				;slots
+    :accessor doc-title
+    :initarg :doc-title))
+
+   ;; options
+
+   (:panes
+    (title				;pane name 
+     :application			;pane type
+     ;; pane options
+     :display-function #'display-doc-title
+     :initial-cursor-visibility nil)
+    (document				;pane name 
+     :application))			;pane type
+
+   (:layouts
+    (default				;name of the layout
+	(vertically ()			;layout macros
+	  (1/4 title)
+	  (3/4 document)))))
+
+(defmethod display-doc-title ((frame word) stream)
+  (draw-text* stream "Document:" 10 15)
+  (if (slot-boundp frame 'doc-title)
+      (draw-text* stream (doc-title frame) 20 40)
+      (draw-text* stream "Untitled" 20 40)))
+
+(make-application-frame 'word 
+			:height 300
+			:width 300
+			:doc-title "Microcrock's Business Plan")</code></pre>
+
+<p>
+Notice that the origin of the coordinate system of the drawing plane
+is in the top left corner of the window with positive x extending to
+the right and positive y extending down toward the bottom of the
+window.
+
+
+<h2>Exercises</h2>
+
+"Men are sent into the world with bills of credit, and seldom draw to
+their full extent."  <br>-- Horace Walpole
+
+ 
+
+<ol><li class=separate>Load the CLIM package within your Lisp, and switch to the CLIM-USER package.
+    <li class=separate>Load <a href="word.lisp">word.lisp</a>
+    <li class=separate>Type the following into your Lisp listener:
+
+<pre><code>(make-application-frame 'word
+                        :height 300 :width 400
+                        :doc-title "Microcrock's Business Plan")</code></pre>
+    <li class=separate>Close the word application frame that appears.  
+
+    <li class=separate>In word.lisp, remove the slot called <code>doc-title</code>
+        from the word application frame, and add a slot called
+        <code>current-file</code>.
+
+    <li class=separate>Modify <code>display-doc-title</code> so that it displays the
+        value of <code>current-file</code> instead of
+        <code>doc-title</code>.
+    
+    <li class=separate>Modify the word application frame so the title pane does
+        not have scroll-bars.  
+
+    <li class=separate>Add a display function called <code>#'display-document</code>
+        to the document pane description of the word application
+        frame.  
+
+    <li class=separate>Define display-document to draw each line of
+        <code>current-file</code> onto the document pane.  Use the
+        <code>do-file</code> macro provided in word.lisp to iterate
+        over the lines of a the file.  To find out the height of a
+        line, use the <code>line-height</code> function provided in
+        word.lisp.  Use clim:draw-rectangle* to draw a black line
+        around the all of the text.
+
+    <li class=separate>After you make your modifications, you should be able to type
+        the following into your lisp listener to see the contents of
+        the word.lisp file within the word application frame.  
+
+<pre><code>(make-application-frame 'word
+                        :height 300 :width 400
+                        :current-file "word.lisp")</code></pre>
+
+</ol>
+
+
+<p class=mtb>Next: <a href="formatting.html">Formatted Output</a>
+

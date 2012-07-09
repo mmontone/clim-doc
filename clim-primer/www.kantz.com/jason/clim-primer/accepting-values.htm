@@ -1,0 +1,112 @@
+<html><head><title>Common Lisp Interface Manager (CLIM) Primer -- Accepting Values</title>
+<LINK REL=STYLESHEET HREF="clim-primer.css" TYPE="text/css"></head><body>
+<h1>Menus and Dialogs</h1>
+
+part of <a href="index.htm">Common Lisp Interface Manager (CLIM)</a>
+by <a href="http://jason.kantz.com">Jason Kantz</a>
+
+<hr>
+
+<h2>Reading</h2>
+
+<li><a href="http://www.lispworks.com/reference/lw44/CLIM/html/climguide-213.htm#pgfId-3950">Examples of Menus and Dialogs in CLIM</a>
+
+<p class=mtb>There are three mechanisms for this
+
+<ul>
+
+<li><code><b>menu-choose</b></code>
+
+<p class=stb>Let's say you have a list of 50 million entrees and you want to select one using a menu.
+<pre><code>(menu-choose list-of-50-million-entrees
+	     :label "Choose an entree"
+	     :associated-window (get-frame-pane *application-frame* 'restaurant)
+	     :max-height 300 :max-width 100
+	     :n-columns 1)</code></pre>
+
+<p class=stb>50 million entrees is a lot of food though, and we'll probably want
+to split this up into some categories.
+
+<pre><code>(menu-choose
+ ;; nested items
+ `(("Mexican" :items ,(find-if #'mexican-p list-of-50-million-entrees))
+   ("Itallian" :items ,(find-if #'itallian-p list-of-50-million-entrees))
+   ("Other" :items ,(remove-if (lambda (entree) (or (mexican-p entree)
+						   (itallian-p entree)))
+			       list-of-50-million-entrees)))
+ ;; keys
+ :label "Choose an entree"
+ :associated-window (get-frame-pane *application-frame* 'restaurant)
+ :max-height 300 :max-width 100
+ :n-columns 1)</code></pre>
+
+<p>
+<li><b>menu-choose-from-drawer</b>
+
+<pre><code>(defun choose-compass-direction ()
+  (labels ((draw-compass-point (stream ptype symbol x y)
+	     (with-output-as-presentation (stream symbol ptype)
+	       (draw-text* stream (symbol-name symbol)
+			   x y :align-x :center :align-y :center)))
+	   (draw-compass (stream ptype)
+	     (draw-line* stream 0 25 0 -25)
+	     (draw-line* stream 25 0 -25 0)
+	     (loop for point in '((n 0 -30) (s 0 30) (e 30 0) (w -30 0))
+		 do (apply #'draw-compass-point stream ptype point))))
+    (with-menu (menu)
+      (menu-choose-from-drawer menu	; clim window to use for the menu
+			       'clim:menu-item ; presentation type of mouse sensitive items
+			       #'draw-compass)))) ; function that takes args (stream type)</pre></code>
+
+<li><b>accepting-values</b>
+
+<pre><code>(in-package clim-user)
+
+(define-application-frame frame-full-name ()
+  ((f-name :accessor f-name :initform nil) 
+   (l-name :accessor l-name :initform nil))
+  (:panes 
+   ;; one pane to show the name
+   (pane-full-name 
+    :application
+    :incremental-redisplay t
+    :initial-cursor-visibility nil
+    :redisplay-after-commands t
+    :display-function 'display-pane-full-name))
+  (:layouts
+   (default pane-full-name)))
+
+(defmethod display-pane-full-name ((frame frame-full-name) stream)
+  (when (and (l-name frame) (f-name frame))
+    (write-string (format nil "~%    ~A, ~A" (l-name frame) (f-name frame)) stream)))
+
+(define-frame-full-name-command (get-name :menu "Get Name")
+    ()
+  (let (f-name l-name
+	(stream (frame-standard-input *application-frame*)))
+    (restart-case
+	(progn
+	  (accepting-values (stream :own-window t
+				    :label "Input Values"
+				    :initially-select-query-identifier 'selected)
+	    (formatting-table (stream)
+	      (formatting-column (stream)
+		(formatting-cell (stream)
+		  (setq f-name (accept 'string 
+				       :prompt "First Name" :stream stream :query-identifier 'selected)))
+		(formatting-cell (stream)
+		  (setq l-name (accept 'string
+				       :prompt "Last Name" :stream stream))))))
+	  ;; This gets done if the accepting-values dialog is not canceled
+	  (cond ((and f-name l-name)
+		 (setf (f-name *application-frame*) f-name)
+		 (setf (l-name *application-frame*) l-name))
+		(t (notify-user *application-frame* "A Field was left blank"))))
+      (abort () ()))))
+
+#+notnow
+(run-frame-top-level (make-application-frame 'frame-full-name :width 300))
+</code></pre>
+</ul>
+
+</body></html>

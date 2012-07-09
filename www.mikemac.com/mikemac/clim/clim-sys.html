@@ -1,0 +1,219 @@
+<html><head><title>CLIM: 32 The CLIM-SYS Package</title></head><body>
+<br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="glossary.html">Glossary</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="encapsulating-streams.html">Encapsulating Streams</a></td>
+</tr></table><br><hr><br>
+<p>
+<br><a name="32"><h1>32 The CLIM-SYS Package</h1></a>
+<a name="LABEL=clim-sys-package"></a> The <tt>clim-sys</tt> package where useful ``system-like'' functionality lives,
+including such things as resources and multi-processing primitives.  It contains
+concepts that are not part of Common Lisp, but which are not conceptually the
+province of CLIM itself.
+<p>
+All of the symbols documented in this appendix must be accessible as external
+symbols in the <tt>clim-sys</tt> package.
+<p>
+
+<a name="32.1"><h2>32.1 Resources</h2></a>
+CLIM provides a facility called <a name="CONCEPT=resources"><b><i>resources</i></b></a> that provides for reusing
+objects.  A resource describes how to construct an object, how to initialize and
+deinitialize it, and how an object should be selected from the resource of
+objects based on a set of parameters.
+<p>
+<a name="Macro defresource"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>defresource</b></td><td valign="baseline" width="100%"><i>name parameters
+                         <tt>&amp;key</tt> constructor initializer deinitializer
+                              matcher initial-copies</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Defines a resource named <i>name</i> , which must be a symbol.  <i>parameters</i> is a lambda-list giving names and default values (for optional and keyword
+parameters) of parameters to an object of this type.
+<p>
+<i>constructor</i> is a form that is responsible for creating an object, and is
+called when someone tries to allocate an object from the resource and no
+suitable free objects exist.  The constructor form can access the parameters as
+variables.  This argument is required.
+<p>
+<i>initializer</i> is a form that is used to initialize an object gotten from the
+resource.  It can access the parameters as variables, and also has access to a
+variable called <i>name</i> , which is the object to be initialized.  The
+initializer is called both on newly created objects and objects that are being
+reused.
+<p>
+<i>deinitializer</i> is a form that is used to deinitialize an object when it is
+about to be returned to the resource.  It can access the parameters as
+variables, and also has access to a variable called <i>name</i> , which is the
+object to be deinitialized.  It is called whenever an object is deallocated back
+to the resource, but is not called by <tt>clear-resource</tt> .  Deinitializers are
+typically used to clear references to other objects.
+<p>
+<i>matcher</i> is a form that ensures that an object in the resource ``matches''
+the specified parameters, which it can access as variables.  In addition, the
+matcher also has access to a variable called <i>name</i> , which is the object in
+the resource being matched against.  If no matcher is supplied, the system
+remembers the values of the parameters (including optional ones that defaulted)
+that were used to construct the object, and assumes that it matches those
+particular values for all time. This comparison is done with <tt>equal</tt> .  The
+matcher should return <a href="clim-sys.html#CONCEPT=true"><i>true</i></a> if there is a match, otherwise it should
+return <a href="clim-sys.html#CONCEPT=false"><i>false</i></a> .
+<p>
+<i>initial-copies</i> is used to specify the number of objects that should be
+initially put into the resource.  It must be an integer or <tt>nil</tt> (the
+default), meaning that no initial copies should be made.  If initial copies are
+made and there are parameters, all the parameters must be optional; in this
+case, the initial copies have the default values of the parameters.
+<p>
+
+<a name="Macro using-resource"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>using-resource</b></td><td valign="baseline" width="100%"><i>(variable name <tt>&amp;rest</tt> parameters) <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>The forms in <i>body</i> are evaluated with <i>variable</i> bound to an object
+allocated from the resource named <i>name</i> , using the parameters given by
+<i>parameters</i> .  The parameters (if any) are evaluated, but <i>name</i> is
+not.
+<p>
+After the body has been evaluated, <tt>using-resource</tt> returns the object in
+<i>variable</i> back to the resource.  If some form in the body sets
+<i>variable</i> to <tt>nil</tt> , the object will not be returned to the resource.
+Otherwise, the body should not changes the value of <i>variable</i> .
+<p>
+
+<a name="Function allocate-resource"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>allocate-resource</b></td><td valign="baseline" width="100%"><i>name <tt>&amp;rest</tt> parameters</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Allocates an object from the resource named <i>name</i> , using the parameters
+given by <i>parameters</i> .  <i>name</i> must be a symbol that names a resource.
+The returned value is the allocated object.
+<p>
+<a name="Function deallocate-resource"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>deallocate-resource</b></td><td valign="baseline" width="100%"><i>name object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Returns the object <i>object</i> to the resource named <i>name</i> .  <i>name</i> must be a symbol that names a resource.  <i>object</i> must be an object that was
+originally allocated from the same resource.
+<p>
+<a name="Function clear-resource"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>clear-resource</b></td><td valign="baseline" width="100%"><i>name</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Clears the resource named <i>name</i> , that is, removes all of the resourced
+object from the resource.  <i>name</i> must be a symbol that names a resource.
+<p>
+<a name="Function map-resource"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>map-resource</b></td><td valign="baseline" width="100%"><i>function name</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Calls <i>function</i> once on each object in the resource named <i>name</i> .
+<i>function</i> is a function of three arguments, the object, a boolean value
+that is <a href="clim-sys.html#CONCEPT=true"><i>true</i></a> if the object is in use or <a href="clim-sys.html#CONCEPT=false"><i>false</i></a> if it is free, and
+<i>name</i> .  <i>function</i> has dynamic extent.
+<p>
+
+<a name="32.2"><h2>32.2 Multi-processing</h2></a>
+Most Lisp implementations provide some form of multi-processing.  CLIM provides
+a set of functions that implement a uniform interface to the multi-processing
+functionality.
+<p>
+<a name="Variable *multiprocessing-p*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="100%"><b>*multiprocessing-p*</b></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Variable]</b></td></tr></table>The value of <tt>*multiprocessing-p*</tt> is <tt>t</tt> if the current Lisp
+environment supports multi-processing, otherwise it is <tt>nil</tt> .
+<p>
+<a name="Function make-process"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>make-process</b></td><td valign="baseline" width="100%"><i>function <tt>&amp;key</tt> name</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Creates a process named <i>name</i> .  The new process will evaluate the function
+<i>function</i> .  On systems that do not support multi-processing,
+<tt>make-process</tt> will signal an error.
+<p>
+<a name="Function destroy-process"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>destroy-process</b></td><td valign="baseline" width="100%"><i>process</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Terminates the process <i>process</i> .  <i>process</i> is an object returned by
+<tt>make-process</tt> .
+<p>
+<a name="Function current-process"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>current-process</b></td><td valign="baseline" width="100%"><i></i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Returns the currently running process, which will be the same kind of object as
+would be returned by <tt>make-process</tt> .
+<p>
+<a name="Function all-processes"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>all-processes</b></td><td valign="baseline" width="100%"><i></i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Returns a sequence of all of the processes.
+<p>
+<a name="Predicate processp"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>processp</b></td><td valign="baseline" width="100%"><i>object</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Predicate]</b></td></tr></table>Returns <tt>t</tt> if <i>object</i> is a process, otherwise returns <i>nil</i> .
+<p>
+<a name="Function process-name"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>process-name</b></td><td valign="baseline" width="100%"><i>process</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table><a name="Function process-state"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>process-state</b></td><td valign="baseline" width="100%"><i>process</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table><a name="Function process-whostate"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>process-whostate</b></td><td valign="baseline" width="100%"><i>process</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>These functions return, respectively, the name, state, and ``whostate'' of the
+process.  These format of these quantities will vary depending on the platform.
+<p>
+<a name="Function process-wait"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>process-wait</b></td><td valign="baseline" width="100%"><i>reason predicate</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Causes the current process to wait until <i>predicate</i> returns <a href="clim-sys.html#CONCEPT=true"><i>true</i></a> .
+<i>reason</i> is a ``reason'' for waiting, usually a string.  On systems that do
+not support multi-processing, <tt>process-wait</tt> will loop until <i>predicate</i> returns <a href="clim-sys.html#CONCEPT=true"><i>true</i></a> .
+<p>
+<a name="Function process-wait-with-timeout"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>process-wait-with-timeout</b></td><td valign="baseline" width="100%"><i>reason timeout predicate</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Causes the current process to wait until either <i>predicate</i> returns
+<a href="clim-sys.html#CONCEPT=true"><i>true</i></a> , or the number of seconds specified by <i>timeout</i> has elapsed.
+<i>reason</i> is a ``reason'' for waiting, usually a string.  On systems that do
+not support multi-processing, <tt>process-wait-with-timeout</tt> will loop until
+<i>predicate</i> returns <a href="clim-sys.html#CONCEPT=true"><i>true</i></a> or the timeout has elapsed.
+<p>
+<a name="Function process-yield"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>process-yield</b></td><td valign="baseline" width="100%"><i></i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Allows other processes to run.  On systems that do not support multi-processing,
+this does nothing.
+<p>
+<a name="Function process-interrupt"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>process-interrupt</b></td><td valign="baseline" width="100%"><i>process function</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Interrupts the process <i>process</i> and causes it to evaluate the function
+<i>function</i> .  On systems that do not support multi-processing, this is
+equivalent to <tt>funcall</tt> 'ing <i>function</i> .
+<p>
+<a name="Function disable-process"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>disable-process</b></td><td valign="baseline" width="100%"><i>process</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Disables the process <i>process</i> from becoming runnable until it is enabled
+again.
+<p>
+<a name="Function enable-process"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>enable-process</b></td><td valign="baseline" width="100%"><i>process</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Allows the process <i>process</i> to become runnable again after it has been
+disabled.
+<p>
+<a name="Function restart-process"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>restart-process</b></td><td valign="baseline" width="100%"><i>process</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Restarts the process <i>process</i> by ``unwinding'' it to its initial state, and
+reinvoking its top-level function.
+<p>
+<a name="Macro without-scheduling"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>without-scheduling</b></td><td valign="baseline" width="100%"><i><tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Evaluates <i>body</i> in a context that is guaranteed to be free from
+interruption by other processes.  On systems that do not support
+multi-processing, <tt>without-scheduling</tt> is equivalent to <tt>progn</tt> .
+<p>
+<a name="Function atomic-incf"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>atomic-incf</b></td><td valign="baseline" width="100%"><i>reference</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table><a name="Function atomic-decf"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>atomic-decf</b></td><td valign="baseline" width="100%"><i>reference</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Increments (or decrements) the fixnum value referred to by <i>reference</i> as a
+single, atomic operation.
+<p>
+
+<a name="32.3"><h2>32.3 Locks</h2></a>
+<a name="Function make-lock"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>make-lock</b></td><td valign="baseline" width="100%"><i><tt>&amp;optional</tt> name</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Creates a lock whose name is <i>name</i> .  On systems that do not support
+locking, this will return a new list of one element, <tt>nil</tt> .
+<p>
+<a name="Macro with-lock-held"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>with-lock-held</b></td><td valign="baseline" width="100%"><i>(place <tt>&amp;optional</tt> state) <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Evaluates <i>body</i> with the lock named by <i>place</i> .  <i>place</i> is a
+reference to a lock created by <tt>make-lock</tt> .
+<p>
+On systems that do not support locking, <tt>with-lock-held</tt> is equivalent to
+<tt>progn</tt> .
+<p>
+<a name="Function make-recursive-lock"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>make-recursive-lock</b></td><td valign="baseline" width="100%"><i><tt>&amp;optional</tt> name</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Function]</b></td></tr></table>Creates a recursive lock whose name is <i>name</i> .  On systems that do not
+support locking, this will return a new list of one element, <tt>nil</tt> .  A
+recursive lock differs from an ordinary lock in that a process that already
+holds the recursive lock can call <tt>with-recursive-lock-held</tt> on the same lock
+without blocking.
+<p>
+<a name="Macro with-recursive-lock-held"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>with-recursive-lock-held</b></td><td valign="baseline" width="100%"><i>(place <tt>&amp;optional</tt> state) <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Evaluates <i>body</i> with the recursive lock named by <i>place</i> .  <i>place</i> is a reference to a recursive lock created by <tt>make-recursive-lock</tt> .  
+<p>
+On systems that do not support locking, <tt>with-recursive-lock-held</tt> is
+equivalent to <tt>progn</tt> .
+<p>
+
+<a name="32.4"><h2>32.4 Multiple Value <tt>setf</tt></h2></a>
+CLIM provides a facility, sometimes referred to as <tt>setf*</tt> , that allows
+<tt>setf</tt> to be used on ``places'' that name multiple values.  For example,
+<tt>output-record-position</tt> returns the position of an output record as two
+values that correspond to the <tt>x</tt> and <tt>y</tt> coordinates.  In order to change the
+position of an output record, the programmer would like to invoke
+<tt>(setf~output-record-position)</tt> .  Normally however, <tt>setf</tt> only takes a
+single value with which to modify the specified place.  The <tt>setf*</tt> facility
+provides a ``multiple value'' version of <tt>setf</tt> that allows an expression
+that returns multiple values to be used to update the specified place.
+<p>
+<a name="Macro defgeneric*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>defgeneric*</b></td><td valign="baseline" width="100%"><i>name lambda-list <tt>&amp;body</tt> options</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Defines a <tt>setf*</tt> generic function named <i>name</i> .  The last argument in
+<i>lambda-list</i> is intended to be class specialized, just as is the case for
+normal <tt>setf</tt> generic functions.  <i>options</i> is as for <tt>defgeneric</tt> .
+<p>
+<a name="Macro defmethod*"></a><table cellspacing="0" cellpadding="0"><tr valign="baseline"><td nowrap="nowrap" width="0%"><b>defmethod*</b></td><td valign="baseline" width="100%"><i>name {method-qualifier}* specialized-lambda-list <tt>&amp;body</tt> body</i></td><td align=right nowrap="nowrap" valign="baseline" width="0%"><b>[Macro]</b></td></tr></table>Defines a <tt>setf*</tt> method for the generic function <i>name</i> .  The last
+argument in <i>specialized-lambda-list</i> is intended to be class specialized,
+just as is the case for normal <tt>setf</tt> methods.  <i>{method-qualifier}*</i> amd <i>body</i> are as for <tt>defgeneric</tt> .
+<p>
+
+For example, <tt>output-record-position</tt> and its <tt>setf*</tt> method for a class
+called <tt>sample-output-record</tt> might be defined as follows:
+<p>
+<pre>(defgeneric output-record-position (record)
+  (declare (values x y)))
+(defgeneric* (setf output-record-position) (x y record))
+<p>
+(defmethod output-record-position ((record sample-output-record))
+  (with-slots (x y)
+    (values x y)))
+<p>
+(defmethod* (setf output-record-position) (nx ny (record sample-output-record))
+  (with-slots (x y)
+    (setf x nx
+          y ny)))
+</pre> The position of such an output record could then be changed as follows:
+<p>
+<pre>(setf (output-record-position record) (values nx ny))
+<p>
+(setf (output-record-position record1) (output-record-position record2))
+</pre> <br><hr><br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="glossary.html">Glossary</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="encapsulating-streams.html">Encapsulating Streams</a></td>
+</tr></table>
+</body></html>

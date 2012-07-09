@@ -1,0 +1,319 @@
+<html><head><title>CLIM: 2 Conventions</title></head><body>
+<br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="overview.html">Overview of CLIM</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="regions.html">Regions</a></td>
+</tr></table><br><hr><br>
+<p>
+<br><a name="2"><h1>2 Conventions</h1></a>
+<a name="LABEL=conventions"></a> This chapter describes the conventions used in this specification and in the
+CLIM software itself.
+<p>
+
+<a name="2.1"><h2>2.1 Audience, Goals, and Purpose</h2></a>
+This document, the <b>CLIM Release 2 Specification</b>, is intended for vendors.
+While it does define the Application Programmer's Interface (API), that is, the
+functionality that a customer/consumer would use to write an application, it
+also defines the names and functionality of some internal parts of CLIM.  These
+``portals'' in implementation space allow one vendor to extend, for example, the
+output record mechanism and have it work with another vendor's implementation of
+incremental redisplay.  We have attempted to carefully identify the appropriate
+``portals'' so that the API can be implemented efficiently, but we have also
+tried not to overconstrain the specification so that it restricts creativity of
+implementation or the possibility for extension.  This also affects the more
+sophisticated application writers who want to go a little below the published
+API but still want portable applications.  This document defines which
+functionality is part of the advertised API, and which is part of the internal
+protocols.
+<p>
+In this document, we refer to three different audiences.  A CLIM <a name="CONCEPT=user"><b><i>user</i></b></a> is a person who uses an application program that was written using CLIM.  A CLIM
+<a name="CONCEPT=programmer"><b><i>programmer</i></b></a> is a person who writes application programs using CLIM.  A
+CLIM <a name="CONCEPT=implementor"><b><i>implementor</i></b></a> is a programmer who implements CLIM or extends it in
+some non-trivial way.
+<p>
+
+<a name="2.2"><h2>2.2 Package Structure</h2></a>
+CLIM defines a variety of packages in order to provide its functionality.  In
+general, no symbols except for the symbols in this specification should be added
+to those packages.
+<p>
+The <tt>clim-lisp</tt> package is intended to implement as much of the draft X3J13
+Common Lisp as possible, independent of the conformance of individual vendors.
+(When all Lisp vendors implement X3J13 Common Lisp, the <tt>clim-lisp</tt> package
+could be eliminated.)  <tt>clim-lisp</tt> is the version of Common Lisp in which
+CLIM is implemented and which the <tt>clim-user</tt> package uses instead of
+<tt>common-lisp</tt> .  <tt>clim-lisp</tt> contains only exported symbols, and is locked
+in those implementations that allow package locking.
+<p>
+<tt>clim</tt> is the package where the symbols specified in this specification live.
+It contains only exported symbols and is locked in those implementations that
+allow package locking.
+<p>
+<tt>clim-sys</tt> is the package where useful ``system-like'' functionality lives,
+including such things as resources and multi-processing primitives.  It contains
+functionality that is not part of Common Lisp, but which is not conceptually the
+province of CLIM itself.  It contains only exported symbols and is locked in
+those implementations that allow package locking.
+<p>
+No code is written in any of the above packages, but rather code is written for
+symbols in the above packages.  None of the above use any other packages (in the
+sense of the <tt>:use</tt> option to <tt>defpackage</tt> ).  A CLIM implementation might
+define a <tt>clim-internals</tt> package that uses each of the above packages, thus
+getting the definition of Lisp from <tt>clim-lisp</tt> .  It would then implement the
+functionality of the symbols in <tt>clim</tt> and <tt>clim-sys</tt> in the
+<tt>clim-internals</tt> package.
+<p>
+<tt>clim-user</tt> is a package that programmers can use if they don't wish to
+create their own package.  It is the CLIM analog of <tt>common-lisp-user</tt> .
+<p>
+
+<a name="LABEL=spread-vs-point"></a> 
+<a name="2.3"><h2>2.3 ``Spread'' Point Arguments to Functions </h2></a>
+Many functions that take point arguments come in two forms: <a name="CONCEPT=structured"><b><i>structured</i></b></a> and <a name="CONCEPT=spread"><b><i>spread</i></b></a> .  Functions that take structured point arguments take the
+argument as a single <tt>point</tt> object.  Functions that take spread point
+arguments take a pair of arguments that correspond to the <tt>x</tt> and <tt>y</tt>
+coordinates of the point.
+<p>
+Functions that take spread point arguments, or return spread point values have
+an asterisk in their name, for example, <tt>draw-line*</tt> .
+<p>
+
+<a name="2.4"><h2>2.4 Immutability of Objects</h2></a>
+Most CLIM objects are <a name="CONCEPT=immutable"><b><i>immutable</i></b></a> , that is, at the protocol level none
+of their components can be modified once the object is created.  Examples of
+immutable objects include all of the members of the <tt>region</tt> classes, colors
+and opacities, text styles, and line styles.  Since immutable objects by
+definition never change, functions in the CLIM API can safely capture immutable
+objects without first copying them.  This also allows CLIM to cache immutable
+objects.  Constructor functions that return immutable objects are free to either
+create and return a new object, or return an already existing object.
+<p>
+A few CLIM objects are <a name="CONCEPT=mutable"><b><i>mutable</i></b></a> .  Examples of mutable objects include
+streams and output records.  Some components of mutable objects can be modified
+once the object has been created, usually via <tt>setf</tt> accessors.
+<p>
+In CLIM, object immutability is maintained at the class level.  Throughout this
+specification, the immutability or mutability of a class will be explicitly
+specified.
+<p>
+Some immutable classes also allow <a name="CONCEPT=interning"><b><i>interning</i></b></a> .  A class is said to be
+interning if it guarantees that two instances that are equivalent will always be
+<tt>eq</tt> .  For example, if the class <tt>color</tt> were interning, calling
+<tt>make-rgb-color</tt> twice with the same arguments would return <tt>eq</tt> values.
+CLIM does not specify that any class is interning, however all immutable classes
+are allowed to be interning at the discretion of the implementation.
+<p>
+In some rare cases, CLIM will modify objects that are members of immutable
+classes.  Such objects are referred to as being <a name="CONCEPT=volatile"><b><i>volatile</i></b></a> .  Extreme
+care must be take with volatile objects.  This specification will note whenever
+some object that is part of the API is volatile.
+<p>
+
+<a name="2.4.1"><h3>2.4.1 Behavior of Interfaces</h3></a>
+In this specification, any interfaces that take or return mutable objects can
+be classified in a few different ways.
+<p>
+Most functions <a name="CONCEPT=do not capture"><b><i>do not capture</i></b></a> their mutable input objects, that is,
+these functions will either not store the objects at all, or will copy any
+mutable objects before storing them, or perhaps store only some of the
+components of the objects.  Later modifications to those objects will not
+affect the internal state of CLIM.
+<p>
+Some functions <a name="CONCEPT=may capture"><b><i>may capture</i></b></a> their mutable input objects.  That is, it
+is unspecified as to whether a CLIM implementation will or will not capture the
+mutable inputs to some function.  For such functions, programmers should assume
+that these objects will be captured and must not modify these objects
+capriciously.  Furthermore, it is unspecifed what will happen if these objects
+are later modified.
+<p>
+Some programmers might choose to create a mutable subclass of an immutable
+class.  If CLIM captures an object that is a member of such a class, it is
+unspecified what will happen if the programmer later modifies that object.  If a
+programmer passes such an object to a CLIM function that may capture its inputs,
+he is responsible for either first copying the object or ensuring that the
+object does not change later.
+<p>
+Some functions that return mutable objects are guaranteed to create
+<a name="CONCEPT=fresh outputs"><b><i>fresh outputs</i></b></a> .  These objects can be modified without affecting the
+internal state of CLIM.
+<p>
+Functions that return mutable objects that are not fresh objects fall into two
+categories: those that return <a name="CONCEPT=read-only state"><b><i>read-only state</i></b></a> , and those that return
+<a name="CONCEPT=read-write state"><b><i>read-write state</i></b></a> .  If a function returns read-only state, programmers
+must not modify that object; doing so might corrupt the state of CLIM.  If a
+function returns read/write state, the modification of that object is part of
+CLIM's interface, and programmers are free to modify the object in ways that
+``make sense''.
+<p>
+
+<a name="2.5"><h2>2.5 Protocol Classes and Predicates</h2></a>
+CLIM supplies a set of predicates that can be called on an object to determine
+whether or not that object satisfies a certain protocol.  These predicates can
+be implemented in one of two ways.
+<p>
+The first way is that a class implementing a particular protocol will inherit
+from a <a name="CONCEPT=protocol class"><b><i>protocol class</i></b></a> that corresponds to that protocol.  A protocol
+class is an ``abstract'' class with no slots and no methods (except perhaps for
+some default methods), and exists only to indicate that some subclass obeys the
+protocol.  In the case when a class inherits from a protocol class, the
+predicate could be implemented using <tt>typep</tt> .  All of the CLIM region,
+design, sheet, and output record classes use this convention.  For example, the
+presentation protocol class and predicate could be implemented in this way:
+<p>
+<pre>(defclass presentation () ())
+<p>
+(defun presentationp (object)
+  (typep object 'presentation))
+</pre> Note that in some implementations, it may be more efficient not to use
+<tt>typep</tt> , and instead use a generic function for the predicate.  However,
+simply implementing a method for the predicate that returns <a href="conventions.html#CONCEPT=true"><i>true</i></a> is not
+necessarily enough to assert that a class supports that protocol; the class must
+include the protocol class as a superclass.
+<p>
+CLIM always provides at least one ``standard'' instantiable class that
+implements each protocol.
+<p>
+The second way is that a class implementing a particular protocol must simply
+implement a method for a predicate generic function that returns <a href="conventions.html#CONCEPT=true"><i>true</i></a> if
+and only if that class supports the protocol (otherwise, it returns
+<a href="conventions.html#CONCEPT=false"><i>false</i></a> ).  Most of the CLIM stream classes use this convention.  Protocol
+classes are not used in these cases because, as in the case of some of the
+stream classes, the underlying Lisp implementation may not be arranged so as to
+permit it.  For example, the extended input stream protocol might be implemented
+in this way:
+<p>
+<pre>(defgeneric extended-input-stream-p (object))
+<p>
+(defmethod extended-input-stream-p ((object t)) nil)
+<p>
+(defmethod extended-input-stream-p ((object basic-extended-input-protocol)) t)
+<p>
+(defmethod extended-input-stream-p
+           ((encapsulating-stream standard-encapsulating-stream))
+  (with-slots (stream) encapsulating-stream
+    (extended-input-stream-p stream)))
+</pre> Whenever a class inherits from a protocol class or returns <a href="conventions.html#CONCEPT=true"><i>true</i></a> from the
+protocol predicate, the class must implement methods for all of the generic
+functions that make up the protocol.
+<p>
+
+<a name="2.6"><h2>2.6 Specialized Arguments to Generic Functions</h2></a>
+Unless otherwise stated, this specification uses the following convention
+for specifying which arguments to generic functions are specialized:
+<p>
+<ul> <li> If the generic function is a <tt>setf</tt> function, the second argument is
+the one that is intended to be specialized.
+<p>
+<li> If the generic function is a ``mapping'' function (such as
+<tt>map-over-region-set-regions</tt> ), the second argument (the object that
+specifies what is being mapped over) is the one that is specialized.  The
+first argument (the functional argument) is not intended to be specialized.
+<p>
+<li> Otherwise, the first argument is the one that is intended to be
+specialized.
+</ul> <a name="2.7"><h2>2.7 Multiple Value <tt>setf</tt></h2></a>
+Some functions in CLIM that return multiple values have <tt>setf</tt> functions
+associated with them.  For example, <tt>output-record-position</tt> returns the
+position of an output record as two values that correspond to the <tt>x</tt> and <tt>y</tt>
+coordinates.  In order to change the position of an output record, the
+programmer would like to invoke <tt>(setf~output-record-position)</tt> .  Normally
+however, <tt>setf</tt> only takes a single value with which to modify the specified
+place.  CLIM provides a ``multiple value'' version of <tt>setf</tt> that allows an
+expression that returns multiple values to be used in updating the specified
+place.  In this specification, this facility will be referred to as <tt>setf*</tt> in the guise of function names such as <tt>(setf* output-record-position)</tt> , even
+though <tt>setf*</tt> is not actually a defined form.
+<p>
+For example, the modifying function for <tt>output-record-position</tt> might be
+called in either of the following two ways:
+<p>
+<pre>(setf (output-record-position record) (values nx ny))
+<p>
+(setf (output-record-position record1) (output-record-position record2))
+</pre> The second form works because <tt>output-record-position</tt> itself returns two
+values.
+<p>
+Some CLIM implementations may not support <tt>setf*</tt> due to restrictions imposed
+by the underlying Lisp implementation.  In this case, programmers may use
+special ``setter'' function instead.  In the above example,
+<tt>output-record-set-position</tt> is the ``setter'' function.
+<p>
+
+<a name="2.8"><h2>2.8 Sheet, Stream, or Medium Arguments to Macros</h2></a>
+There are many macros that take a sheet, stream, or medium as one of the
+arguments, for example, <tt>with-new-output-record</tt> and <tt>formatting-table</tt> .
+In CLIM, this argument must be a variable bound to a sheet, stream, or medium;
+it may not be an arbitrary form that evaluates to a sheet, stream, or medium.
+<tt>t</tt> and sometimes <tt>nil</tt> are usually allowed as special cases; this causes
+the variable to be interpreted as a reference to another stream variable
+(usually <tt>*standard-output*</tt> for output macros, or <tt>*standard-input*</tt> for
+input macros).  Note that, while the variable outside the macro form and the
+variable inside the body share the same name, they cannot be assumed to be the
+same reference.  That is, the macro is free to create a new binding for the
+variable.  Thus, the following code fragment will not necessarily affect the
+value of <i>stream</i> outside the <tt>formatting-table</tt> form:
+<p>
+<pre>(formatting-table (stream)
+  (setq stream some-other-stream)
+  ...)
+</pre> Furthermore, for the macros that take a sheet, stream, or medium argument, the
+position of that variable is always before any forms or other ``inputs''.
+<p>
+
+<a name="2.9"><h2>2.9 Macros that Expand into Calls to Advertised Functions</h2></a>
+Some macros that take a ``body'' argument expand into a call to an advertised
+function that takes a functional argument.  This functional argument will
+execute the suppled body.  For a macro named ``<i><tt>with-</tt> environment</i>'',
+the function is generally named ``<i><tt>invoke-with-</tt> environment</i>''.  For
+example, <tt>with-drawing-options</tt> might be defined as follows:
+<p>
+<pre>(defgeneric invoke-with-drawing-options (medium continuation &key)
+  (declare (dynamic-extent continuation)))
+<p>
+(defmacro with-drawing-options ((medium &rest drawing-options) &body body)
+  `(flet ((with-drawing-options-body (,medium) ,@body))
+     (declare (dynamic-extent #'with-drawing-options-body))
+     (invoke-with-drawing-options
+       ,medium #'with-drawing-options-body ,@drawing-options)))
+<p>
+(defmethod invoke-with-drawing-options 
+           ((medium clx-display-medium) continuation &rest drawing-options)
+  (with-drawing-options-merged-into-medium (medium drawing-options)
+    (funcall continuation medium)))
+</pre> <a name="2.10"><h2>2.10 Terminology Pertaining to Error Conditions</h2></a>
+When this specification specifies that it ``is an error'' for some situation to
+occur, this means that:
+<p>
+<ul> <li> No valid CLIM program should cause this situation to occur.
+<p>
+<li> If this situation does occur, the effects and results are undefined as
+far as adherence to the CLIM specification is concerned.
+<p>
+<li> CLIM implementations are not required to detect such an error, although
+implementations are encouraged to provide such error detection whenever it is
+reasonable to do so.
+</ul> When this specification specifies that some argument ``must be a <a href="conventions.html#CONCEPT=type"><i>type</i></a> ''
+or uses the phrase ``the <a href="conventions.html#CONCEPT=type"><i>type</i></a> <i>argument</i> '', this means that it is an
+error if the argument is not of the specified type.  CLIM implementations are
+encouraged, but not required, to generate an argument type error for these
+situations.
+<p>
+When this specification says that ``an error is signalled'' in some situation,
+this means that:
+<p>
+<ul> <li> If the situation occurs, an error will be signalled using either
+<tt>error</tt> or <tt>cerror</tt> .
+<p>
+<li> Valid CLIM programs may rely on the fact that an error will be signalled.
+<p>
+<li> Every CLIM implementation is required to detect such an error.
+</ul> When this specification says that ``a condition is signalled'' in some
+situation, this is just like ``an error is signalled'' with the exception that
+the condition will be signalled using <tt>signal</tt> instead of <tt>error</tt> .
+<br><hr><br><table width=100%><tr valign="baseline">
+<td width=25% align=left><a href="overview.html">Overview of CLIM</a></td>
+<td width=25% align=center><a href="toc.html">Contents</a></td>
+<td width=25% align=center><a href="index.html">Index</a></td>
+<td width=25% align=right><a href="regions.html">Regions</a></td>
+</tr></table>
+</body></html>
