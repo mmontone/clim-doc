@@ -6,6 +6,7 @@ Common Lisp CLIM related documentation
 
 * https://dspace.mit.edu/handle/1721.1/6946
 * https://dspace.mit.edu/handle/1721.1/41161
+* http://www.jucs.org/jucs_14_20/an_implementation_of_clim
 
 ## More resources
 
